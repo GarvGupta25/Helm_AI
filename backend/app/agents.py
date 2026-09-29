@@ -646,7 +646,7 @@ def rank_catalogue_plans(profile: dict, catalogue: list[dict]) -> list[dict]:
 
 def explain_catalogue_ranking(ranked: list[dict]) -> list[dict]:
     """Explain the deterministic ranking without letting a model delay the member journey."""
-    return [
+    fallback = [
         {
             "plan_id": row["plan_id"],
             "explanation": (
@@ -656,6 +656,43 @@ def explain_catalogue_ranking(ranked: list[dict]) -> list[dict]:
         }
         for row in ranked
     ]
+    if not ranked or not settings().groq_api_key:
+        return fallback
+    try:
+        response = _client().chat.completions.create(
+            model=settings().groq_model,
+            temperature=0,
+            response_format={"type": "json_object"},
+            max_tokens=1200,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Explain each fixed insurance-plan ranking in plain language. "
+                        "Do not change scores, order or plan IDs. Return JSON with an explanations array; "
+                        "each item must contain plan_id and explanation."
+                    ),
+                },
+                {"role": "user", "content": json.dumps({"ranked_plans": ranked})},
+            ],
+        )
+        items = json.loads(response.choices[0].message.content or "{}").get("explanations", [])
+        by_plan = {
+            item["plan_id"]: item["explanation"].strip()
+            for item in items
+            if isinstance(item, dict)
+            and isinstance(item.get("plan_id"), str)
+            and isinstance(item.get("explanation"), str)
+            and item["explanation"].strip()
+        }
+        if all(row["plan_id"] in by_plan for row in ranked):
+            return [
+                {"plan_id": row["plan_id"], "explanation": by_plan[row["plan_id"]]}
+                for row in ranked
+            ]
+    except Exception:
+        pass
+    return fallback
 
 
 def _route(state: AgentState) -> str:
