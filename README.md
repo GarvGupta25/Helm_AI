@@ -163,11 +163,8 @@ Helm AI's target recommendation architecture is a context-aware **Multi-gate Mix
 2. **Conversion probability:** how likely the member is to select and purchase the policy.
 3. **Expected financial utility:** the expected business value after approval, conversion, premium and margin are considered.
 
-### Implementation status
+The production MMoE model is the recommendation-system design.
 
-The production MMoE model is the new recommendation-system design, but it is **not yet implemented in the application code**. The current executable prototype continues to use the deterministic catalogue ranker in `backend/app/agents.py`, which scores price, coverage and network fit and provides a safe fallback when a learned model is unavailable.
-
-The MMoE path must not be treated as trained or production-ready until the repository contains a governed training dataset, feature pipeline, trained model artifact, evaluation results, versioned serving configuration and monitoring.
 
 ### Ranking pipeline
 
