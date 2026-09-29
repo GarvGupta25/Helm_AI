@@ -21,6 +21,7 @@ The repository includes the customer experience, broker workspace, provider work
 - [Product Overview](#product-overview)
 - [User Workspaces](#user-workspaces)
 - [Architecture](#architecture)
+- [Context-Aware Recommendation System](#context-aware-recommendation-system)
 - [Complete Marketplace Workflow](#complete-marketplace-workflow)
 - [Complete Claims Workflow](#complete-claims-workflow)
 - [Features](#features)
@@ -43,7 +44,8 @@ Helm AI provides one connected health-insurance journey for individual UAE custo
 - capture identity, residency, health, funding and cover preferences;
 - accept natural-language and voice input through the Helm assistant;
 - compare a catalogue of 50 fictional schemes from 10 fictional partners;
-- rank plans against saved member requirements using deterministic rules;
+- dynamically rank eligible plans using member context, approval likelihood, conversion likelihood and expected financial utility;
+- retain the deterministic rules engine as the current runtime and fallback until the MMoE model is trained, validated and deployed;
 - explain recommendations and trade-offs in plain language;
 - send selected requests to providers with explicit member consent;
 - allow providers to return structured quotations;
@@ -124,6 +126,7 @@ flowchart TB
 
     subgraph AI["AI and Background Processing"]
         WORKER["LangGraph worker"]
+        RANKER["MMoE policy ranker - target architecture"]
         GROQ["Groq language models"]
         WHISPER["Groq Whisper transcription"]
         OCR["PyMuPDF, Pillow and Tesseract OCR"]
@@ -145,30 +148,111 @@ flowchart TB
     RBAC --> RLS
     API --> Data
     PROFILE --> WORKER
+    PROFILE -. proposed ranking path .-> RANKER
     CLAIM --> WORKER
     WORKER --> GROQ
     WORKER --> WHISPER
     CLAIM --> OCR
 ```
 
+## Context-Aware Recommendation System
+
+Helm AI's target recommendation architecture is a context-aware **Multi-gate Mixture-of-Experts (MMoE)** ranker. It is designed to balance multiple objectives instead of optimising a single signal such as clicks or premium value:
+
+1. **Approval probability:** how likely the member is to satisfy underwriting requirements.
+2. **Conversion probability:** how likely the member is to select and purchase the policy.
+3. **Expected financial utility:** the expected business value after approval, conversion, premium and margin are considered.
+
+### Implementation status
+
+The production MMoE model is the new recommendation-system design, but it is **not yet implemented in the application code**. The current executable prototype continues to use the deterministic catalogue ranker in `backend/app/agents.py`, which scores price, coverage and network fit and provides a safe fallback when a learned model is unavailable.
+
+The MMoE path must not be treated as trained or production-ready until the repository contains a governed training dataset, feature pipeline, trained model artifact, evaluation results, versioned serving configuration and monitoring.
+
+### Ranking pipeline
+
+```mermaid
+flowchart LR
+    INTAKE["Live member intake context"] --> RULES["Hard-rule eligibility filter"]
+    CATALOGUE["Policy catalogue and commercial attributes"] --> RULES
+    RULES --> FEATURES["Context + policy feature pipeline"]
+    FEATURES --> MMoE["MMoE shared experts and task-specific gates"]
+    MMoE --> APPROVAL["Approval probability"]
+    MMoE --> CONVERSION["Conversion probability"]
+    APPROVAL --> UTILITY["Expected-utility scoring"]
+    CONVERSION --> UTILITY
+    CATALOGUE --> UTILITY
+    UTILITY --> BOOSTS["Governed context and campaign rules"]
+    BOOSTS --> RESULTS["Ranked eligible policies"]
+    RESULTS --> UI["Updated member recommendations"]
+```
+
+The serving sequence is:
+
+1. Apply inexpensive hard rules before model inference, such as minimum-age or product-availability constraints.
+2. Combine the latest member context with every eligible policy's attributes.
+3. Standardise and vectorise numeric and categorical features through a versioned feature pipeline.
+4. Run one batched MMoE inference request across the eligible policy set.
+5. Produce separate approval and conversion probabilities for every candidate.
+6. Calculate expected utility and apply explicitly governed business-context rules.
+7. Sort by the final score and return the ranked list with human-readable reasons.
+
+The base utility formula is:
+
+```text
+expected_utility = P(approval) × P(conversion) × (base_premium × margin_rate)
+```
+
+Any campaign or regional multiplier is applied only after the base utility calculation and must be stored as versioned configuration. The example `1.2` regional multiplier and default margin values are design parameters, not validated production values.
+
+### MMoE model structure
+
+- A blended feature vector represents the member's current context and one policy candidate.
+- Multiple shared expert networks learn different representations of the combined input.
+- An approval gate and a conversion gate independently weight those experts for their tasks.
+- Each gated output passes through a task-specific tower and sigmoid output layer.
+- The two probabilities feed the utility calculation; premium and margin remain explicit business inputs rather than hidden model outputs.
+
+This separation allows each task to use the shared experts differently. It is a design rationale, not evidence that MMoE outperforms a shared-bottom model for Helm AI. That claim requires a controlled offline comparison.
+
+### Dynamic intake behaviour
+
+When a member changes a relevant intake value, the recommendation endpoint recalculates the eligible pool and ranking from the latest profile. For example, changing occupation from a desk-based role to construction work may change approval predictions and reorder the eligible policies. A clearly ineligible policy is removed by the hard-rule filter before inference.
+
+### Validation required before deployment
+
+- Train only on lawfully collected, versioned approval and conversion outcomes.
+- Record policy exposure so conversion labels are not interpreted without knowing which products were shown.
+- Compare MMoE against the deterministic fallback and a simpler shared-bottom baseline.
+- Measure approval and conversion AUC/log loss, ranking NDCG or top-k hit rate, calibration and end-to-end latency.
+- Evaluate fairness and explainability across permitted member segments and sensitive or proxy attributes.
+- Define cold-start behaviour for new members and policies.
+- Version the model, feature pipeline, hard rules, loss weights and utility parameters together.
+- Monitor drift, feature failures and output distributions, with automatic fallback to deterministic ranking.
+
+No sub-15 ms latency, accuracy, conversion uplift or superiority claim is made until it is measured against a stated dataset, candidate-set size and serving environment.
+
 ## Complete Marketplace Workflow
 
 1. The member signs in and starts a new shopping case.
 2. Profile intake captures identity, residence, health, budget and cover preferences.
 3. Required fields are validated and stored in a versioned member profile.
-4. Deterministic matching filters and ranks eligible catalogue plans.
-5. Helm explains the strongest recommendations using saved facts and database plan terms.
-6. The member selects plans/providers and explicitly consents to sharing the required profile.
-7. Marketplace applications are created for the selected providers.
-8. The broker can see the request, selected providers and progress in the broker workspace.
-9. Each provider reviews its assigned request and submits structured quotation terms.
-10. Member notifications and the marketplace timeline update as responses arrive.
-11. The member opens the returned quotations and selects one quotation.
-12. The selected provider receives the member's acceptance request.
-13. The provider accepts and confirms policy-start details.
-14. Required broker/binding-readiness checkpoints are completed.
-15. The marketplace policy is created and appears in the member and provider workspaces.
-16. Policy servicing, payment scheduling, cover questions and later claims continue from the same record.
+4. Hard rules remove clearly ineligible catalogue plans before ranking.
+5. The current runtime applies deterministic price, coverage and network scoring; the target system sends context-policy feature vectors to the MMoE ranker.
+6. The target MMoE model estimates approval and conversion probability for every eligible policy in one batch.
+7. Expected-utility scoring combines those probabilities with premium and margin, then applies governed context rules.
+8. Helm returns the ranked policies with plain-language explanations and keeps the deterministic engine available as a fallback.
+9. The member selects plans/providers and explicitly consents to sharing the required profile.
+10. Marketplace applications are created for the selected providers.
+11. The broker can see the request, selected providers and progress in the broker workspace.
+12. Each provider reviews its assigned request and submits structured quotation terms.
+13. Member notifications and the marketplace timeline update as responses arrive.
+14. The member opens the returned quotations and selects one quotation.
+15. The selected provider receives the member's acceptance request.
+16. The provider accepts and confirms policy-start details.
+17. Required broker/binding-readiness checkpoints are completed.
+18. The marketplace policy is created and appears in the member and provider workspaces.
+19. Policy servicing, payment scheduling, cover questions and later claims continue from the same record.
 
 ## Complete Claims Workflow
 
@@ -195,7 +279,11 @@ flowchart TB
 - Three-stage editable profile intake.
 - Natural-language profile assistant with conversation state.
 - Voice transcription and browser read-aloud.
-- Deterministic plan matching with explainable recommendation copy.
+- Context-aware MMoE recommendation design for approval and conversion prediction.
+- Expected-utility ranking using explicit premium, margin and governed business rules.
+- Hard-rule eligibility filtering and deterministic runtime fallback.
+- Dynamic re-ranking when relevant member intake context changes.
+- Explainable recommendation copy that cannot silently alter the ranked order.
 - Member consent and provider-specific application routing.
 - Provider quotation, member selection and policy-start lifecycle.
 - Notification bell and live marketplace status timeline.
@@ -249,6 +337,8 @@ flowchart TB
 | Database | PostgreSQL 17, SQLAlchemy 2, Psycopg 3 | Transactional workflow state and binary claim evidence |
 | Platform | Supabase local stack | Authentication, PostgreSQL, RLS and Studio |
 | AI workflow | LangGraph | Durable assistant and claim-agent state |
+| Recommendation runtime | Deterministic Python rules | Current price, coverage and network ranking plus model fallback |
+| Recommendation design | TensorFlow/Keras MMoE | Target approval/conversion multi-task ranker; not yet included in runtime dependencies |
 | Language/STT | Groq, Whisper Large V3 | Assistant responses, extraction and voice transcription |
 | Documents | PyMuPDF, Pillow, Tesseract | PDF/image validation, extraction and OCR |
 | PDF generation | ReportLab | Quotations, proof documents and provisional letters |
