@@ -119,17 +119,17 @@ def extract_claim_attachment(content: bytes, filename: str, doc_type: str) -> di
             raise HTTPException(503, "Local image OCR is unavailable.") from None
     else:
         try:
-            image = Image.open(BytesIO(content))
-            if image.format not in {"JPEG", "PNG"} or image.width * image.height > 20000000:
-                raise HTTPException(422, "Use a JPG/PNG with at most 20 million pixels.")
-            if settings().tesseract_cmd:
-                pytesseract.pytesseract.tesseract_cmd = settings().tesseract_cmd
-            text = pytesseract.image_to_string(image, timeout=20)[:10000]
-            image.close()
-        except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
-            raise HTTPException(422, "This is not a readable JPG, PNG or PDF.") from None
+            with Image.open(BytesIO(content)) as image:
+                if image.format not in {"JPEG", "PNG"} or image.width * image.height > 20000000:
+                    raise HTTPException(422, "Use a JPG/PNG with at most 20 million pixels.")
+                image.load()
+                if settings().tesseract_cmd:
+                    pytesseract.pytesseract.tesseract_cmd = settings().tesseract_cmd
+                text = pytesseract.image_to_string(image, timeout=20)[:10000]
         except (pytesseract.TesseractNotFoundError, RuntimeError):
             raise HTTPException(503, "Local image OCR is unavailable.") from None
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+            raise HTTPException(422, "This is not a readable JPG, PNG or PDF.") from None
     # Only bounded factual fields are retained. Instruction-like source text is discarded.
     metadata = {"file_name": re.sub(r"[^\w. -]", "", filename)[:80], "description": "Member attachment parsed locally"}
     for name, pattern in {

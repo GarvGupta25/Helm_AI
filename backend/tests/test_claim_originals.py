@@ -1,6 +1,7 @@
 from io import BytesIO
 from uuid import uuid4
 
+import pytest
 from conftest import as_assigned_broker
 from PIL import Image
 from reportlab.pdfgen import canvas
@@ -8,10 +9,19 @@ from sqlalchemy.orm import Session
 from test_claim_review import add_flagged_claim, add_policy
 
 from app.auth import User
+from app.documents import settings
 from app.models import ClaimDocument, ClaimDocumentFile
 
 
-def test_broker_can_view_member_originals_for_regular_and_emergency_claims(fixture_client):
+@pytest.mark.parametrize("ocr_available", [True, False])
+def test_broker_can_view_member_originals_for_regular_and_emergency_claims(
+    fixture_client, monkeypatch, tmp_path, ocr_available,
+):
+    if ocr_available:
+        monkeypatch.setattr("app.documents.pytesseract.image_to_string", lambda *args, **kwargs: "")
+    else:
+        monkeypatch.setattr(settings(), "tesseract_cmd", str(tmp_path / "missing-tesseract"))
+        monkeypatch.setattr("app.documents.pytesseract.pytesseract.tesseract_cmd", "tesseract")
     client, owner, engine = fixture_client
     with Session(engine) as db:
         policy = add_policy(db, owner[0].id)
@@ -26,7 +36,7 @@ def test_broker_can_view_member_originals_for_regular_and_emergency_claims(fixtu
     png = buffer.getvalue()
     pdf_buffer = BytesIO()
     pdf = canvas.Canvas(pdf_buffer)
-    pdf.drawString(40, 750, "Demo invoice")
+    pdf.drawInlineImage(image, 40, 700)
     pdf.save()
     originals = {regular_id: ("فاتورة-王秀英.png", png, "image/png"),
                  emergency_id: ("invoice.pdf", pdf_buffer.getvalue(), "application/pdf")}
