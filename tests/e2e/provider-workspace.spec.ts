@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support';
 
 const config = {
   auth_configured: true,
@@ -35,6 +35,7 @@ test('provider sees the isolated applications, quotation, policy and account wor
   await page.getByLabel('Email address').fill('provider@example');
   await page.getByLabel('Password').fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/(app|provider)$/);
   await expect(page).toHaveURL(/\/provider$/);
   await page.getByRole('button', { name: /Application applicat/ }).click();
   await expect(page.getByText('hospital preference')).toBeVisible();
@@ -46,4 +47,32 @@ test('provider sees the isolated applications, quotation, policy and account wor
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(300);
   await page.screenshot({ path: 'PIVOT_V2_PHASE5_PROVIDER_MOBILE.png', fullPage: true });
+});
+
+test('provider accepts a selection and starts only after the final review', async ({ page }) => {
+  await stubProviderApi(page);
+  let applicationStatus = 'customer_selected';
+  let accepted = false;
+  await page.route('**/api/provider/quotations', route => route.fulfill({ json: [{ id: 'quote-selected', application_id: 'application-selected', premium: 9200, status: accepted ? 'accepted' : 'selected', application_status: applicationStatus, plan_terms: {}, submitted_at: '2026-09-19T09:00:00Z' }] }));
+  await page.route('**/api/provider/quotations/quote-selected/accept', route => {
+    accepted = true; applicationStatus = 'provider_accepted';
+    return route.fulfill({ json: { status: 'accepted' } });
+  });
+  await page.route('**/api/provider/policies/quote-selected/start', route => {
+    expect(applicationStatus).toBe('broker_final_review');
+    applicationStatus = 'bound';
+    return route.fulfill({ json: { id: 'policy-new', status: 'active' } });
+  });
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill('provider@example');
+  await page.getByLabel('Password').fill('password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/provider$/);
+  await page.getByRole('button', { name: 'Accept quotation' }).click();
+  await expect(page.getByText('Awaiting broker final review')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start policy', exact: true })).toHaveCount(0);
+  applicationStatus = 'broker_final_review';
+  await page.reload();
+  await page.getByRole('button', { name: 'Start policy', exact: true }).click();
+  await expect(page.getByText('Policy started', { exact: true })).toBeVisible();
 });

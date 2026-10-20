@@ -1,109 +1,72 @@
-import { useEffect, useRef, useState } from "react";
-import { DotLottie } from "@lottiefiles/dotlottie-web";
-import { ChatPanel } from "./ChatPanel";
-import "./ChatbotLauncher.css";
-
-// Bundled locally under frontend/public/assets/
-const LOTTIE_SRC = "/assets/robot.json";
-const GREETING_TEXT = "Welcome to Helm Ai";
-const GREETING_DELAY_MS = 60000; // 60 seconds
+import { useEffect, useRef, useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
+import type { DotLottie } from '@lottiefiles/dotlottie-web';
+import { ChatPanel } from './ChatPanel';
+import './ChatbotLauncher.css';
 
 export function ChatbotLauncher() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const dotLottieRef = useRef<DotLottie | null>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const greetingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [showGreeting, setShowGreeting] = useState(true);
+  const [animated, setAnimated] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
+  useEffect(() => {
+    try { if (sessionStorage.getItem('helm-greeting-dismissed') === 'yes') return; } catch { /* Storage may be unavailable. */ }
+    greetingTimer.current = setTimeout(() => setShowGreeting(true), 60000);
+    return () => { if (greetingTimer.current) clearTimeout(greetingTimer.current); };
+  }, []);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    dotLottieRef.current = new DotLottie({
-      autoplay: true,
-      loop: true,
-      canvas: canvasRef.current,
-      src: LOTTIE_SRC,
-    });
-
-    const showTimer = window.setInterval(() => setShowGreeting(true), GREETING_DELAY_MS);
-
+    const motion = matchMedia('(prefers-reduced-motion: reduce)');
+    let player: DotLottie | undefined;
+    let cancelled = false;
+    const update = () => {
+      const play = !motion.matches && !document.hidden;
+      setAnimated(play && !!player);
+      if (play) player?.play(); else player?.pause();
+    };
+    // Load the optional mascot after the page; assistant controls work immediately.
+    const timer = window.setTimeout(() => {
+      if (motion.matches) return;
+      void import('@lottiefiles/dotlottie-web').then(({ DotLottie }) => {
+        if (cancelled || !canvas.current) return;
+        player = new DotLottie({ canvas: canvas.current, src: '/assets/robot.json', autoplay: false, loop: true });
+        update();
+      }).catch(() => setAnimated(false));
+    }, 1500);
+    motion.addEventListener('change', update);
+    document.addEventListener('visibilitychange', update);
     return () => {
-      window.clearInterval(showTimer);
-      dotLottieRef.current?.destroy();
+      cancelled = true; clearTimeout(timer); player?.destroy();
+      motion.removeEventListener('change', update);
+      document.removeEventListener('visibilitychange', update);
     };
   }, []);
 
-  const markInteracted = () => {
+  function dismissGreeting() {
+    if (greetingTimer.current) clearTimeout(greetingTimer.current);
     setShowGreeting(false);
-  };
+    try { sessionStorage.setItem('helm-greeting-dismissed', 'yes'); } catch { /* Session memory is optional. */ }
+  }
+  function open() { dismissGreeting(); setIsOpen(true); }
+  function close() { setIsOpen(false); trigger.current?.focus(); }
 
-  const handleOpen = () => {
-    setIsOpen(true);
-    markInteracted();
-  };
-
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    markInteracted();
-  };
-
-  return (
-    <div className="chatbot-launcher-root">
-      {isOpen && <ChatPanel onClose={() => setIsOpen(false)} />}
-
-      <div className="chatbot-launcher">
-        {showGreeting && !isOpen && (
-          <button
-            type="button"
-            className="chatbot-greeting-card"
-            onClick={handleOpen}
-            aria-label={`${GREETING_TEXT} — open the Helm AI assistant`}
-          >
-            <div
-              className="chatbot-greeting-card__close"
-              onClick={handleDismiss}
-              aria-label="Dismiss message"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleDismiss(e as any);
-                }
-              }}
-            >
-              &times;
-            </div>
-            <span className="chatbot-greeting-card__eyebrow">
-              <span className="chatbot-greeting-card__status-dot" />
-              Helm AI Assistant
-            </span>
-            <span className="chatbot-greeting-card__headline">
-              {GREETING_TEXT}
-              <span className="chatbot-greeting-card__wave" aria-hidden="true">
-                👋
-              </span>
-            </span>
-            <span className="chatbot-greeting-card__subtext">
-              Your guide to UAE health cover — ask me anything.
-            </span>
-            <span className="chatbot-greeting-card__tail" aria-hidden="true" />
-          </button>
-        )}
-        <button
-          type="button"
-          className="chatbot-launcher__button"
-          aria-label="Open the Helm AI assistant"
-          aria-expanded={isOpen}
-          onClick={handleOpen}
-        >
-          <canvas
-            ref={canvasRef}
-            width={120}
-            height={120}
-            className="chatbot-launcher__canvas"
-            aria-hidden="true"
-          />
+  return <div className="chatbot-launcher-root">
+    {isOpen && <ChatPanel onClose={close}/>}
+    <div className="chatbot-launcher">
+      {showGreeting && !isOpen && <div className="chatbot-greeting-card">
+        <button type="button" className="chatbot-greeting-card__open" onClick={open}>
+          <span className="chatbot-greeting-card__eyebrow">Helm AI Assistant</span>
+          <strong>Welcome to Helm AI</strong>
+          <span>Your guide to UAE health cover. Ask a question.</span>
         </button>
-      </div>
+        <button type="button" className="chatbot-greeting-card__close" onClick={dismissGreeting} aria-label="Dismiss message"><X size={16}/></button>
+      </div>}
+      <button ref={trigger} type="button" className="chatbot-launcher__button" aria-label="Open the Helm AI assistant" aria-expanded={isOpen} aria-controls={isOpen ? 'helm-public-assistant' : undefined} onClick={open}>
+        {!animated && <MessageCircle size={28} aria-hidden="true"/>}
+        <canvas ref={canvas} width={96} height={96} className="chatbot-launcher__canvas" hidden={!animated} aria-hidden="true"/>
+      </button>
     </div>
-  );
+  </div>;
 }

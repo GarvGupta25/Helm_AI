@@ -367,9 +367,8 @@ def main() -> None:
     with Session(engine()) as db:
         counts = seed_catalogue(db)
         seed_performance_examples(db)
-        credentials = [provider_login(spec) for spec in PROVIDER_SPECS if spec["display_name"]]
         if not args.skip_auth:
-            credentials = provision_provider_accounts(db)
+            provision_provider_accounts(db)
         db.commit()
 
     print("Marketplace provider seed complete.")

@@ -1,9 +1,16 @@
+from conftest import as_assigned_broker
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain import plans
-from app.models import ClaimAutoRule, ClaimDecision, ClaimIntake, ClaimQualityAudit, Policy, ProvisionalAuthRule
-from conftest import as_assigned_broker
+from app.models import (
+    ClaimAutoRule,
+    ClaimDecision,
+    ClaimIntake,
+    ClaimQualityAudit,
+    Policy,
+    ProvisionalAuthRule,
+)
 
 
 def policy_for(db, owner):

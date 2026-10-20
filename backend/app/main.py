@@ -281,7 +281,7 @@ def public_marketplace_plans(db: Session = Depends(session)):
     ).all()
     return {
         "plans": [
-            {**plan.terms, "id": plan.plan_code, "provider_name": provider.name}
+            {**plan.terms, "id": plan.plan_code, "provider_id": provider.id, "provider_name": provider.name}
             for plan, provider in rows
         ],
         "notice": "All marketplace plans and partner names are fictional Helm demonstration data.",
@@ -291,7 +291,7 @@ def public_marketplace_plans(db: Session = Depends(session)):
 @app.get("/api/public/marketplace-partners")
 def public_marketplace_partners(db: Session = Depends(session)):
     rows = db.execute(
-        select(Provider.name, func.count(MarketplacePlan.id))
+        select(Provider.id, Provider.name, func.count(MarketplacePlan.id))
         .join(MarketplacePlan, MarketplacePlan.provider_id == Provider.id)
         .group_by(Provider.id, Provider.name)
         .order_by(Provider.name)
@@ -300,12 +300,13 @@ def public_marketplace_partners(db: Session = Depends(session)):
         "items": [
             {
                 "id": name.lower().replace(" ", "-").replace("/", "-"),
+                "provider_id": provider_id,
                 "name": name,
                 "tier": "marketplace_partner",
                 "emirate": "UAE demonstration",
                 "scheme_count": count,
             }
-            for name, count in rows
+            for provider_id, name, count in rows
         ],
         "notice": "Fictional Helm marketplace partners. Not real insurer relationships.",
     }

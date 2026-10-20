@@ -5,44 +5,39 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import type { Session } from '@supabase/supabase-js';
 import { Compass, ArrowUpRight, ArrowRight, Mic, ShieldCheck, Layers3, LayoutDashboard, LogOut, Menu, Check, Sparkles, ClipboardCheck, Bell } from 'lucide-react';
 import { api, auth, configureAuth, type Config, aed } from './api';
-import { Dashboard, Intake, QuotePage, ApplicationPage, PolicyPage, Loading, ErrorView } from './Shopping';
-import { BrokerWorkspace } from './Broker';
-import { ClaimReview } from './broker/ClaimReview';
-import { ProviderWorkspace } from './provider/ProviderWorkspace';
-import { MarketplaceJourney } from './MarketplaceJourney';
+import { Loading, ErrorView } from './Feedback';
 import './styles.css';
 import { MarketingLayout } from './marketing/components/MarketingLayout';
-import { HomePage } from './marketing/pages/HomePage';
-import { AboutPage } from './marketing/pages/AboutPage';
-import { PartnersPage } from './marketing/pages/PartnersPage';
-import { PlansPage } from './marketing/pages/PlansPage';
-import { PlanDetailPage } from './marketing/pages/PlanDetailPage';
-import { GuidePage } from './marketing/pages/GuidePage';
-import { GuideTopicPage } from './marketing/pages/GuideTopicPage';
-import { HowItWorksPage } from './marketing/pages/HowItWorksPage';
-import { FaqPage } from './marketing/pages/FaqPage';
-import { ClaimsExplainedPage } from './marketing/pages/ClaimsExplainedPage';
-import { ContactPage } from './marketing/pages/ContactPage';
-import { PrivacyPage } from './marketing/pages/PrivacyPage';
-import { TermsPage } from './marketing/pages/TermsPage';
-import { DisclaimerPage } from './marketing/pages/DisclaimerPage';
+import './foundation.css';
+
+const HomePage = React.lazy(() => import('./marketing/pages/HomePage').then(module => ({ default: module.HomePage })));
+const AboutPage = React.lazy(() => import('./marketing/pages/AboutPage').then(module => ({ default: module.AboutPage })));
+const PartnersPage = React.lazy(() => import('./marketing/pages/PartnersPage').then(module => ({ default: module.PartnersPage })));
+const PlansPage = React.lazy(() => import('./marketing/pages/PlansPage').then(module => ({ default: module.PlansPage })));
+const PlanDetailPage = React.lazy(() => import('./marketing/pages/PlanDetailPage').then(module => ({ default: module.PlanDetailPage })));
+const GuidePage = React.lazy(() => import('./marketing/pages/GuidePage').then(module => ({ default: module.GuidePage })));
+const GuideTopicPage = React.lazy(() => import('./marketing/pages/GuideTopicPage').then(module => ({ default: module.GuideTopicPage })));
+const HowItWorksPage = React.lazy(() => import('./marketing/pages/HowItWorksPage').then(module => ({ default: module.HowItWorksPage })));
+const FaqPage = React.lazy(() => import('./marketing/pages/FaqPage').then(module => ({ default: module.FaqPage })));
+const ClaimsExplainedPage = React.lazy(() => import('./marketing/pages/ClaimsExplainedPage').then(module => ({ default: module.ClaimsExplainedPage })));
+const ContactPage = React.lazy(() => import('./marketing/pages/ContactPage').then(module => ({ default: module.ContactPage })));
+const PrivacyPage = React.lazy(() => import('./marketing/pages/PrivacyPage').then(module => ({ default: module.PrivacyPage })));
+const TermsPage = React.lazy(() => import('./marketing/pages/TermsPage').then(module => ({ default: module.TermsPage })));
+const DisclaimerPage = React.lazy(() => import('./marketing/pages/DisclaimerPage').then(module => ({ default: module.DisclaimerPage })));
+
+const Dashboard = React.lazy(() => import('./Shopping').then(module => ({ default: module.Dashboard })));
+const Intake = React.lazy(() => import('./Shopping').then(module => ({ default: module.Intake })));
+const QuotePage = React.lazy(() => import('./Shopping').then(module => ({ default: module.QuotePage })));
+const ApplicationPage = React.lazy(() => import('./Shopping').then(module => ({ default: module.ApplicationPage })));
+const PolicyPage = React.lazy(() => import('./Shopping').then(module => ({ default: module.PolicyPage })));
+const BrokerWorkspace = React.lazy(() => import('./Broker').then(module => ({ default: module.BrokerWorkspace })));
+const ClaimReview = React.lazy(() => import('./broker/ClaimReview').then(module => ({ default: module.ClaimReview })));
+const ProviderWorkspace = React.lazy(() => import('./provider/ProviderWorkspace').then(module => ({ default: module.ProviderWorkspace })));
+const MarketplaceJourney = React.lazy(() => import('./MarketplaceJourney').then(module => ({ default: module.MarketplaceJourney })));
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
 function Brand() { return <Link to="/" className="brand" aria-label="Helm AI home"><span><Compass size={25}/></span>helm<span className="brand-ai">ai</span></Link>; }
-function Landing() {
-  const catalogue = useQuery({ queryKey: ['catalogue'], queryFn: () => api('/api/catalogue') });
-  return <div className="landing"><header className="public-nav"><Brand/><nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#plans">Explore plans</a><a href="#questions">Questions</a></nav><Link className="button secondary" to="/login">Your workspace <ArrowUpRight size={16}/></Link></header>
-    <main><section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="small-dot"/> HEALTH INSURANCE. HUMAN AGAIN.</span><h1>Cover choices.<br/><span>Clear answers.</span></h1><p>Health cover should make you feel more certain.<br className="desktop-break"/> Tell us what matters. We’ll help you understand your options, one conversation at a time.</p><div className="hero-actions"><Link className="button" to="/login">Find my cover <ArrowRight size={19}/></Link><Link className="text-link" to="/login"><Mic size={18}/> Try voice intake</Link></div><div className="hero-footnotes"><span><Check size={15}/> Speak or type</span><span><Check size={15}/> Understand the tradeoffs</span></div></div>
-    <div className="hero-product"><div className="preview-top"><span className="assistant-avatar"><Sparkles size={20}/></span><div><strong>A little more you.<br/>A lot less paperwork.</strong></div><span className="badge neutral">Sample journey</span></div><div className="preview-question">“I’m looking for good hospital access, without paying for benefits I won’t use.”</div><div className="preview-answer"><span className="eyebrow">START WITH WHAT MATTERS</span><h2>Let’s look at<br/>the whole picture.</h2><ul><li><span>01</span> Your health and upcoming care</li><li><span>02</span> Where and when you need cover</li><li><span>03</span> Your budget and priorities</li></ul></div><div className="preview-footer"><span><ShieldCheck size={19}/> Your details, connected</span><span className="voice-orb"><Mic size={23}/></span></div></div></section>
-    <div className="demo-strip"><ShieldCheck size={18}/><span>A working product demonstration using fictional plans and people. No real cover is sold.</span></div>
-    <section id="how-it-works" className="landing-section"><div className="section-heading"><div><span className="eyebrow">LESS BACK-AND-FORTH. MORE UNDERSTANDING.</span><h2>From your first question<br/>to your next step.</h2></div><p>You shouldn’t have to start over<br/>every time you need an answer.</p></div><div className="steps"><article><span className="step-number">01</span><Mic/><h3>Tell us your story.</h3><p>Speak naturally or type. Review the details as your reusable insurance profile takes shape.</p></article><article><span className="step-number">02</span><Layers3/><h3>See the real tradeoffs.</h3><p>Compare premiums, waiting periods and network access against the needs you’ve shared.</p></article><article><span className="step-number">03</span><ShieldCheck/><h3>Keep your cover close.</h3><p>Review your application, try sandbox payments and find your saved policy details in one place.</p></article></div></section>
-    <section id="plans" className="landing-section plan-preview"><span className="eyebrow">A SMALL CATALOGUE. MEANINGFUL DIFFERENCES.</span><h2>More cover isn’t always a better fit.</h2><p>Explore the three fictional plans used in this demonstration.</p><div className="sample-plans">{catalogue.data?.plans.map((p: any) => <article key={p.id}><span className="eyebrow">{p.network.toUpperCase()} NETWORK</span><h3>{p.name}</h3><strong>{aed(p.annual_premium * 100)}<small> / year</small></strong><p>{p.network_note}</p><Link className="text-link" to="/login">Compare for my needs <ArrowRight size={16}/></Link></article>)}</div>{catalogue.error && <p>The sample catalogue is temporarily unavailable.</p>}</section>
-    <section id="questions" className="landing-section faq"><div><span className="eyebrow">A FEW THINGS, MADE CLEAR.</span><h2>Good questions.<br/>Straight answers.</h2></div><div>{[['Is this real insurance?', 'This is a synthetic demonstration. Quotes, carriers, providers, applications and local payment schedules are fictional. No real insurance cover is issued.'], ['Can I speak instead of filling a form?', 'Yes, when voice is configured. Record a short answer, review the transcript and check the details before saving. Typing and an editable profile remain available.'], ['Does a covered benefit work immediately?', 'Not necessarily. A benefit can have a waiting period, network restriction or limit. Helm shows those conditions alongside the price.'], ['Does a test payment mean I am covered?', 'No. A local simulation or test-provider receipt cannot activate real insurance.'], ['Can I change my answers?', 'Yes. Saved corrections update your profile and make affected old quotes stale. The terms saved with an existing policy remain unchanged.']].map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></section>
-    <section className="closing"><div><span className="eyebrow">YOUR NEXT STEP CAN BE A SIMPLE ONE.</span><h2>Start with a conversation.</h2></div><Link className="button light-button" to="/login">Meet your cover options <ArrowRight size={18}/></Link></section></main>
-    <footer className="public-footer"><Brand/><p>Clarity at every step.</p><span>Helm AI · Synthetic demonstration</span></footer></div>;
-}
-
 function Login({ session, config }: { session: Session | null; config: Config }) {
   const [mode, setMode] = useState<'login' | 'signup' | 'recover' | 'reset'>('login'); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -74,6 +69,17 @@ function Shell({ session }: { session: Session | null }) {
   const [open, setOpen] = useState(false); const [notificationsOpen, setNotificationsOpen] = useState(false); const navigate = useNavigate(); const location = useLocation();
   const access = useQuery({ queryKey: ['access', session?.user.id], queryFn: () => api<{ role: 'member' | 'broker' | 'provider' }>('/api/me/access'), enabled: !!session });
   const notifications = useQuery<any[]>({ queryKey: ['marketplace-notifications'], queryFn: () => api('/api/marketplace/notifications'), enabled: access.data?.role === 'member', refetchInterval: 5000 });
+  useEffect(() => {
+    function dismiss(event: KeyboardEvent) {
+      if (event.key === 'Escape') { setOpen(false); setNotificationsOpen(false); }
+    }
+    function outside(event: PointerEvent) {
+      if (event.target instanceof Element && !event.target.closest('.notification-menu')) setNotificationsOpen(false);
+    }
+    document.addEventListener('keydown', dismiss);
+    document.addEventListener('pointerdown', outside);
+    return () => { document.removeEventListener('keydown', dismiss); document.removeEventListener('pointerdown', outside); };
+  }, []);
   if (!session) return <Navigate to="/login" replace/>;
   if (access.data?.role === 'provider' && location.pathname.startsWith('/app')) return <Navigate to="/provider" replace/>;
   async function logout() {
@@ -88,7 +94,7 @@ function Shell({ session }: { session: Session | null }) {
       navigate('/');
     }
   }
-  return <div className="app-shell"><a className="skip-link" href="#workspace">Skip to workspace</a><aside className={`sidebar ${open ? 'open' : ''}`}><Brand/><span className="nav-caption">YOUR WORKSPACE</span><nav>{access.data?.role === 'provider' ? <NavLink end to="/provider" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Provider workspace</NavLink> : <><NavLink end to="/app" onClick={() => setOpen(false)}><LayoutDashboard size={19}/> Overview</NavLink><PoliciesLink onClick={() => setOpen(false)}/>{access.data?.role === "broker" && <><NavLink end to="/app/broker" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Broker workspace</NavLink><NavLink to="/app/broker/claims" onClick={() => setOpen(false)}><FileTextIcon/> Claim review</NavLink></>}</>}<Link to="/#questions"><MessageIcon/> About this demo</Link></nav><div className="sidebar-bottom"><div className="sidebar-note"><ShieldCheck size={22}/><strong>Clarity, not guesswork.</strong><p>{access.data?.role === 'provider' ? 'Review the details before every submission.' : 'Your choices stay yours. Review the details before every submission.'}</p></div><button className="quiet" onClick={logout}><LogOut size={17}/> Sign out</button></div></aside><div className="app-content"><header className="workspace-header"><button className="mobile-menu quiet" onClick={() => setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open}><Menu size={23}/></button><span>Individual health insurance <span className="header-divider">/</span> UAE</span><div><span className="badge neutral">Demo workspace</span>{access.data?.role === 'member' && <div className="notification-menu"><button className="quiet notification-bell" onClick={() => setNotificationsOpen(value => !value)} aria-label="Marketplace notifications" aria-expanded={notificationsOpen}><Bell size={19}/>{notifications.data?.length ? <span>{notifications.data.length}</span> : null}</button>{notificationsOpen && <div className="notification-popover">{notifications.data?.length ? notifications.data.map((item, index) => <Link to={`/app/marketplace/${item.case_id}`} onClick={() => setNotificationsOpen(false)} key={`${item.case_id}-${item.provider}-${index}`}><strong>{item.provider}</strong><small>{item.message}</small></Link>) : <p>No marketplace updates yet.</p>}</div>}</div>}<span className="user-avatar" title={session.user.email}>{session.user.email?.[0]?.toUpperCase() || 'H'}</span></div></header><main id="workspace"><Outlet/></main><footer className="workspace-footer">Helm AI · All insurance products and transactions in this workspace are demonstrations.</footer></div></div>;
+  return <div className="app-shell"><a className="skip-link" href="#workspace">Skip to workspace</a><aside className={`sidebar ${open ? 'open' : ''}`}><Brand/><button className="quiet navigation-dismiss" onClick={() => setOpen(false)}>Close navigation</button><span className="nav-caption">YOUR WORKSPACE</span><nav>{access.data?.role === 'provider' ? <NavLink end to="/provider" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Provider workspace</NavLink> : <><NavLink end to="/app" onClick={() => setOpen(false)}><LayoutDashboard size={19}/> Overview</NavLink><PoliciesLink onClick={() => setOpen(false)}/>{access.data?.role === "broker" && <><NavLink end to="/app/broker" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Broker workspace</NavLink><NavLink to="/app/broker/claims" onClick={() => setOpen(false)}><FileTextIcon/> Claim review</NavLink></>}</>}<Link to="/faq"><MessageIcon/> About this demo</Link></nav><div className="sidebar-bottom"><div className="sidebar-note"><ShieldCheck size={22}/><strong>Clarity, not guesswork.</strong><p>{access.data?.role === 'provider' ? 'Review the details before every submission.' : 'Your choices stay yours. Review the details before every submission.'}</p></div><button className="quiet" onClick={logout}><LogOut size={17}/> Sign out</button></div></aside><div className="app-content"><header className="workspace-header"><button className="mobile-menu quiet" onClick={() => setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open}><Menu size={23}/></button><span>Individual health insurance <span className="header-divider">/</span> UAE</span><div><span className="badge neutral">Demo workspace</span>{access.data?.role === 'member' && <div className="notification-menu"><button className="quiet notification-bell" onClick={() => setNotificationsOpen(value => !value)} aria-label="Marketplace notifications" aria-expanded={notificationsOpen}><Bell size={19}/>{notifications.data?.length ? <span>{notifications.data.length}</span> : null}</button>{notificationsOpen && <div className="notification-popover">{notifications.data?.length ? notifications.data.map((item, index) => <Link to={`/app/marketplace/${item.case_id}`} onClick={() => setNotificationsOpen(false)} key={`${item.case_id}-${item.provider}-${index}`}><strong>{item.provider}</strong><small>{item.message}</small></Link>) : <p>No marketplace updates yet.</p>}</div>}</div>}<span className="user-avatar" title={session.user.email}>{session.user.email?.[0]?.toUpperCase() || 'H'}</span></div></header><main id="workspace"><Outlet/></main><footer className="workspace-footer">Helm AI · All insurance products and transactions in this workspace are demonstrations.</footer></div></div>;
 }
 function MessageIcon() { return <Layers3 size={19}/>; }
 function FileTextIcon() { return <ClipboardCheck size={19}/>; }
@@ -103,7 +109,7 @@ function App() {
   }, [config.data]);
   if (config.error) return <div className="startup-error"><Brand/><h1>The workspace service is unavailable.</h1><p>Start the Helm API, then reload this page.</p><ErrorView error={config.error}/><button onClick={() => { void config.refetch(); }}>Try again</button></div>;
   if (!config.data || !ready) return <Loading/>;
-  return <Routes>
+  return <React.Suspense fallback={<Loading/>}><Routes>
     {/* Marketing site — public, wrapped in MarketingLayout (header + footer) */}
     <Route element={<MarketingLayout />}>
       <Route path="/" element={<HomePage />} />
@@ -140,6 +146,6 @@ function App() {
     </Route>
 
     <Route path="*" element={<Navigate to="/" replace/>} />
-  </Routes>;
+  </Routes></React.Suspense>;
 }
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={client}><BrowserRouter><App/></BrowserRouter></QueryClientProvider></React.StrictMode>);

@@ -65,8 +65,8 @@ class AgentState(TypedDict, total=False):
     _next: str
 
 
-def _client() -> Groq:
-    return Groq(api_key=settings().groq_api_key, timeout=25, max_retries=1)
+def _client(timeout: float = 25, max_retries: int = 1) -> Groq:
+    return Groq(api_key=settings().groq_api_key, timeout=timeout, max_retries=max_retries)
 
 
 def _field_question(field: str) -> str:
@@ -578,11 +578,13 @@ def rank_catalogue_plans(profile: dict, catalogue: list[dict]) -> list[dict]:
     for item in catalogue:
         metadata, plan = _catalogue_item(item)
         try:
-            premium = int(plan["annual_premium"])
+            premium = float(plan["annual_premium"])
             network = plan["network"]
             provider_id = str(metadata["provider_id"])
             plan_id = str(metadata.get("id") or plan.get("id") or metadata["plan_code"])
             if network not in tiers or not provider_id or not plan_id:
+                continue
+            if premium < 0 or (profile.get("strict_budget") and premium > budget):
                 continue
             checks = _coverage_checks(profile, plan)
         except (KeyError, TypeError, ValueError):
@@ -659,7 +661,7 @@ def explain_catalogue_ranking(ranked: list[dict]) -> list[dict]:
     if not ranked or not settings().groq_api_key:
         return fallback
     try:
-        response = _client().chat.completions.create(
+        response = _client(timeout=4, max_retries=0).chat.completions.create(
             model=settings().groq_model,
             temperature=0,
             response_format={"type": "json_object"},
@@ -683,7 +685,7 @@ def explain_catalogue_ranking(ranked: list[dict]) -> list[dict]:
             if isinstance(item, dict)
             and isinstance(item.get("plan_id"), str)
             and isinstance(item.get("explanation"), str)
-            and item["explanation"].strip()
+            and 0 < len(item["explanation"].strip()) <= 1200
         }
         if all(row["plan_id"] in by_plan for row in ranked):
             return [

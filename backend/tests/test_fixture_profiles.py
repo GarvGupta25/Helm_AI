@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from uuid import uuid4
 
 from conftest import as_assigned_broker
@@ -21,7 +22,7 @@ def fixture_application_facts(profile):
         "smoker": "yes" if profile["smoker"] else "no",
         "maternity": False,
         "geography": "UAE",
-        "start_date": "2026-10-01",
+        "start_date": (date.today() + timedelta(days=1)).isoformat(),
         "payer": "self",
         "annual_budget": 25000,
         "strict_budget": False,

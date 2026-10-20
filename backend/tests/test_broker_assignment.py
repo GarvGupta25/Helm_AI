@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
@@ -23,7 +24,7 @@ def application_facts(**overrides):
         "smoker": "no",
         "maternity": False,
         "geography": "UAE",
-        "start_date": "2026-10-01",
+        "start_date": (date.today() + timedelta(days=1)).isoformat(),
         "near_term_needs": ["routine care"],
         "payer": "self",
         "annual_budget": 6000,

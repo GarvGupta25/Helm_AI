@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, ArrowRight, Check, ClipboardCheck, RefreshCw } from 'lucide-react';
 import { api, post, aed } from './api';
-import { ErrorView, Loading } from './Shopping';
+import { ErrorView, Loading } from './Feedback';
 import { MarketplaceBrokerPanel } from './MarketplaceBrokerPanel';
 
 type Recommendation = {

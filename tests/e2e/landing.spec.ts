@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support';
 
 const config = {
   auth_configured: false,
@@ -19,7 +19,8 @@ const catalogue = {
 
 async function stubPublicApi(page: Page) {
   await page.route('**/api/config', route => route.fulfill({ json: config }));
-  await page.route('**/api/catalogue', route => route.fulfill({ json: catalogue }));
+  await page.route('**/api/public/marketplace-plans', route => route.fulfill({ json: catalogue }));
+  await page.route('**/api/public/marketplace-partners', route => route.fulfill({ json: { items: [] } }));
 }
 
 test('public journey is keyboard-accessible and labels the demonstration', async ({ page }) => {

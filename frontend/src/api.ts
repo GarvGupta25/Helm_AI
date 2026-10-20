@@ -18,7 +18,7 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     const fields = error.field_errors?.map((e: any) => e.message).join(' ');
-    throw new ApiError(fields || error.message || `Request failed (${response.status}).`, response.status);
+    throw new ApiError(fields || error.message || (typeof error.detail === 'string' ? error.detail : '') || `Request failed (${response.status}).`, response.status);
   }
   return response.json();
 }

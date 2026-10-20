@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -9,7 +10,21 @@ from app.marketplace_models import (
     ProviderQuotation,
     ProviderUser,
 )
-from app.models import BrokerAssignment, Case, Profile
+from app.marketplace_selection import _collection_ready
+from app.models import BrokerAssignment, Case, Profile, now
+
+
+def test_quotation_collection_requires_responses_or_expiry_and_never_an_empty_offer():
+    applications = [MarketplaceApplication(created_at=now() - timedelta(hours=1)) for _ in range(3)]
+    assert not _collection_ready([], 0)
+    assert not _collection_ready(applications, 0)
+    assert not _collection_ready(applications, 1)
+    assert _collection_ready(applications, 3)
+    applications[0].created_at = (now() - timedelta(hours=73)).replace(tzinfo=None)
+    applications[1].created_at = applications[0].created_at
+    applications[2].created_at = applications[0].created_at
+    assert _collection_ready(applications, 1)
+    assert not _collection_ready(applications, 0)
 
 
 def quote_body(premium: int, network: str = "standard") -> dict:
@@ -92,6 +107,11 @@ def test_real_quotes_flow_from_ranking_to_three_party_policy_visibility(fixture_
     waiting = client.get("/api/marketplace/cases/selection-case/quotations")
     assert waiting.status_code == 200
     assert waiting.json()["collection_ready"] is False
+    assert waiting.json()["status"] == "quotation_received"
+    assert len(waiting.json()["updates"]) == 1
+    assert client.post(f"/api/marketplace/quotations/{quote_a.json()['id']}/select").status_code == 409
+    with Session(engine) as db:
+        assert db.get(MarketplaceApplication, "selection-application-b").status == "sent_to_providers"
 
     owner[0] = User(provider_user_b, "b@provider.test", "provider")
     quote_b = client.post(
@@ -109,6 +129,9 @@ def test_real_quotes_flow_from_ranking_to_three_party_policy_visibility(fixture_
     selected_application_id = ranked.json()["quotations"][0]["application_id"]
     selection = client.post(f"/api/marketplace/quotations/{selected_quote_id}/select")
     assert selection.status_code == 200
+    assert client.post(f"/api/marketplace/quotations/{selected_quote_id}/select").status_code == 200
+    other_quote_id = next(row["quotation_id"] for row in ranked.json()["quotations"] if row["quotation_id"] != selected_quote_id)
+    assert client.post(f"/api/marketplace/quotations/{other_quote_id}/select").status_code == 409
 
     with Session(engine) as db:
         quotations = db.query(ProviderQuotation).order_by(ProviderQuotation.premium).all()
@@ -152,6 +175,7 @@ def test_real_quotes_flow_from_ranking_to_three_party_policy_visibility(fixture_
     owner[0] = member
     assert client.get("/api/marketplace/cases/selection-case/quotations").json()["status"] == "bound"
     assert [row["id"] for row in client.get("/api/marketplace/policies").json()] == [policy_id]
+    assert client.get("/api/marketplace/applications").json() == [{"case_id": "selection-case", "status": "bound"}]
     owner[0] = User(str(uuid4()), "other-member@example.test")
     assert client.get("/api/marketplace/policies").json() == []
 

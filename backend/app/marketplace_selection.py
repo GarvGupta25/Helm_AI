@@ -23,7 +23,7 @@ COLLECTION_WINDOW = timedelta(hours=72)
 
 
 def _case_applications(db: Session, case_id: str, user: User) -> list[MarketplaceApplication]:
-    own(db, Case, case_id, user)
+    own(db, Case, case_id, user, lock=True)
     return list(
         db.scalars(
             select(MarketplaceApplication)
@@ -52,15 +52,13 @@ def _quotation_rows(db: Session, applications: list[MarketplaceApplication]):
 def _collection_ready(applications: list[MarketplaceApplication], quotation_count: int) -> bool:
     if not applications or quotation_count == 0:
         return False
-    # A member may accept a provider's submitted quotation immediately rather
-    # than waiting for every selected provider to reply.
-    if quotation_count > 0:
+    if quotation_count == len(applications):
         return True
     current = now()
-    created_at = applications[0].created_at
+    created_at = min(application.created_at for application in applications)
     if created_at.tzinfo is None:
         created_at = created_at.replace(tzinfo=current.tzinfo)
-    return quotation_count == len(applications) or current - created_at >= COLLECTION_WINDOW
+    return current - created_at >= COLLECTION_WINDOW
 
 
 def rank_real_quotations(profile: dict, rows: list[tuple]) -> list[dict]:
@@ -171,8 +169,13 @@ def member_marketplace_applications(
         .order_by(MarketplaceApplication.created_at.desc())
     ).all()
     grouped = {}
+    progress = {state: index for index, state in enumerate(
+        ("declined", "awaiting_broker_review", "broker_approved", "sent_to_providers", "quotes_collected",
+         "customer_selected", "provider_accepted", "broker_final_review", "bound")
+    )}
     for case_id, status in rows:
-        grouped.setdefault(case_id, status)
+        if case_id not in grouped or progress.get(status, 0) > progress.get(grouped[case_id], 0):
+            grouped[case_id] = status
     return [{"case_id": case_id, "status": status} for case_id, status in grouped.items()]
 
 
@@ -190,6 +193,8 @@ def member_marketplace_notifications(
         "sent_to_providers": "Your selected provider has received your quotation request.",
         "quotes_collected": "A provider quotation is ready to compare.",
         "customer_selected": "Your selected quotation is waiting for provider acceptance.",
+        "provider_accepted": "Your provider accepted your selection. Final broker review is next.",
+        "broker_final_review": "Final broker review is complete. Your provider can start the policy.",
         "bound": "Your provider has started your demonstration policy.",
     }
     result = []
@@ -232,13 +237,28 @@ def select_quotation(
             ProviderQuotation.id == quotation_id,
             MarketplaceApplication.owner_id == user.id,
         )
-        .with_for_update()
     )
     if selected is None:
         raise HTTPException(404, "Quotation not found.")
     selected_application = db.get(MarketplaceApplication, selected.application_id)
+    own(db, Case, selected_application.case_id, user, lock=True)
+    db.refresh(selected)
+    db.refresh(selected_application)
+    if selected.status in {"selected", "accepted"}:
+        return {
+            "quotation_id": selected.id,
+            "application_id": selected.application_id,
+            "status": selected.status,
+        }
     applications = _case_applications(db, selected_application.case_id, user)
     rows = _quotation_rows(db, applications)
+    if selected.status not in {"submitted", "shortlisted"} or any(
+        application.status in {"customer_selected", "provider_accepted", "broker_final_review", "bound"}
+        for application in applications
+    ):
+        raise HTTPException(409, "A quotation was already selected. Refresh to follow its progress.")
+    if not _collection_ready(applications, len(rows)):
+        raise HTTPException(409, "Wait for the selected providers or the 72-hour collection window.")
     for quotation, application, _ in rows:
         chosen = quotation.id == quotation_id
         quotation.status = "selected" if chosen else "declined"

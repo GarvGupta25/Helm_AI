@@ -29,6 +29,8 @@ def extract_identity(content: bytes):
                     if embedded.strip():
                         text += embedded + "\n"
                     else:
+                        if page.rect.width * page.rect.height * 2.25 > 20000000:
+                            raise HTTPException(422, "Image resolution is too large.")
                         pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
                         if pix.width * pix.height > 20000000:
                             raise HTTPException(422, "Image resolution is too large.")
@@ -101,6 +103,8 @@ def extract_claim_attachment(content: bytes, filename: str, doc_type: str) -> di
                     if embedded.strip():
                         text += embedded[:10000]
                     else:
+                        if page.rect.width * page.rect.height * 2.25 > 20000000:
+                            raise HTTPException(422, "Image resolution is too large.")
                         pixels = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
                         if pixels.width * pixels.height > 20000000:
                             raise HTTPException(422, "Image resolution is too large.")

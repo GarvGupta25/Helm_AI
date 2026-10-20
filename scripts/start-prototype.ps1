@@ -31,6 +31,8 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'Local Supabase could not start. Confirm that Docker Desktop shows Engine running, then retry.'
     }
+    & npx supabase migration up --local
+    if ($LASTEXITCODE -ne 0) { throw 'Local database migrations could not be applied. Existing data was not reset.' }
     if (-not (Test-Path (Join-Path $backendRoot '.env'))) {
         throw 'backend/.env is missing. Run the local Supabase configuration step before starting Helm.'
     }

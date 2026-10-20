@@ -1,7 +1,6 @@
 """Scoped, read-only claim analysis. Only servicing.py can record money decisions."""
 
 from datetime import datetime, timezone
-from decimal import Decimal
 from statistics import mean
 
 import httpx

@@ -411,6 +411,14 @@ http://127.0.0.1:5174/login
 
 ## Manual Setup
 
+For an existing local database, apply pending migrations with `npx supabase migration up --local` after Supabase starts. The prototype launcher also runs this command; it does not reset saved data.
+
+The current marketplace flow collects provider replies until all invited providers respond, or until 72 hours pass with at least one quotation. Members can review partial replies immediately. After comparison, the member confirms one quotation, the provider accepts it, the assigned broker approves the final checkpoint, and the provider explicitly selects **Start policy**. Activation saves both workspaces' policy records and the member's simulated payment schedule. Claims then open from **Policies & cover → Claim Center**. Retrying the same selection cannot select a second quotation.
+
+Runtime recommendations use the latest saved profile, preserve decimal premiums and respect a strict annual budget. Groq explanations have a four-second request timeout and a deterministic fallback; they cannot alter scores or order. MMoE remains the target architecture described above.
+
+Automated checks run with `npm run test:e2e`, `npm --prefix frontend run build`, and (from `backend/`) `uv run ruff check app tests scripts` followed by `uv run pytest -q`. Browser tests use controlled API responses; backend tests exercise persistence and authorization separately. PostgreSQL role and migration checks need running local Supabase. Physical-device keyboard, safe-area and touch behavior also need a real phone check.
+
 ### 1. Start Supabase
 
 ```powershell

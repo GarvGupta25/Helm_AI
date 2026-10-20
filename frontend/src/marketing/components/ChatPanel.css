@@ -1,10 +1,10 @@
 /* frontend/src/marketing/components/ChatPanel.css */
 .chat-panel {
   position: fixed;
-  right: 24px;
-  bottom: 108px; /* above the 72px launcher + 12px gap */
-  width: min(calc(100vw - 48px), 360px);
-  height: min(calc(100vh - 140px), 500px);
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: min(calc(100vw - 32px), 360px);
+  height: min(calc(100dvh - 120px - env(safe-area-inset-bottom) - env(safe-area-inset-top)), 500px);
   background: var(--color-surface-white, #fff);
   border: 1px solid var(--color-ink-100, #e2e8f0);
   border-radius: var(--radius-lg, 24px);
@@ -13,12 +13,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: chat-panel-in 220ms ease-out;
-}
-
-@keyframes chat-panel-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+  transform-origin: bottom right;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -61,6 +56,7 @@
 
 /* Messages */
 .chat-panel__messages {
+  min-height: 0;
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4, 1rem);
@@ -74,7 +70,7 @@
   max-width: 85%;
   padding: 10px 14px;
   border-radius: 16px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   word-break: break-word;
 }
@@ -136,8 +132,11 @@
   line-height: 1.4;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .chat-panel__suggestions button:hover {
   background: #bfdbfe;
+}
 }
 
 .chat-panel__suggestions button:focus-visible {
@@ -188,8 +187,11 @@
   white-space: nowrap;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .chat-panel__composer button:hover {
   background: var(--color-accent-hover, #1d4ed8);
+}
 }
 
 .chat-panel__composer button:disabled {

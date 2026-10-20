@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, FileText, MessageSquare } from 'lucide-react';
 import { api, auth, post } from '../api';
-import { ErrorView, Loading } from '../Shopping';
+import { ErrorView, Loading } from '../Feedback';
 import { ClaimOperations } from './ClaimOperations';
 
 type ReviewAction = 'approve' | 'partially_approve' | 'request_more_information' | 'deny' | 'medical_review' | 'escalate_to_senior_broker';

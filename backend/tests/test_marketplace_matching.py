@@ -1,3 +1,4 @@
+import copy
 import json
 from types import SimpleNamespace
 
@@ -70,6 +71,15 @@ def test_plan_with_insufficient_data_never_appears():
     assert agents.rank_catalogue_plans(profile, [plan("unknown-overseas", "provider-a", 8_000)]) == []
 
 
+def test_updated_strict_budget_filters_plans_and_preserves_decimal_premiums():
+    profile = {"annual_budget": 8000, "strict_budget": True, "geography": "UAE",
+               "diagnosed_conditions": "no", "maternity": False}
+    catalogue = [plan("affordable", "provider-a", 7999.99), plan("over-budget", "provider-b", 8000.01)]
+    assert [row["plan_id"] for row in agents.rank_catalogue_plans(profile, catalogue)] == ["affordable"]
+    assert agents.rank_catalogue_plans(profile, catalogue)[0]["premium_aed"] == 7999.99
+    assert len(agents.rank_catalogue_plans({**profile, "annual_budget": 9000}, catalogue)) == 2
+
+
 def test_explanation_uses_one_call_for_the_fixed_ranking(monkeypatch):
     ranked = [
         {"plan_id": f"p{number}", "score": 90 - number, "premium_aed": 8_000 + number, "factors": {}}
@@ -98,13 +108,31 @@ def test_explanation_uses_one_call_for_the_fixed_ranking(monkeypatch):
     monkeypatch.setattr(
         agents,
         "_client",
-        lambda: SimpleNamespace(chat=SimpleNamespace(completions=Completions())),
+        lambda **options: SimpleNamespace(chat=SimpleNamespace(completions=Completions())),
     )
 
     explanations = agents.explain_catalogue_ranking(ranked)
 
     assert len(calls) == 1
     assert [row["plan_id"] for row in explanations] == [row["plan_id"] for row in ranked]
+
+
+def test_untrusted_or_unavailable_explanations_keep_scores_and_order(monkeypatch):
+    ranked = [{"plan_id": "p1", "score": 90}, {"plan_id": "p2", "score": 80}]
+    original = copy.deepcopy(ranked)
+    monkeypatch.setattr(agents, "settings", lambda: SimpleNamespace(groq_api_key="test", groq_model="test"))
+
+    def client(**options):
+        assert options == {"timeout": 4, "max_retries": 0}
+        return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: response)))
+
+    monkeypatch.setattr(agents, "_client", client)
+    for content in ('not json', '{"explanations": null}', json.dumps({"explanations": [{"plan_id": "p1", "explanation": "x" * 1201}]}),
+                    json.dumps({"explanations": [{"plan_id": "p2", "explanation": "Second"}, {"plan_id": "p1", "explanation": "First"}]})):
+        response = SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+        explanations = agents.explain_catalogue_ranking(ranked)
+        assert [row["plan_id"] for row in explanations] == ["p1", "p2"]
+        assert ranked == original
 
 
 def test_explicit_yes_creates_one_application_per_distinct_provider():

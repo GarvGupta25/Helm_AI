@@ -50,8 +50,11 @@
   transition: color 0.2s;
 }
 
+@media (hover: hover) and (pointer: fine) {
+
 .plan-detail-back:hover {
   color: var(--color-accent);
+}
 }
 
 .plan-detail-hero h1 {

@@ -44,7 +44,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
 
   // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: 'nearest' });
   }, [messages, isSending]);
 
   async function send(text: string) {
@@ -81,6 +81,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
   return (
     <div 
       className="chat-panel" 
+      id="helm-public-assistant"
       role="dialog" 
       aria-label="Helm AI assistant"
       ref={containerRef}
@@ -97,7 +98,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      <div className="chat-panel__messages">
+      <div className="chat-panel__messages" role="log" aria-live="polite" aria-relevant="additions text">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -111,14 +112,14 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
             Thinking…
           </div>
         )}
-        {error && <div className="chat-panel__error">{error}</div>}
+        {error && <div className="chat-panel__error" role="alert">{error}</div>}
         <div ref={messagesEndRef} />
       </div>
 
       {showSuggestions && (
         <div className="chat-panel__suggestions">
           {SUGGESTED_QUESTIONS.map((q) => (
-            <button key={q} type="button" onClick={() => send(q)}>
+            <button key={q} type="button" disabled={isSending} onClick={() => send(q)}>
               {q}
             </button>
           ))}
@@ -143,6 +144,8 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
           }}
           placeholder="Ask a question..."
           aria-label="Type your message"
+          enterKeyHint="send"
+          maxLength={2000}
           disabled={isSending}
           rows={1}
         />

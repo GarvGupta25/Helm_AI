@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 /* Marketing Design Tokens */
 :root {
   --color-ink-900: #0F172A;
@@ -6,8 +5,8 @@
   --color-ink-500: #475569;
   --color-ink-300: #94a3b8;
   --color-ink-100: #CBD5E1;
-  --color-brand-navy: #1E3A8A;
-  --color-accent-cyan: #0891B2;
+  --color-brand-navy: var(--brand-ink);
+  --color-accent-cyan: var(--brand-accent);
   --color-accent-cyan-bright: #22D3EE;
   --color-surface-white: #FFFFFF;
   --color-surface-tint: #F8FAFC;
@@ -19,9 +18,10 @@
   --color-success: #16A34A;
   --color-muted-foreground: #475569;
   --color-accent: var(--color-accent-cyan);
-  --color-accent-hover: var(--color-accent-cyan-bright);
-  --font-display: 'IBM Plex Sans', sans-serif;
-  --font-body: 'IBM Plex Sans', sans-serif;
+  --color-accent-hover: #076579;
+  --color-accent-light: #e7f4f7;
+  --font-display: var(--font-ui);
+  --font-body: var(--font-ui);
   --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem; --space-16: 4rem;
   --radius-sm: 8px; --radius-md: 16px; --radius-lg: 24px;
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);

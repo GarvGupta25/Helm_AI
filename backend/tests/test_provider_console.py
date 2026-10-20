@@ -1,6 +1,7 @@
 from decimal import Decimal
 from uuid import uuid4
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import User
@@ -12,7 +13,7 @@ from app.marketplace_models import (
     ProviderQuotation,
     ProviderUser,
 )
-from app.models import Case, ReviewDecision
+from app.models import Case, Installment, Policy, ReviewDecision
 
 
 def quotation_body(premium=9000):
@@ -145,6 +146,12 @@ def test_provider_lifecycle_requires_selection_and_checkpoint_two(fixture_client
     accepted = client.post(f"/api/provider/quotations/{quotation_id}/accept")
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "accepted"
+    with Session(engine) as db:
+        assert db.scalar(
+            select(MarketplacePolicy).where(
+                MarketplacePolicy.application_id == "provider-application-a"
+            )
+        ) is None
     assert client.post(f"/api/provider/policies/{quotation_id}/start").status_code == 403
 
     with Session(engine) as db:
@@ -161,7 +168,21 @@ def test_provider_lifecycle_requires_selection_and_checkpoint_two(fixture_client
     started = client.post(f"/api/provider/policies/{quotation_id}/start")
     assert started.status_code == 201
     policy_id = started.json()["id"]
+    with Session(engine) as db:
+        member_policy = db.scalar(select(Policy).where(Policy.owner_id == member.id))
+        assert member_policy is not None
+        assert member_policy.snapshot["marketplace_policy_id"] == policy_id
+        assert db.scalar(select(Installment).where(Installment.policy_id == member_policy.id)).amount == 880000
     assert client.get(f"/api/provider/policies/{policy_id}/payments").json() == []
+    owner[0] = member
+    claim = client.post(
+        f"/api/policies/{member_policy.id}/claim-intakes/free-form",
+        json={"message": "I need emergency hospital care.", "explicit_emergency": True,
+              "emergency_category": "emergency_room_admission", "documents": []},
+        headers={"Idempotency-Key": str(uuid4())},
+    )
+    assert claim.status_code == 200, claim.text
+    owner[0] = User(provider_user_a, "a@provider.test", "provider")
     assert client.post(
         f"/api/provider/policies/{policy_id}/flags",
         json={"reason": "Member details need confirmation", "note": "Broker review requested."},
@@ -178,6 +199,8 @@ def test_provider_lifecycle_requires_selection_and_checkpoint_two(fixture_client
     )
     assert discontinued.status_code == 200
     assert discontinued.json()["status"] == "discontinued"
+    with Session(engine) as db:
+        assert db.get(Policy, member_policy.id).status == "discontinued"
 
 
 def test_provider_role_requires_a_provider_mapping(fixture_client):

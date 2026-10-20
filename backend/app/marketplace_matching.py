@@ -123,7 +123,7 @@ def create_consented_applications(
 
 
 def _matching_context(db: Session, case_id: str, user: User) -> tuple[Profile, list[dict]]:
-    own(db, Case, case_id, user)
+    own(db, Case, case_id, user, lock=True)
     profile = db.scalar(select(Profile).where(Profile.owner_id == user.id))
     if profile is None or not readiness(profile.facts)["ready"]:
         raise HTTPException(409, "Complete the insurance profile before catalogue matching.")

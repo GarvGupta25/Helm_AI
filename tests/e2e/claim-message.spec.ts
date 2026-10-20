@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support';
 
 test('member message is saved when image OCR is unavailable', async ({ page }) => {
   const message = 'I visited Crescent Demo Clinic and received a bill for AED 735.';
@@ -20,7 +20,7 @@ test('member message is saved when image OCR is unavailable', async ({ page }) =
         maternity: { covered: false }, chronic_preexisting: { covered: false } },
       servicing: [], instalments: [],
     } });
-    if (url.pathname.endsWith('/attachments/parse')) return route.fulfill({ status: 503, json: { message: 'Local image OCR is unavailable.' } });
+    if (url.pathname.endsWith('/attachments')) return route.fulfill({ status: 503, json: { message: 'Document processing is temporarily unavailable.' } });
     if (url.pathname.endsWith('/claim-intakes/free-form')) {
       submitted = route.request().postDataJSON();
       return route.fulfill({ json: { intake_id: 'claim-demo', kind: 'pending', route: 'review', follow_up: 'Which provider?' } });
@@ -34,6 +34,7 @@ test('member message is saved when image OCR is unavailable', async ({ page }) =
   await page.getByLabel('Email address').fill('member@example');
   await page.getByLabel('Password').fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/(app|provider)$/);
   await page.goto('/app/policies/policy-demo');
   await page.getByRole('button', { name: 'Claim Center' }).click();
   await page.getByLabel('Your message').fill(message);
@@ -43,6 +44,6 @@ test('member message is saved when image OCR is unavailable', async ({ page }) =
   await page.getByRole('button', { name: 'Submit claim message' }).click();
 
   await expect(page.getByText('✨ We received your message.')).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('sample-invoice.png could not be read');
+  await expect(page.getByRole('alert')).toContainText('Claim saved, but the files were not attached');
   expect(submitted).toEqual({ message, documents: [] });
 });

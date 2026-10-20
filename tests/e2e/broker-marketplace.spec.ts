@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support';
 
 const config = {
   auth_configured: true,
@@ -29,7 +29,7 @@ async function stubBrokerApi(page: Page) {
     { id: 'app-1', item_type: 'marketplace_checkpoint_1', applicant_id: 'member-1', case_id: 'case-1', age_days: 1, priority_rank: 2, priority_reason: '1 day unresolved; Checkpoint 1 blocks provider submission.' },
   ] }));
   await page.route('**/api/broker/marketplace/applications', route => route.fulfill({ json: [
-    { id: 'app-1', case_id: 'case-1', applicant_id: 'member-1', provider_id: 'provider-1', status: 'broker_final_review' },
+    { id: 'app-1', case_id: 'case-1', applicant_id: 'member-1', provider_id: 'provider-1', provider_name: 'Al Noor Takaful', requested_plan_ids: ['plan-b'], status: 'broker_final_review' },
   ] }));
   await page.route('**/api/broker/marketplace/provider-performance', route => route.fulfill({ json: [
     { provider_id: 'pearl', provider_name: 'Pearl Health Partners', average_turnaround_hours: 2, submitted: 4, selected: 2, win_rate_pct: 50 },
@@ -40,6 +40,7 @@ async function stubBrokerApi(page: Page) {
     case_id: 'case-1',
     applicant_id: 'member-1',
     status: 'broker_final_review',
+    provider_name: 'Al Noor Takaful', requested_plans: [{ id: 'plan-b', name: 'Balanced' }],
     quotations: [
       { id: 'quote-1', provider: 'Al Noor Takaful', premium: 8900, key_terms: { network: 'standard', deductible: 500, outpatient_copay_pct: 20 }, status: 'accepted', submitted_at: '2026-09-18T08:30:00Z' },
       { id: 'quote-2', provider: 'Gulf Shield Insurance', premium: 12400, key_terms: { network: 'wide', deductible: 250, outpatient_copay_pct: 10 }, status: 'submitted', submitted_at: '2026-09-18T09:15:00Z' },
@@ -61,8 +62,9 @@ test('broker compares marketplace quotations and both checkpoints', async ({ pag
   await page.getByLabel('Email address').fill('broker@example');
   await page.getByLabel('Password').fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/(app|provider)$/);
   await page.goto('/app/broker');
-  await page.getByRole('button', { name: /Case case-1/ }).click();
+  await page.getByRole('button', { name: /Al Noor Takaful/ }).click();
 
   await expect(page.getByRole('heading', { name: 'Provider quotations and checkpoints' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Pearl Health Partners' })).toBeVisible();

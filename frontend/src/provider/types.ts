@@ -12,6 +12,7 @@ export type ProviderQuotation = {
   premium: number;
   status: string;
   submitted_at: string;
+  application_status?: string;
 };
 
 export type ProviderPolicy = {

@@ -7,6 +7,7 @@ import './PartnersPage.css';
 
 interface Provider {
   id: string;
+  provider_id?: string;
   name: string;
   tier: string;
   emirate: string;
@@ -21,7 +22,7 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 export function PartnersPage() {
-  const { data: providersData, error } = useQuery({
+  const { data: providersData, error, isLoading, refetch } = useQuery({
     queryKey: ['marketplace-partners'],
     queryFn: () => api('/api/public/marketplace-partners'),
   });
@@ -37,7 +38,7 @@ export function PartnersPage() {
   return (
     <PageShell>
       {/* 1. Impossible to miss demo label */}
-      <div className="partners-demo-alert" role="alert">
+      <div className="partners-demo-alert" role="note">
         <strong>Sample partner network — for demonstration purposes.</strong> 
         {' '}These are illustrative provider names, not real insurer or hospital partnerships.
       </div>
@@ -54,9 +55,12 @@ export function PartnersPage() {
       </Section>
 
       <Section id="partners-list" tinted>
+        {isLoading && <p role="status">Loading partners…</p>}
+        {!isLoading && !error && !providersData?.items?.length && <div className="empty-state"><h2>No partners available</h2><p>Please check again shortly.</p></div>}
         {error ? (
-          <div className="partners-error">
+          <div className="partners-error" role="alert">
             <p>Provider directory temporarily unavailable.</p>
+            <button className="secondary" onClick={() => void refetch()}>Retry partners</button>
           </div>
         ) : (
           <div className="partners-tiers-container">
@@ -71,7 +75,7 @@ export function PartnersPage() {
                   <h2 className="partners-tier-heading">{label}</h2>
                   <div className="partners-grid">
                     {tierProviders.map((provider: Provider) => (
-                      <Link key={provider.id} to="/plans" className="partners-card scroll-reveal">
+                      <Link key={provider.id} to={`/plans?provider=${encodeURIComponent(provider.provider_id || provider.id)}`} className="partners-card scroll-reveal">
                         <span className="partners-card-icon"><Building2 size={22}/></span>
                         <h3>{provider.name}</h3>
                         <p>{provider.scheme_count || 0} fictional schemes · {provider.emirate}</p>

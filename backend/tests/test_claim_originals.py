@@ -1,14 +1,14 @@
 from io import BytesIO
 from uuid import uuid4
 
+from conftest import as_assigned_broker
 from PIL import Image
 from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
+from test_claim_review import add_flagged_claim, add_policy
 
 from app.auth import User
 from app.models import ClaimDocument, ClaimDocumentFile
-from conftest import as_assigned_broker
-from test_claim_review import add_flagged_claim, add_policy
 
 
 def test_broker_can_view_member_originals_for_regular_and_emergency_claims(fixture_client):
@@ -28,7 +28,7 @@ def test_broker_can_view_member_originals_for_regular_and_emergency_claims(fixtu
     pdf = canvas.Canvas(pdf_buffer)
     pdf.drawString(40, 750, "Demo invoice")
     pdf.save()
-    originals = {regular_id: ("invoice.png", png, "image/png"),
+    originals = {regular_id: ("فاتورة-王秀英.png", png, "image/png"),
                  emergency_id: ("invoice.pdf", pdf_buffer.getvalue(), "application/pdf")}
     for claim_id, (filename, content, media_type) in originals.items():
         response = client.post(
@@ -49,6 +49,7 @@ def test_broker_can_view_member_originals_for_regular_and_emergency_claims(fixtu
             assert preview.content == content
             assert preview.headers["content-type"] == media_type
             assert preview.headers["cache-control"] == "no-store"
+            assert "filename*=UTF-8''" in preview.headers["content-disposition"]
 
     owner[0] = User(str(uuid4()), "other-broker@example.test", "broker")
     assert client.get(f"/api/broker/claims/{regular_id}/documents/{document['id']}/original").status_code == 404

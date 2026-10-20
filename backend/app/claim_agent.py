@@ -1,7 +1,7 @@
 """Pre-adjudication claim intake; financial decisions remain in servicing.py."""
 
-import json
 import hashlib
+import json
 import re
 from collections import Counter
 from datetime import datetime, timezone
@@ -9,40 +9,48 @@ from decimal import Decimal
 from io import BytesIO
 from statistics import median
 from typing import Annotated, Literal
+from urllib.parse import quote
 from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import Response
 from groq import Groq, GroqError
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session
 
 from .auth import User, current_user, require_broker
-from .config import settings
+from .claims_lifecycle import (
+    auto_cap,
+    final_amount,
+    provisional,
+    review_sample,
+    sample_auto_decision,
+    validate_cap_raise,
+)
 from .claims_phase_one import analyze, brief, finding, log, page_oncall
-from .claims_lifecycle import auto_cap, final_amount, provisional, review_sample, sample_auto_decision, validate_cap_raise
+from .config import settings
 from .db import session
 from .documents import extract_claim_attachment
 from .explanations import servicing_explanation
 from .models import (
     Audit,
     BrokerAssignment,
+    ClaimAuditLog,
+    ClaimAutoRule,
+    ClaimDecision,
     ClaimDocument,
     ClaimDocumentFile,
+    ClaimFinding,
     ClaimFlag,
     ClaimIntake,
-    ClaimAuditLog,
-    ClaimDecision,
-    ClaimFinding,
-    ClaimAutoRule,
     ClaimQualityAudit,
     OnCallRoster,
     Policy,
-    ProvisionalAuthRule,
     Profile,
+    ProvisionalAuthRule,
     ReviewDecision,
     ServicingEvent,
 )
@@ -1261,7 +1269,7 @@ def broker_claim_original(claim_intake_id: str, document_id: str,
     if original is None:
         raise HTTPException(404, "Claim attachment not found.")
     return Response(original.content, media_type=original.media_type,
-                    headers={"Content-Disposition": f'inline; filename="{original.filename.replace(chr(34), "")}"',
+                    headers={"Content-Disposition": f"inline; filename*=UTF-8''{quote(original.filename, safe='')}",
                              "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
                              "Content-Security-Policy": "sandbox"})
 

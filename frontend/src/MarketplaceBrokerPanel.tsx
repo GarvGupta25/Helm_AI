@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ClipboardCheck } from 'lucide-react';
 import { aed, api, post } from './api';
-import { ErrorView, Loading } from './Shopping';
+import { ErrorView, Loading } from './Feedback';
 
 type Application = {
   id: string;

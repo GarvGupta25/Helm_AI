@@ -98,7 +98,13 @@ def test_seeded_catalogue_completes_the_full_marketplace_journey(fixture_client)
     assert len(recommendations.json()["recommendations"]) == 5
     assert "send your details" in recommendations.json()["consent_question"]
 
-    consent = client.post(f"/api/marketplace/cases/{case_id}/consent", json={"consent": "yes"})
+    consent = client.post(
+        f"/api/marketplace/cases/{case_id}/consent",
+        json={
+            "consent": "yes",
+            "plan_ids": [item["plan_id"] for item in recommendations.json()["recommendations"][:3]],
+        },
+    )
     assert consent.status_code == 200
     applications = consent.json()["applications"]
     assert len(applications) >= 2
@@ -167,3 +173,19 @@ def test_seeded_catalogue_completes_the_full_marketplace_journey(fixture_client)
     assert [row["id"] for row in case.json()["marketplace_policies"]] == [policy_id]
     with Session(engine) as db:
         assert db.scalar(select(MarketplacePolicy).where(MarketplacePolicy.id == policy_id)) is not None
+
+
+def test_marketplace_recommendations_use_the_latest_saved_budget(fixture_client):
+    client, owner, engine = fixture_client
+    with Session(engine) as db:
+        seed_catalogue(db)
+        db.add(Profile(owner_id=owner[0].id, facts=PROFILE))
+        db.add(Case(id="updated-budget", owner_id=owner[0].id, status="open"))
+        db.commit()
+    path = "/api/marketplace/cases/updated-budget/recommendations"
+    assert client.get(path).json()["recommendations"]
+    profile = client.get("/api/me/profile").json()
+    changed = client.patch("/api/me/profile", json={"expected_version": profile["version"],
+                                                  "changes": {"annual_budget": 1, "strict_budget": True}})
+    assert changed.status_code == 200
+    assert client.get(path).json()["recommendations"] == []

@@ -7,7 +7,15 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from .claims_phase_one import log
-from .models import ClaimAutoRule, ClaimDecision, ClaimIntake, ClaimQualityAudit, LedgerProjection, Policy, ProvisionalAuthRule
+from .models import (
+    ClaimAutoRule,
+    ClaimDecision,
+    ClaimIntake,
+    ClaimQualityAudit,
+    LedgerProjection,
+    Policy,
+    ProvisionalAuthRule,
+)
 
 
 def provisional(db, intake, policy, category: str) -> ClaimDecision | None:

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './support';
 
 async function stubMemberMarketplace(page: Page) {
   let selected = false;
@@ -24,11 +24,41 @@ test('member compares and selects ranked real provider quotations', async ({ pag
   await page.getByLabel('Email address').fill('member@example');
   await page.getByLabel('Password').fill('password');
   await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/(app|provider)$/);
   await page.goto('/app/marketplace/case-1');
   await expect(page.getByRole('heading', { name: 'Your provider quotations' })).toBeVisible();
   await expect(page.getByText('AED 8,200.00')).toBeVisible();
-  await page.getByRole('button', { name: /Select this quotation/ }).first().click();
-  await expect(page.getByText(/chosen provider has been notified/i)).toBeVisible();
-  await expect(page.getByText('Quotation selected')).toBeVisible();
+  await page.getByRole('button', { name: /Choose this quotation/ }).first().click();
+  await expect(page.getByRole('heading', { name: 'Choose Al Noor Takaful?' })).toBeFocused();
+  await page.getByRole('button', { name: 'Yes, confirm this policy' }).click();
+  await expect(page.getByText(/Your choice was sent to the provider/)).toBeVisible();
+  await expect(page.locator('[aria-current="step"]')).toContainText('Choice sent');
   await page.screenshot({ path: 'PIVOT_V2_PHASE7_MEMBER_TIMELINE.png', fullPage: true });
+});
+
+test('member sees partial replies and every persisted activation step at a narrow width', async ({ page }) => {
+  await stubMemberMarketplace(page);
+  await page.setViewportSize({ width: 320, height: 844 });
+  let stage = 'quotation_received';
+  const quote = { rank: 1, quotation_id: 'quote-real-1', provider_name: 'Emirates International Family Health Assurance', premium_aed: 8200, name: 'Family care', status: 'accepted', explanation: 'Submitted provider terms.', terms: { network: 'wide', maternity: { covered: false }, chronic_preexisting: { covered: true, waiting_period_months: 0 } } };
+  await page.route('**/api/marketplace/cases/case-1/quotations', route => route.fulfill({ json: {
+    status: stage, invited: 3, responded: stage === 'quotation_received' ? 1 : 3,
+    collection_ready: stage !== 'quotation_received', collection_window_hours: 72,
+    quotations: stage === 'quotation_received' ? [] : [quote], updates: [quote],
+  } }));
+  await page.goto('/login');
+  await page.getByLabel('Email address').fill('member@example');
+  await page.getByLabel('Password').fill('password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await page.goto('/app/marketplace/case-1');
+  await expect(page.getByText('1 of 3 selected providers have responded.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Choose this quotation/ })).toHaveCount(0);
+  for (const [status, label] of [['provider_accepted', 'Provider accepted'], ['broker_final_review', 'Final review complete'], ['bound', 'Policy started']]) {
+    stage = status;
+    await page.reload();
+    await expect(page.locator('[aria-current="step"]')).toContainText(label);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  }
+  await expect(page.getByRole('link', { name: 'Open policies & cover' })).toBeVisible();
 });

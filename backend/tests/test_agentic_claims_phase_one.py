@@ -3,17 +3,16 @@ from io import BytesIO
 from types import SimpleNamespace
 
 import pytest
+from conftest import as_assigned_broker
+from reportlab.pdfgen import canvas
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
-from reportlab.pdfgen import canvas
 
 from app import claims_phase_one
-from app.config import settings
 from app.db import engine
 from app.domain import plans
 from app.models import ClaimAuditLog, ClaimDecision, ClaimFinding, OnCallRoster, Policy, ServicingEvent
-from conftest import as_assigned_broker
 
 
 def test_emergency_pages_staffed_broker_and_never_records_a_decision(monkeypatch, fixture_client):

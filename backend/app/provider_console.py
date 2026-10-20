@@ -12,14 +12,17 @@ from sqlalchemy.orm import Session
 
 from .auth import ProviderIdentity, require_provider
 from .db import session
+from .domain import installments, money
+from .marketplace_broker import require_binding_approval
 from .marketplace_models import (
     MarketplaceApplication,
+    MarketplacePlan,
     MarketplacePolicy,
     ProviderFlag,
     ProviderPayment,
     ProviderQuotation,
 )
-from .models import Policy
+from .models import Installment, Policy
 
 router = APIRouter(prefix="/api/provider", tags=["provider"])
 
@@ -83,13 +86,12 @@ def _application(db: Session, application_id: str, provider: ProviderIdentity):
     return row
 
 
-def _quotation(db: Session, quotation_id: str, provider: ProviderIdentity):
-    row = db.scalar(
-        select(ProviderQuotation).where(
-            ProviderQuotation.id == quotation_id,
-            ProviderQuotation.provider_id == provider.provider_id,
-        )
+def _quotation(db: Session, quotation_id: str, provider: ProviderIdentity, *, lock: bool = False):
+    query = select(ProviderQuotation).where(
+        ProviderQuotation.id == quotation_id,
+        ProviderQuotation.provider_id == provider.provider_id,
     )
+    row = db.scalar(query.with_for_update() if lock else query)
     if row is None:
         raise HTTPException(404, "Quotation not found.")
     return row
@@ -116,8 +118,10 @@ def _application_payload(row: MarketplaceApplication) -> dict:
     }
 
 
-def _quotation_payload(row: ProviderQuotation) -> dict:
-    return {
+def _quotation_payload(
+    row: ProviderQuotation, application: MarketplaceApplication | None = None
+) -> dict:
+    payload = {
         "id": row.id,
         "application_id": row.application_id,
         "marketplace_plan_id": row.marketplace_plan_id,
@@ -126,6 +130,9 @@ def _quotation_payload(row: ProviderQuotation) -> dict:
         "status": row.status,
         "submitted_at": row.submitted_at.isoformat(),
     }
+    if application is not None:
+        payload["application_status"] = application.status
+    return payload
 
 
 def _policy_payload(row: MarketplacePolicy) -> dict:
@@ -164,6 +171,13 @@ def submit_quote(
     application = _application(db, application_id, provider)
     if application.status != "sent_to_providers":
         raise HTTPException(409, "Only a newly received application can be quoted.")
+    if body.marketplace_plan_id and not db.scalar(
+        select(MarketplacePlan.id).where(
+            MarketplacePlan.id == body.marketplace_plan_id,
+            MarketplacePlan.provider_id == provider.provider_id,
+        )
+    ):
+        raise HTTPException(404, "Plan not found for this provider.")
     quotation = ProviderQuotation(
         application_id=application.id,
         provider_id=provider.provider_id,
@@ -185,12 +199,13 @@ def submit_quote(
 def quotations(
     provider: ProviderIdentity = Depends(require_provider), db: Session = Depends(session)
 ):
-    rows = db.scalars(
-        select(ProviderQuotation)
+    rows = db.execute(
+        select(ProviderQuotation, MarketplaceApplication)
+        .join(MarketplaceApplication, MarketplaceApplication.id == ProviderQuotation.application_id)
         .where(ProviderQuotation.provider_id == provider.provider_id)
         .order_by(ProviderQuotation.submitted_at.desc())
     ).all()
-    return [_quotation_payload(row) for row in rows]
+    return [_quotation_payload(quotation, application) for quotation, application in rows]
 
 
 @router.post("/quotations/{quotation_id}/accept")
@@ -199,42 +214,12 @@ def accept_quotation(
     provider: ProviderIdentity = Depends(require_provider),
     db: Session = Depends(session),
 ):
-    quotation = _quotation(db, quotation_id, provider)
+    quotation = _quotation(db, quotation_id, provider, lock=True)
     if quotation.status != "selected":
         raise HTTPException(409, "Only the customer's selected quotation can be accepted.")
     application = _application(db, quotation.application_id, provider)
     quotation.status = "accepted"
-    existing = db.scalar(
-        select(MarketplacePolicy).where(MarketplacePolicy.application_id == application.id)
-    )
-    if existing is None:
-        marketplace_policy = MarketplacePolicy(
-            owner_id=application.owner_id,
-            application_id=application.id,
-            quotation_id=quotation.id,
-            provider_id=provider.provider_id,
-        )
-        db.add(marketplace_policy)
-        terms = dict(quotation.plan_terms)
-        plan = {
-            **terms,
-            "id": quotation.id,
-            "name": terms.get("name") or "Marketplace health policy",
-            "annual_premium": float(quotation.premium),
-        }
-        db.add(
-            Policy(
-                owner_id=application.owner_id,
-                status="demo_active",
-                snapshot={
-                    "plan": plan,
-                    "start_date": date.today().isoformat(),
-                    "payment_frequency": "annual",
-                    "marketplace_policy_id": marketplace_policy.id,
-                },
-            )
-        )
-    application.status = "bound"
+    application.status = "provider_accepted"
     db.commit()
     return _quotation_payload(quotation)
 
@@ -245,7 +230,7 @@ def start_policy(
     provider: ProviderIdentity = Depends(require_provider),
     db: Session = Depends(session),
 ):
-    quotation = _quotation(db, quotation_id, provider)
+    quotation = _quotation(db, quotation_id, provider, lock=True)
     application = _application(db, quotation.application_id, provider)
     if quotation.status != "accepted":
         raise HTTPException(409, "Only an accepted quotation can start a policy.")
@@ -254,19 +239,48 @@ def start_policy(
     )
     if existing is not None:
         raise HTTPException(409, "A policy already exists for this application.")
-    policy = MarketplacePolicy(
+    require_binding_approval(db, application)
+    marketplace_policy = MarketplacePolicy(
         owner_id=application.owner_id,
         application_id=application.id,
         quotation_id=quotation.id,
         provider_id=provider.provider_id,
     )
-    db.add(policy)
-    # The database policy trigger checks the pre-bind application state before allowing the insert.
+    db.add(marketplace_policy)
     db.flush()
+    terms = dict(quotation.plan_terms)
+    # Member servicing snapshots use numeric money values, unlike JSON-encoded quote Decimals.
+    for field in ("annual_limit", "deductible"):
+        terms[field] = float(terms[field])
+    for field in ("maternity", "chronic_preexisting"):
+        if terms.get(field, {}).get("limit") is not None:
+            terms[field] = {**terms[field], "limit": float(terms[field]["limit"])}
+    shared_profile = application.consent_snapshot.get("shared_profile", {})
+    start_date = max(date.today().isoformat(), shared_profile.get("start_date") or date.today().isoformat())
+    payment_frequency = "monthly" if shared_profile.get("payment_frequency") == "monthly" else "annual"
+    member_policy = Policy(
+        owner_id=application.owner_id,
+        status="demo_active",
+        snapshot={
+            "plan": {
+                **terms,
+                "id": quotation.id,
+                "name": terms.get("name") or "Marketplace health policy",
+                "annual_premium": float(quotation.premium),
+            },
+            "start_date": start_date,
+            "payment_frequency": payment_frequency,
+            "marketplace_policy_id": marketplace_policy.id,
+        },
+    )
+    db.add(member_policy)
+    db.flush()
+    for installment in installments(money(quotation.premium), start_date, 12 if payment_frequency == "monthly" else 1):
+        db.add(Installment(owner_id=application.owner_id, policy_id=member_policy.id, **installment))
     application.status = "bound"
     db.commit()
-    db.refresh(policy)
-    return _policy_payload(policy)
+    db.refresh(marketplace_policy)
+    return _policy_payload(marketplace_policy)
 
 
 @router.get("/policies")
@@ -293,6 +307,11 @@ def discontinue_policy(
         raise HTTPException(409, "This policy is already discontinued.")
     policy.status = "discontinued"
     policy.discontinued_reason = body.reason
+    for member_policy in db.scalars(select(Policy).where(
+        Policy.owner_id == policy.owner_id,
+        Policy.snapshot["marketplace_policy_id"].as_string() == policy.id,
+    )):
+        member_policy.status = "discontinued"
     db.commit()
     return _policy_payload(policy)
 
