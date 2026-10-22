@@ -8,3 +8,6 @@
 - The phase is partial: live browser timing capture, competitor audit and phase-wide quality evidence remain outstanding. No invented timings or audit scores.
 
 Each subsequent phase report records actual verification and remaining acceptance items. A commit is a reviewable checkpoint, not certification of completion.
+
+## Phase 1 — design system
+Added scoped design tokens, self-hosted font imports, Radix dialogs/tooltips/tabs, labelled form fields, native accordions and reduced-motion/forced-colours styles. Storybook, per-component unit tests and four-width evidence remain outstanding; this is a partial engineering checkpoint.
