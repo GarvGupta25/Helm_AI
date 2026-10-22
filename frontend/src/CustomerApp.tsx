@@ -78,6 +78,7 @@ function PortalNotice({ role, onSignOut }: { role: string; onSignOut: () => Prom
 }
 
 function Shell({ session }: { session: Session | null }) {
+  const [signingOut, setSigningOut] = useState(false);
   const [open, setOpen] = useState(false); const [notificationsOpen, setNotificationsOpen] = useState(false); const navigate = useNavigate();
   const access = useQuery({ queryKey: ['access', session?.user.id], queryFn: () => api<{ role: 'member' | 'broker' | 'provider' }>('/api/me/access'), enabled: !!session });
   const notifications = useQuery<any[]>({ queryKey: ['marketplace-notifications'], queryFn: () => api('/api/marketplace/notifications'), enabled: access.data?.role === 'member', refetchInterval: 5000 });
@@ -92,8 +93,9 @@ function Shell({ session }: { session: Session | null }) {
     document.addEventListener('pointerdown', outside);
     return () => { document.removeEventListener('keydown', dismiss); document.removeEventListener('pointerdown', outside); };
   }, []);
-  if (!session) return <Navigate to="/login" replace/>;
+  if (!session) return signingOut ? <Loading/> : <Navigate to="/login" replace/>;
   async function logout() {
+    setSigningOut(true);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     try {
       await auth?.auth.signOut();
@@ -102,7 +104,9 @@ function Shell({ session }: { session: Session | null }) {
       await auth?.auth.signOut({ scope: 'local' });
     } finally {
       client.clear();
-      navigate('/');
+      // Clearing the query cache remounts auth-dependent routes. Leave that router
+      // with a document navigation so its stale auth redirect cannot win the race.
+      window.location.replace('/');
     }
   }
   if (access.isPending) return <Loading/>;
