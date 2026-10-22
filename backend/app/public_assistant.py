@@ -20,7 +20,7 @@ FALLBACK = "I’m Helm’s AI assistant for UK private medical cover. Try our FA
 EMERGENCY = "If this is a medical emergency, call 999 or go to your nearest A&E now. For urgent advice that isn’t an emergency, use NHS 111. Private cover doesn’t replace emergency NHS care."
 CRISIS = "I’m sorry you’re going through this. If you’re in immediate danger, call 999 or go to A&E now. If you can, reach out to someone you trust and ask them to stay with you. You deserve support. Please seek urgent help from NHS services. We can pause the insurance conversation."
 KNOWLEDGE = {
-    "ipt": f"Insurance Premium Tax is a tax on insurance premiums. The standard rate used here is {IPT_STANDARD_RATE * 100:g}%. Quote totals include it; base premium and tax are shown separately." + INFORMATION,
+    "ipt": f"Insurance Premium Tax is a tax on insurance premiums. The standard rate used here is {(IPT_STANDARD_RATE * 100).normalize():f}%. Quote totals include it; base premium and tax are shown separately." + INFORMATION,
     "excess": "An excess is the amount you pay towards eligible treatment. Check whether it applies per person, claim or policy year. The demo uses an annual excess per person." + INFORMATION,
     "underwriting": "Moratorium applies rules to recent medical history, which may be checked when you claim. Full medical underwriting asks questions before cover starts and sets out specific exclusions. Neither guarantees cover for an existing condition." + INFORMATION,
     "exclusions": "Private medical insurance usually covers eligible acute conditions. Chronic and pre-existing conditions, A&E and routine pregnancy care are usually excluded, depending on underwriting and policy terms. I cannot decide whether a condition or treatment is covered." + INFORMATION,
