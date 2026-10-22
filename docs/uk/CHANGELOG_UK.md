@@ -17,3 +17,6 @@ Added five Radix mega-menus, responsive navigation dialog, search, language-supp
 
 ## Phase 3 — homepage
 Added responsive licensed-photo hero, rotating explainer badge, written explainer fallback, cover categories, price transparency, renewal notes, scenario education, values, FAQs and sourced footnotes. An approved captioned video and measured animation/performance parity remain outstanding. No savings or live adviser service is claimed.
+
+## Phase 4 — About
+Added collage, sourced/demo statistics, accessible narrative tabs, six-step original roadmap, observer-driven sticky illustration, keyboard-focus activation, Embla value carousel, truthful credential disclosure, explore cards and footnotes. Omitted founder quote because no verified quote exists. GSAP, three-photo collage, exact reference crossfades/count-ups and owner milestones remain outstanding.
