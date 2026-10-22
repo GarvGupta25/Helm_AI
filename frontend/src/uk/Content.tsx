@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Action, Accordion, Badge, Card, Eyebrow, Field, GlossaryTip } from '../ui/primitives';
+import { Action, Accordion, Badge, Card, Eyebrow, Field } from '../ui/primitives';
 import { coverPages, searchLinks } from './navigation';
 import { faqs, NotCovered } from './Home';
 

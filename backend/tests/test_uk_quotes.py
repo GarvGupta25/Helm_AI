@@ -47,7 +47,12 @@ def test_invalid_answers_rejected(changes):
 
 
 def test_quote_confirmation_capability_and_consents(fixture_client):
-    client, _, _ = fixture_client
+    from sqlalchemy.orm import Session
+
+    from app.market.seed import seed
+    client, _, engine = fixture_client
+    with Session(engine) as db:
+        seed(db)
     response = client.post("/api/uk/quotes", json=payload())
     assert response.status_code == 200, response.text
     data = response.json()

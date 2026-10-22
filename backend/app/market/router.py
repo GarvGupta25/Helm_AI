@@ -6,11 +6,13 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import session
-from .models import UKAudit, UKConsent, UKQuote
-from .quote import UKQuoteRequest, catalogue, quote
+from .models import UKAudit, UKConsent, UKPlan, UKPremium, UKQuote
+from .quote import REGIONS, UKQuoteRequest, catalogue, quote
+from .seed import AGE_BANDS
 
 router = APIRouter(prefix="/api/uk", tags=["UK demo"])
 
@@ -22,7 +24,17 @@ def plans():
 
 @router.post("/quotes")
 def create_quote(body: UKQuoteRequest, db: Session = Depends(session)):
-    snapshot = quote(body)
+    stored_plans = list(db.scalars(select(UKPlan)))
+    if len(stored_plans) != 30:
+        raise HTTPException(503, "The fictional UK rate card is not ready. Run the approved demo seed.")
+    def stored_rate(plan, age, region, smoker, excess):
+        lower = max((bound for bound, _ in AGE_BANDS if bound <= age), default=18)
+        key = f"{plan['id']}:{lower}:{REGIONS.index(region)}:{int(smoker)}:{excess}"
+        rate = db.get(UKPremium, key)
+        if rate is None:
+            raise HTTPException(503, "A required demo rate is missing. No price has been invented.")
+        return rate.base_monthly_pence
+    snapshot = quote(body, rate_lookup=stored_rate, plan_catalogue=[plan.key_facts for plan in stored_plans])
     identifier = secrets.token_urlsafe(32)
     db.add(UKQuote(id=identifier, snapshot=snapshot, expires_at=datetime.now(timezone.utc) + timedelta(days=7)))
     db.add(UKAudit(intent="quote_created", event={"quote_ref": identifier[:8], "member_count": len(body.members),

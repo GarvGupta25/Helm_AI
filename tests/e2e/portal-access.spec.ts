@@ -81,6 +81,6 @@ test('archived workspace routes fall back to the public website', async ({ page 
   for (const path of ['/app/broker', '/app/broker/claims', '/broker/claims', '/provider']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Individual health cover for UAE residents.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Private health cover.*understand/ })).toBeVisible();
   }
 });

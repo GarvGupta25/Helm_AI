@@ -28,4 +28,12 @@ jobs:
       - run: node scripts/uk-release-guard.mjs
       - run: npm --prefix frontend run build
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npm --prefix frontend run lint:uk
+      - run: npm --prefix frontend test
+      - run: npm run test:uk
+      - run: npx playwright test claim-message marketplace-selection portal-access
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uk-browser-evidence
+          path: docs/uk/evidence

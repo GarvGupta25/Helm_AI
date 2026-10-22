@@ -37,6 +37,7 @@ export function ChatbotLauncher() {
       if (motion.matches) return;
       void import('@lottiefiles/dotlottie-web').then(({ DotLottie }) => {
         if (cancelled || !canvas.current) return;
+        DotLottie.setWasmUrl('/assets/uk/dotlottie-player.wasm');
         player = new DotLottie({ canvas: canvas.current, src: '/assets/robot.json', autoplay: false, loop: true });
         update();
       }).catch(() => setAnimated(false));

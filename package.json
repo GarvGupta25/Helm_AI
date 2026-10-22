@@ -6,7 +6,8 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "check": "npm --prefix frontend run check",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:uk": "playwright test --config playwright.uk.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

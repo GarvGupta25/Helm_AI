@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUpRight, Check, Heart, Play, ShieldCheck, Sparkles } from 'lucide-react';
-import { Action, Accordion, Badge, Button, Card, Eyebrow, Modal, NarrativeTabs, GlossaryTip } from '../ui/primitives';
+import { Action, Accordion, Badge, Card, Eyebrow, Modal, NarrativeTabs, GlossaryTip } from '../ui/primitives';
 import { coverPages } from './navigation';
 import './home.css';
 

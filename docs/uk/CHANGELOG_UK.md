@@ -35,3 +35,6 @@ Added reversible UK table migration, 30 fictional plan records, 23,100 demo rate
 
 ## Phase 9 — compliance drafts and release guard
 Added truthful legal notices, DPIA/ROPA draft, retention proposal and explicit maintenance command, Consumer Duty review pack, public-source contamination guard and fail-closed live-release guard. Legacy inventory remains nonzero (351 matches at this checkpoint); preserved archives and active historical workflows have NOT been certified UK-only. Legal, DPO and compliance sign-offs are unresolved. Ordinary builds are labelled demos; build:production fails.
+
+## Phase 10 — hardening checkpoint
+Separated public and customer bundles, lazy-loaded quote/About/legal routes, subset self-hosted fonts to Latin, fixed observed contrast failures, self-hosted the Lottie runtime, added reduced-motion/forced-colours fallbacks, scoped frontend lint and five primitive unit tests. Browser overflow passes at four widths; quote, chat, keyboard, consent and mobile checks passed in the initial run. Automated a11y is being rerun after contrast fixes. Manual SR/device matrix and measured performance targets remain open.

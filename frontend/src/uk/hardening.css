@@ -1,0 +1,11 @@
+/* Explicit text colours prevent inherited workspace styles weakening public contrast. */
+.uk-site .uk-hero-copy p,.uk-site .uk-hero-copy .uk-eyebrow{color:#fff}
+.uk-site .uk-narrative p,.uk-site .uk-mega-promo .uk-eyebrow{color:#e4f6f3}
+.uk-site .uk-footer .uk-eyebrow{color:#e4f6f3}
+.uk-site .uk-footer-columns p{color:#e4f6f3}
+.uk-site .uk-demo{color:#053b44}
+.uk-site .uk-page-heading p{color:#29494d}
+.uk-site .uk-stats .uk-eyebrow{color:#172c32}
+.uk-site .uk-premium dt,.uk-site .uk-premium dd{color:#172c32}
+.uk-site .uk-life-grid h3{color:#172c32}
+@media(prefers-reduced-motion:reduce){.uk-story-visual{position:relative;top:auto}.uk-hero-photo{transform:none}.uk-header.hidden{transform:none}}

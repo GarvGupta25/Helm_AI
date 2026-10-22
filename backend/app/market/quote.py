@@ -136,13 +136,13 @@ def demands_and_needs(request: UKQuoteRequest):
             "A&E and routine pregnancy care are usually excluded, subject to underwriting and plan wording.")
 
 
-def quote(request: UKQuoteRequest):
+def quote(request: UKQuoteRequest, rate_lookup=base_premium, plan_catalogue=None):
     region = region_for(request.postcode)
     results = []
-    for plan in catalogue():
+    for plan in catalogue() if plan_catalogue is None else plan_catalogue:
         if plan["hospital_list"] != request.hospital_list:
             continue
-        base = sum(base_premium(plan, age_on(member.dob, request.start_date), region, member.smoker, request.excess_pence)
+        base = sum(rate_lookup(plan, age_on(member.dob, request.start_date), region, member.smoker, request.excess_pence)
                    for member in request.members)
         if request.six_week_option:
             base = int((Decimal(base) * Decimal("0.9")).quantize(Decimal(1), rounding=ROUND_HALF_UP))
