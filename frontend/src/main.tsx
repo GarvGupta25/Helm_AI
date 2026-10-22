@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { Compass, ArrowUpRight, ArrowRight, Mic, ShieldCheck, Layers3, LayoutDashboard, LogOut, Menu, Check, Sparkles, ClipboardCheck, Bell } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Loading, ErrorView } from './Feedback';
 import './styles.css';
 import { MarketingLayout } from './marketing/components/MarketingLayout';
 import './foundation.css';
+import { PublicApp } from './uk/PublicApp';
 
 const HomePage = React.lazy(() => import('./marketing/pages/HomePage').then(module => ({ default: module.HomePage })));
 const AboutPage = React.lazy(() => import('./marketing/pages/AboutPage').then(module => ({ default: module.AboutPage })));
@@ -113,7 +114,9 @@ function Shell({ session }: { session: Session | null }) {
 }
 function MessageIcon() { return <Layers3 size={19}/>; }
 function App() {
-  const config = useQuery({ queryKey: ['config'], queryFn: () => api<Config>('/api/config') }); const [session, setSession] = useState<Session | null>(null); const [ready, setReady] = useState(false);
+  const location = useLocation();
+  const publicPage = !location.pathname.startsWith('/app') && location.pathname !== '/login';
+  const config = useQuery({ queryKey: ['config'], queryFn: () => api<Config>('/api/config'), enabled: !publicPage }); const [session, setSession] = useState<Session | null>(null); const [ready, setReady] = useState(false);
   useEffect(() => {
     if (!config.data) return; configureAuth(config.data);
     if (!auth) { setReady(true); return; }
@@ -121,6 +124,7 @@ function App() {
     const { data: subscription } = auth.auth.onAuthStateChange((_event, next) => { setSession(next); setReady(true); });
     return () => { active = false; subscription.subscription.unsubscribe(); };
   }, [config.data]);
+  if (publicPage) return <PublicApp/>;
   if (config.error) return <div className="startup-error"><Brand/><h1>The workspace service is unavailable.</h1><p>Start the Helm API, then reload this page.</p><ErrorView error={config.error}/><button onClick={() => { void config.refetch(); }}>Try again</button></div>;
   if (!config.data || !ready) return <Loading/>;
   return <React.Suspense fallback={<Loading/>}><Routes>

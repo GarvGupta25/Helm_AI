@@ -11,3 +11,6 @@ Each subsequent phase report records actual verification and remaining acceptanc
 
 ## Phase 1 — design system
 Added scoped design tokens, self-hosted font imports, Radix dialogs/tooltips/tabs, labelled form fields, native accordions and reduced-motion/forced-colours styles. Storybook, per-component unit tests and four-width evidence remain outstanding; this is a partial engineering checkpoint.
+
+## Phase 2 — public shell
+Added five Radix mega-menus, responsive navigation dialog, search, language-support disclosure, login entries, footer, cookie preferences and an external-link interstitial. Public pages no longer require API availability. No false regulatory claim is displayed. First-paint loader, complete gesture parity and per-phase Lighthouse/screenshots remain unverified.
