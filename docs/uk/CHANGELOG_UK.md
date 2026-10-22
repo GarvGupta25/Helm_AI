@@ -38,3 +38,6 @@ Added truthful legal notices, DPIA/ROPA draft, retention proposal and explicit m
 
 ## Phase 10 — hardening checkpoint
 Separated public and customer bundles, lazy-loaded quote/About/legal routes, subset self-hosted fonts to Latin, fixed observed contrast failures, self-hosted the Lottie runtime, added reduced-motion/forced-colours fallbacks, scoped frontend lint and five primitive unit tests. Browser overflow passes at four widths; quote, chat, keyboard, consent and mobile checks passed in the initial run. Automated a11y is being rerun after contrast fixes. Manual SR/device matrix and measured performance targets remain open.
+
+## Phase 11 — QA and launch-readiness checkpoint
+Prepared end-to-end regression/a11y suite, comprehension research consent/tasks/scoring, security gap review, rollback/monitoring plan and explicit NO-GO launch memo. PHASE_REPORTS.md records completed work and incomplete acceptance for every phase. Real UK user sessions, manual assistive-technology/device testing and professional approvals are not fabricated. Final measured evidence is attached after verification.
