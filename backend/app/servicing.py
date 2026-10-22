@@ -5,6 +5,32 @@ from .domain import empty_ledger, evaluate_servicing
 from .models import LedgerProjection, ServicingEvent
 
 
+def evaluate_uk_claim(*, amount_pence: int, excess_pence: int, excess_used_pence: int,
+                      benefit_remaining_pence: int, pre_authorised: bool, acute: bool,
+                      emergency: bool = False, history_exclusion_uncertain: bool = False):
+    """Pure UK demo rules. Agent output cannot override any financial result."""
+    values = (amount_pence, excess_pence, excess_used_pence, benefit_remaining_pence)
+    if any(type(value) is not int or value < 0 for value in values):
+        raise ValueError("Claim amounts must be non-negative integer pence.")
+    if excess_used_pence > excess_pence:
+        raise ValueError("Used excess cannot exceed the annual excess.")
+    def result(outcome, reason, plan_pays=0):
+        return {"outcome": outcome, "reason": reason, "plan_pays_pence": plan_pays,
+                "member_pays_pence": amount_pence - plan_pays, "currency": "GBP", "demo": True}
+    if emergency:
+        return result("nhs_signposting", "Emergency: call 999 or go to A&E. No private emergency fast path.")
+    if not pre_authorised:
+        return result("requires_pre_authorisation", "Get insurer approval before planned treatment. No payment decision made.")
+    if history_exclusion_uncertain:
+        return result("manual_review", "An authorised reviewer must resolve underwriting and policy eligibility.")
+    if not acute:
+        return result("excluded", "Routine chronic-condition management is excluded in this demo rule set.")
+    remaining_excess = max(0, excess_pence - excess_used_pence)
+    eligible = max(0, amount_pence - remaining_excess)
+    return result("covered" if eligible else "within_excess", "Applied frozen benefit limit and annual excess.",
+                  min(eligible, benefit_remaining_pence))
+
+
 def _projection(db, policy):
     projection = db.scalar(
         select(LedgerProjection).where(LedgerProjection.policy_id == policy.id).with_for_update()

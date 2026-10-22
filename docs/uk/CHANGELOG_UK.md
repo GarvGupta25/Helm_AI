@@ -29,3 +29,6 @@ Added structured React Hook Form wizard, postcode validation, medical consent ga
 
 ## Phase 7 — public UK assistant
 Added reviewed UK knowledge, safety intent routing, advice and medical boundaries, PII suppression, bounded non-spoofable process rate limits, persisted intent-only audit references and demo support tickets. Launcher keeps Lottie and Welcome to Helm Ai. Added 14 required cases and 200 adversarial variations. Groq multi-turn, support-dashboard integration, callback delivery and approved UK crisis-contact configuration remain outstanding. No raw text is retained or sent to inference.
+
+## Phase 8 — additive domain migration
+Added reversible UK table migration, 30 fictional plan records, 23,100 demo rates, idempotent seed and deterministic UK servicing rules. Nested market modules now included in Python distributions. Historical policies, currency units and archived dashboards were preserved. Full replacement/backfill of legacy contracts, claim-agent prompts and professional models remains outstanding and requires migration rehearsal; the repository is not yet wholly UK-only.

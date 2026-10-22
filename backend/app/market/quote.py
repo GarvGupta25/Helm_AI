@@ -112,7 +112,7 @@ def catalogue():
 
 def base_premium(plan: dict, age: int, region: str, smoker: bool, excess: int):
     """Synthetic rate-card formula, never represented as insurer pricing."""
-    age_band = max(0, min(11, (age - 20) // 5))
+    age_band = max(0, min(10, (age - 20) // 5))
     base = 2600 + plan["carrier_index"] * 170 + plan["tier_index"] * 1600 + age_band * 580
     base += 900 if plan["hospital_list"] == "Extended" else 0
     factors = {"London & South East": 120, "South West": 102, "Midlands": 100, "North": 95,
