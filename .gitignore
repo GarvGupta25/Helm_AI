@@ -11,6 +11,8 @@ __pycache__/
 *.db-*
 dist/
 coverage/
+.coverage
+.coverage.*
 playwright-report/
 test-results/
 .runtime/

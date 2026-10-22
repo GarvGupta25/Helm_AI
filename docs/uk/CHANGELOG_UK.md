@@ -41,3 +41,6 @@ Separated public and customer bundles, lazy-loaded quote/About/legal routes, sub
 
 ## Phase 11 — QA and launch-readiness checkpoint
 Prepared end-to-end regression/a11y suite, comprehension research consent/tasks/scoring, security gap review, rollback/monitoring plan and explicit NO-GO launch memo. PHASE_REPORTS.md records completed work and incomplete acceptance for every phase. Real UK user sessions, manual assistive-technology/device testing and professional approvals are not fabricated. Final measured evidence is attached after verification.
+
+## Final regression corrections
+Fixed a nested-route boundary exposed by preserved customer browser tests. Deferred optional Lottie decoding until interaction to reduce startup main-thread work; the chat control remains immediate. Reserved viewport space during lazy loading and preloaded self-hosted critical fonts to reduce layout shift. Final audit outputs retain actual scores, including missed targets; no full launch acceptance is claimed.

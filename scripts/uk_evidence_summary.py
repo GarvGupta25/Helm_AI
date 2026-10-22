@@ -20,5 +20,11 @@ report = root / "playwright.json"
 if report.exists():
     data = json.loads(report.read_text(encoding="utf-8"))
     rows += ["", "## Browser suite", "", f"Actual recorded stats: `{json.dumps(data.get('stats', {}), ensure_ascii=False)}`."]
+coverage = root / "backend-coverage.json"
+if coverage.exists():
+    data = json.loads(coverage.read_text(encoding="utf-8"))
+    rows += ["", "## Backend coverage", "", "| Module | Line coverage |", "|---|---:|"]
+    for name, entry in data.get("files", {}).items():
+        rows.append(f"| {name} | {entry['summary']['percent_covered']:.1f}% |")
 (root.parent / "PERFORMANCE_ACCESSIBILITY_REPORT.md").write_text("\n".join(rows) + "\n", encoding="utf-8")
 print("\n".join(rows[:12]))

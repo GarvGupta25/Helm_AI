@@ -10,13 +10,13 @@ export default defineConfig({
   timeout: 30_000,
   workers: 2,
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: 'http://127.0.0.1:4174',
     trace: 'retain-on-failure',
     launchOptions: executablePath ? { executablePath } : undefined,
   },
   webServer: {
-    command: 'npm --prefix frontend run dev -- --port 4173',
-    url: 'http://127.0.0.1:4173',
+    command: 'npm --prefix frontend run preview',
+    url: 'http://127.0.0.1:4174',
     reuseExistingServer: !process.env.CI,
   },
 });

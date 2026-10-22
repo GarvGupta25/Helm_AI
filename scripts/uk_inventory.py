@@ -1,8 +1,8 @@
 """Inventory tracked historical market terms without rewriting archives or user data."""
 import csv
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PATTERN = re.compile(r"\b(?:UAE|AED|Dubai|DHA|DOH|HAAD|emirates?|razorpay|fils)\b|PD-05-2025|\+971", re.I)

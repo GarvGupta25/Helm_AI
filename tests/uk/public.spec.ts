@@ -4,7 +4,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 
 const evidence = 'docs/uk/evidence';
 test.beforeAll(() => mkdirSync(evidence, { recursive: true }));
-async function consent(page: import('@playwright/test').Page) { const reject = page.getByRole('button', { name: 'Reject all', exact: true }); if (await reject.isVisible()) await reject.click(); }
+async function consent(page: import('@playwright/test').Page) {
+  await expect(page.locator('.uk-header')).toBeVisible({ timeout: 30_000 });
+  const hasChoice = await page.evaluate(() => !!localStorage.getItem('helm-cookie-consent-v1'));
+  if (!hasChoice) await page.getByRole('button', { name: 'Reject all', exact: true }).click();
+}
 
 for (const width of [375, 768, 1280, 1920]) {
   test(`home and About fit ${width}px`, async ({ page }) => {

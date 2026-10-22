@@ -1,11 +1,27 @@
-# Helm AI customer website
+# Helm AI — UK private medical cover demonstration
 
-Helm AI helps UAE residents discover, compare, purchase and manage individual health insurance. Plans, providers, payments and policies in this repository are fictional demonstration data.
+The new public site explains UK private medical cover and compares fictional plans with server-calculated, tax-inclusive prices. It includes a structured quote demo and a reviewed information assistant. No money is collected or insurance contract created. This is **not ready for a real UK insurance launch**.
+
+Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REPORTS.md), [launch blockers](docs/uk/LAUNCH_READINESS.md), [changelog](docs/uk/CHANGELOG_UK.md) and [measured evidence](docs/uk/PERFORMANCE_ACCESSIBILITY_REPORT.md). The historical customer workflows and professional archives remain preserved and require a separate safe domain/data migration. The historical-term inventory is nonzero; a passing demo build does not mean the whole repository is localised.
+
+### Run the isolated UK demo
+
+```powershell
+npm ci
+npm --prefix frontend ci
+uv sync --project backend --locked --group dev
+# Terminal 1: explicitly uses a scratch SQLite database, never your configured database
+uv run --project backend python backend/scripts/uk_test_server.py
+# Terminal 2
+npm run dev
+```
+
+The public pages work without an API; the quote and assistant require the test API. Build with `npm run build`. Run `npm run test:uk` after building; the browser suite uses the production preview and an isolated API. `npm --prefix frontend run build:production` intentionally fails while live-release blockers remain. Do not deploy the legacy authenticated workflows as a completed UK migration.
 
 ## Main-site pages
 
 - Home and the public Helm assistant; About; Our Partners; Popular Schemes and scheme details.
-- UAE newcomer guide and topic pages; How It Works; FAQ; Claims Explained; Contact; privacy, terms and disclaimer.
+- UK newcomer guide, underwriting, cover categories, FAQs, glossary, fictional care finder and draft legal/support pages.
 - Sign in, sign up, account recovery and password reset.
 - Customer overview, saved profile, intake/conversation, quote comparison and application confirmation.
 - Customer marketplace quotations and activation progress.
