@@ -226,11 +226,9 @@ from .public_assistant import (  # noqa: E402 — imported here to keep public b
 
 
 @app.post("/api/public/assistant/messages", response_model=PublicAssistantResponse)
-async def public_assistant(body: PublicAssistantRequest, request: Request) -> PublicAssistantResponse:
-    """Public, unauthenticated chatbot endpoint scoped to general UAE health-insurance
-    questions. Rate-limited to 10 requests per hour per IP. Never produces quotes or
-    eligibility decisions. Does not persist visitor messages."""
-    return await handle_public_assistant(body, request)
+async def public_assistant(body: PublicAssistantRequest, request: Request, db: Session = Depends(session)) -> PublicAssistantResponse:
+    """UK information only. Stores intent/audit references, never visitor text."""
+    return await handle_public_assistant(body, request, db)
 
 
 @app.get("/api/public/providers")

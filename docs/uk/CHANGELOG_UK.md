@@ -26,3 +26,6 @@ Added shared UK content templates, nine tailored cover pages with exclusions, gl
 
 ## Phase 6 — quote journey
 Added structured React Hook Form wizard, postcode validation, medical consent gate, integer-pence server pricing and IPT, transparent ranked results, comparison drawer, frozen quote snapshots, deterministic needs statement, consent records and idempotent £0 confirmation. Anonymous resume uses a capability header and explicit session save. Email delivery, real payment adapters, approved IPIDs and account linking remain outstanding. No real policy is issued.
+
+## Phase 7 — public UK assistant
+Added reviewed UK knowledge, safety intent routing, advice and medical boundaries, PII suppression, bounded non-spoofable process rate limits, persisted intent-only audit references and demo support tickets. Launcher keeps Lottie and Welcome to Helm Ai. Added 14 required cases and 200 adversarial variations. Groq multi-turn, support-dashboard integration, callback delivery and approved UK crisis-contact configuration remain outstanding. No raw text is retained or sent to inference.

@@ -215,3 +215,4 @@
   background: var(--color-surface-white, #fff);
   line-height: 1.4;
 }
+ .chat-panel__disclosure { padding: 8px 16px; margin: 0; font-size: 11px; line-height: 1.5; background: #e4f6f3; color: #172c32; }

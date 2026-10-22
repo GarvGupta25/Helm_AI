@@ -3,9 +3,12 @@ import "./ChatPanel.css";
 
 const GREETING_TEXT = "Welcome to Helm Ai";
 const SUGGESTED_QUESTIONS = [
-  "Do I need this if I'm self-sponsored?",
-  "What does a waiting period mean?",
-  "How does Helm AI's process work?",
+  "How does private health cover work?",
+  "What isn't covered?",
+  "What's an excess?",
+  "Moratorium vs full medical underwriting",
+  "Get a quote",
+  "Talk to an adviser",
 ];
 
 type ChatMessage = { role: "assistant" | "user"; text: string };
@@ -15,7 +18,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
     { role: "assistant", text: GREETING_TEXT },
     {
       role: "assistant",
-      text: "Ask me anything about UAE health insurance basics, or tap a suggestion below.",
+      text: "Hi, I'm Helm's AI assistant. I can explain UK private health cover. I can't give personal or medical advice. Please don't share health, card or password details here. This demo has no live adviser service.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -49,7 +52,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
 
   async function send(text: string) {
     if (!text.trim() || isSending) return;
-    setMessages((m) => [...m, { role: "user", text }]);
+      setMessages((m) => [...m, { role: "user", text: "Question sent. Your text is kept out of the transcript." }]);
     setInput("");
     setIsSending(true);
     setError(null);
@@ -68,7 +71,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
         return;
       }
       const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
+      setMessages((m) => [...m, { role: "assistant", text: data.reply + (data.ticket_ref ? ` Demo support reference: ${data.ticket_ref}` : '') }]);
     } catch {
       setError("Could not reach the assistant. Please check your connection.");
     } finally {
@@ -145,7 +148,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
           placeholder="Ask a question..."
           aria-label="Type your message"
           enterKeyHint="send"
-          maxLength={2000}
+          maxLength={500}
           disabled={isSending}
           rows={1}
         />
@@ -153,6 +156,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
           Send
         </button>
       </form>
+      <p className="chat-panel__disclosure">AI assistant. Information only — not advice. <a href="/legal/privacy">How we use your data</a> · <a href="/contact">Talk to a person</a></p>
     </div>
   );
 }

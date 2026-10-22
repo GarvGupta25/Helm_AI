@@ -13,9 +13,15 @@ export function ChatbotLauncher() {
   const [showGreeting, setShowGreeting] = useState(false);
   useEffect(() => {
     try { if (sessionStorage.getItem('helm-greeting-dismissed') === 'yes') return; } catch { /* Storage may be unavailable. */ }
-    greetingTimer.current = setTimeout(() => setShowGreeting(true), 60000);
+    greetingTimer.current = setTimeout(() => setShowGreeting(true), 3000);
     return () => { if (greetingTimer.current) clearTimeout(greetingTimer.current); };
   }, []);
+
+  useEffect(() => {
+    if (!showGreeting) return;
+    const timeout = window.setTimeout(dismissGreeting, 8000);
+    return () => window.clearTimeout(timeout);
+  }, [showGreeting]);
 
   useEffect(() => {
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -58,8 +64,8 @@ export function ChatbotLauncher() {
       {showGreeting && !isOpen && <div className="chatbot-greeting-card">
         <button type="button" className="chatbot-greeting-card__open" onClick={open}>
           <span className="chatbot-greeting-card__eyebrow">Helm AI Assistant</span>
-          <strong>Welcome to Helm AI</strong>
-          <span>Your guide to UAE health cover. Ask a question.</span>
+          <strong>Welcome to Helm Ai</strong>
+          <span>Your guide to UK private health cover. Ask a question.</span>
         </button>
         <button type="button" className="chatbot-greeting-card__close" onClick={dismissGreeting} aria-label="Dismiss message"><X size={16}/></button>
       </div>}
