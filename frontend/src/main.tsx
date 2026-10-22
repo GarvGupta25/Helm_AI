@@ -1,8 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, useLocation } from 'react-router-dom';
+import { PublicApp } from './uk/PublicApp';
 
-const PublicApp = lazy(() => import('./uk/PublicApp').then(module => ({ default: module.PublicApp })));
 const CustomerApp = lazy(() => import('./CustomerApp'));
 
 function Entry() {

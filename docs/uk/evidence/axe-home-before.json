@@ -1,0 +1,159 @@
+[
+  {
+    "id": "color-contrast",
+    "impact": "serious",
+    "tags": [
+      "cat.color",
+      "wcag2aa",
+      "wcag143",
+      "TTv5",
+      "TT13.c",
+      "EN-301-549",
+      "EN-9.1.4.3",
+      "ACT",
+      "RGAAv4",
+      "RGAA-3.2.1"
+    ],
+    "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/color-contrast?application=playwright",
+    "nodes": [
+      {
+        "any": [
+          {
+            "id": "color-contrast",
+            "data": {
+              "fgColor": "#59677e",
+              "bgColor": "#053b44",
+              "contrastRatio": 2.13,
+              "fontSize": "8.6pt (11.52px)",
+              "fontWeight": "normal",
+              "messageKey": null,
+              "expectedContrastRatio": "4.5:1"
+            },
+            "relatedNodes": [
+              {
+                "html": "<div dir=\"ltr\" data-orientation=\"horizontal\" class=\"uk-narrative\">",
+                "target": [
+                  ".uk-narrative"
+                ]
+              }
+            ],
+            "impact": "serious",
+            "message": "Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 8.6pt (11.52px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<p class=\"uk-eyebrow\">THE HELM APPROACH</p>",
+        "target": [
+          "#radix-_r_p_-content-why > .uk-eyebrow"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 8.6pt (11.52px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "any": [
+          {
+            "id": "color-contrast",
+            "data": {
+              "fgColor": "#59677e",
+              "bgColor": "#053b44",
+              "contrastRatio": 2.13,
+              "fontSize": "12.0pt (16px)",
+              "fontWeight": "normal",
+              "messageKey": null,
+              "expectedContrastRatio": "4.5:1"
+            },
+            "relatedNodes": [
+              {
+                "html": "<div dir=\"ltr\" data-orientation=\"horizontal\" class=\"uk-narrative\">",
+                "target": [
+                  ".uk-narrative"
+                ]
+              }
+            ],
+            "impact": "serious",
+            "message": "Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<p>Clear answers help you make a considered choice. We put the exclusions next to the benefits, and the tax next to the price.</p>",
+        "target": [
+          "#radix-_r_p_-content-why > p:nth-child(3)"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "any": [
+          {
+            "id": "color-contrast",
+            "data": {
+              "fgColor": "#59677e",
+              "bgColor": "#053b44",
+              "contrastRatio": 2.13,
+              "fontSize": "7.8pt (10.4px)",
+              "fontWeight": "normal",
+              "messageKey": null,
+              "expectedContrastRatio": "4.5:1"
+            },
+            "relatedNodes": [
+              {
+                "html": "<footer class=\"uk-footer\">",
+                "target": [
+                  "footer"
+                ]
+              }
+            ],
+            "impact": "serious",
+            "message": "Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 7.8pt (10.4px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<p class=\"uk-eyebrow\">A LITTLE CLARITY GOES A LONG WAY.</p>",
+        "target": [
+          ".uk-footer-top > div > .uk-eyebrow"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 7.8pt (10.4px), font weight: normal). Expected contrast ratio of 4.5:1"
+      },
+      {
+        "any": [
+          {
+            "id": "color-contrast",
+            "data": {
+              "fgColor": "#59677e",
+              "bgColor": "#053b44",
+              "contrastRatio": 2.13,
+              "fontSize": "10.0pt (13.28px)",
+              "fontWeight": "normal",
+              "messageKey": null,
+              "expectedContrastRatio": "4.5:1"
+            },
+            "relatedNodes": [
+              {
+                "html": "<footer class=\"uk-footer\">",
+                "target": [
+                  "footer"
+                ]
+              }
+            ],
+            "impact": "serious",
+            "message": "Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 10.0pt (13.28px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ],
+        "all": [],
+        "none": [],
+        "impact": "serious",
+        "html": "<p>0800 [TBC]<br>Mon–Fri 08:00–20:00<br>(Europe/London)</p>",
+        "target": [
+          "div:nth-child(6) > p"
+        ],
+        "failureSummary": "Fix any of the following:\n  Element has insufficient color contrast of 2.13 (foreground color: #59677e, background color: #053b44, font size: 10.0pt (13.28px), font weight: normal). Expected contrast ratio of 4.5:1"
+      }
+    ]
+  }
+]

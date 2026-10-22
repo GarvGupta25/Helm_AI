@@ -44,3 +44,10 @@ Prepared end-to-end regression/a11y suite, comprehension research consent/tasks/
 
 ## Final regression corrections
 Fixed a nested-route boundary exposed by preserved customer browser tests. Deferred optional Lottie decoding until interaction to reduce startup main-thread work; the chat control remains immediate. Reserved viewport space during lazy loading and preloaded self-hosted critical fonts to reduce layout shift. Final audit outputs retain actual scores, including missed targets; no full launch acceptance is claimed.
+
+## Final measured evidence
+- Backend: 369 passed, one skipped; 94% combined coverage, 95% domain/servicing. Frontend: five unit tests; lint/type-check/build pass.
+- Browser: nine preserved customer tests and nine UK tests pass; zero serious/critical axe rules on five tested routes; eight responsive screenshots retained.
+- Final desktop Lighthouse Home/About: performance 99/100, accessibility 100/100, best practices 96/96, SEO 91/91. Mobile performance 83/79; mobile LCP remains over 2.5 seconds.
+- Eager loading of the default public route and deferred offscreen layout reduce startup work; customer, About, quote and legal routes retain their appropriate lazy boundaries.
+- Whole historical inventory remains 359 matches. All phase acceptance is NOT complete; see PHASE_REPORTS.md and LAUNCH_READINESS.md. No production launch, real payment or customer-data migration occurred.
