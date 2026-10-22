@@ -14,3 +14,6 @@ Added scoped design tokens, self-hosted font imports, Radix dialogs/tooltips/tab
 
 ## Phase 2 — public shell
 Added five Radix mega-menus, responsive navigation dialog, search, language-support disclosure, login entries, footer, cookie preferences and an external-link interstitial. Public pages no longer require API availability. No false regulatory claim is displayed. First-paint loader, complete gesture parity and per-phase Lighthouse/screenshots remain unverified.
+
+## Phase 3 — homepage
+Added responsive licensed-photo hero, rotating explainer badge, written explainer fallback, cover categories, price transparency, renewal notes, scenario education, values, FAQs and sourced footnotes. An approved captioned video and measured animation/performance parity remain outstanding. No savings or live adviser service is claimed.
