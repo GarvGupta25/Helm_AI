@@ -25,6 +25,7 @@ jobs:
       - run: uv run --project backend pytest backend/tests -q
       - run: npm ci
       - run: npm --prefix frontend ci
+      - run: node scripts/uk-release-guard.mjs
       - run: npm --prefix frontend run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

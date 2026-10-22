@@ -12,6 +12,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--create-demo-tables", action="store_true")
 args = parser.parse_args()
 if args.create_demo_tables:
-    Base.metadata.create_all(engine())
+    Base.metadata.create_all(engine(), tables=[table for table in Base.metadata.tables.values() if table.name.startswith("uk_")])
 with Session(engine()) as db:
     print(seed(db))

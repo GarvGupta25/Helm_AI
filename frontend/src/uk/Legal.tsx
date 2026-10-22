@@ -1,0 +1,34 @@
+import { Link, useLocation } from 'react-router-dom';
+import { Eyebrow } from '../ui/primitives';
+
+const policies: Record<string, { title: string; sections: [string, string][] }> = {
+  '/legal/privacy': { title: 'Your information. Explained.', sections: [
+    ['Who is responsible?', 'This is a demonstration. The legal controller, [FIRM NAME], registered office [ADDRESS TBC] and ICO registration [TBC] are unresolved. Do not enter real medical or financial information. A live service is blocked pending approval.'],
+    ['Quote information', 'The form uses date of birth, postcode and preferences to calculate fictional prices on the server. The stored quote contains prices, selected plan facts and a needs statement, not your date of birth or full postcode. A consent record is written if you choose the structured health-data consent. The health answer is not retained in the quote.'],
+    ['Public chat', 'The public assistant uses reviewed information and deterministic routing. It does not send your message to an inference provider. It stores intent, timestamp and an audit reference, not raw chat text. A demo support ticket contains the reason and audit reference, without your message or diagnosis. No live callback is promised.'],
+    ['Storage on your device', 'Cookie choices are kept in local storage. A quote token is saved in session storage only if you choose Save & resume. Anyone with that token can read the fictional quote. Do not save on a shared device. The token expires after seven days.'],
+    ['Retention and rights', 'Quote access expires after seven days. A maintenance task must purge expired quotes and old audit/support records. The retention job and rights contact require operational approval before launch. For a real service you may have rights to access, correction, deletion, restriction, portability, objection and human review, depending on the lawful basis.'],
+    ['Processors and transfers', 'This public demo uses no advertising or analytics scripts. Self-hosted fonts and photos are served locally. Existing signed-in account services are separate. Their hosting, subprocessors, transfer mechanism and lawful bases still require a DPO review before live UK use.'],
+  ] },
+  '/legal/cookies': { title: 'Cookies and storage.', sections: [
+    ['Essential choices', 'The consent preference lets this site remember your choices. Session state supports the form and optional quote resume. Rejecting optional categories does not stop the core site working.'],
+    ['Optional categories', 'Analytics and marketing are off by default. Reject all and Accept all have equal prominence. This demo includes no optional tracking scripts, even if a category is selected.'],
+    ['Change your mind', 'Use Cookie settings in the footer to reopen the controls. A live service must document vendors, purposes and lifetimes before adding any optional script.'],
+  ] },
+  '/legal/terms': { title: 'Website terms.', sections: [
+    ['A fictional demonstration', 'Helm AI is a software demonstration. Its providers, benefits and premiums are fictional. Nothing here creates insurance cover, a personal recommendation or a contract. No money is collected.'],
+    ['Use information carefully', 'General explanations do not establish whether a treatment is covered. A real insurer’s approved wording, underwriting, limits and claims process govern a real policy.'],
+    ['Other websites', 'External links open an interstitial. The destination has its own content and privacy terms. No endorsement is implied.'],
+    ['Ownership and changes', 'Project code and separately licensed assets have their respective owners. The approved legal entity, governing terms and working contact route remain launch dependencies.'],
+  ] },
+  '/legal/terms-of-business': { title: 'Who we are. How this works.', sections: [
+    ['Status disclosure', '[FIRM NAME], company [TBC], registered office [ADDRESS TBC], FRN [TBC] and ICO [TBC] are placeholders. This website makes no claim of FCA authorisation or appointed-representative status.'],
+    ['Scope and advice', 'The demo compares a limited fictional panel of five providers. It is not whole-of-market. Results are price comparisons with disclosed benefit gaps, not personal recommendations or suitability assessments. Public chat gives information only.'],
+    ['Remuneration', 'This demo charges no fee, earns no insurance commission and collects no payment. Actual panel scope, remuneration and fees must be supplied and approved before a real regulated journey.'],
+    ['Key facts and cancellation', 'The key facts pages are illustrative, not approved IPIDs. A real sale needs insurer-approved documents, the required demands-and-needs and suitability process, and clear cancellation terms. Real PMI contracts generally have a 14-day cancellation right, subject to applicable rules and refund terms.'],
+    ['Complaints and protections', 'Complaints, Ombudsman eligibility and FSCS protection depend on the actual regulated business and product. This demo does not claim membership, eligibility or compensation protection. Check the official FCA Register and relevant scheme information for a real firm.'],
+  ] },
+  '/legal/equality': { title: 'A place for everyone.', sections: [['Our approach', 'We aim to use clear language and accessible forms. Sex is not collected for rating in this demonstration. Any future rating factor needs equality-law and underwriting review.'], ['Support', 'Alternative formats, interpreter access and a live support route must be configured before launch. Read Extra support for the current limits.']] },
+  '/legal/paperless': { title: 'Documents you can keep.', sections: [['Your choice', 'The demo shows key facts and a needs statement on screen. No email delivery has been configured. A live service must provide durable documents and a way to request another format without pressure.']] },
+};
+export function Legal() { const { pathname } = useLocation(); const policy = policies[pathname]; if (!policy) return <section className="uk-section"><h1>Legal document not found.</h1><Link to="/legal/terms">Website terms</Link></section>; return <><header className="uk-page-heading"><div className="uk-section"><Eyebrow>TRANSPARENCY / DRAFT FOR REVIEW</Eyebrow><h1>{policy.title}</h1><p>Demo notice · Version 1 · 22/10/2026 · Not approved for a real insurance service.</p></div></header><article className="uk-section narrow">{policy.sections.map(([title, text]) => <section key={title}><h2 className="uk-content-heading">{title}</h2><p>{text}</p></section>)}<div className="uk-related"><Link to="/complaints">Complaints ↗</Link><Link to="/extra-support">Extra support ↗</Link><Link to="/contact">Contact ↗</Link></div></article></>; }

@@ -32,3 +32,6 @@ Added reviewed UK knowledge, safety intent routing, advice and medical boundarie
 
 ## Phase 8 — additive domain migration
 Added reversible UK table migration, 30 fictional plan records, 23,100 demo rates, idempotent seed and deterministic UK servicing rules. Nested market modules now included in Python distributions. Historical policies, currency units and archived dashboards were preserved. Full replacement/backfill of legacy contracts, claim-agent prompts and professional models remains outstanding and requires migration rehearsal; the repository is not yet wholly UK-only.
+
+## Phase 9 — compliance drafts and release guard
+Added truthful legal notices, DPIA/ROPA draft, retention proposal and explicit maintenance command, Consumer Duty review pack, public-source contamination guard and fail-closed live-release guard. Legacy inventory remains nonzero (351 matches at this checkpoint); preserved archives and active historical workflows have NOT been certified UK-only. Legal, DPO and compliance sign-offs are unresolved. Ordinary builds are labelled demos; build:production fails.

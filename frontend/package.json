@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "node ../scripts/uk-release-guard.mjs && tsc -b && vite build",
+    "build:production": "node ../scripts/uk-release-guard.mjs --live && tsc -b && vite build",
     "check": "tsc -b"
   },
   "dependencies": {

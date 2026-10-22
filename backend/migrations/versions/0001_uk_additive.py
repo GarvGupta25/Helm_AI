@@ -11,13 +11,13 @@ depends_on = None
 
 
 def upgrade():
-    for table in Base.metadata.sorted_tables:
+    for table in sorted(Base.metadata.tables.values(), key=lambda item: item.name):
         if table.name.startswith("uk_"):
             table.create(op.get_bind(), checkfirst=True)
 
 
 def downgrade():
     # Operator must back up UK records before deliberately downgrading a live database.
-    for table in reversed(Base.metadata.sorted_tables):
+    for table in sorted(Base.metadata.tables.values(), key=lambda item: item.name, reverse=True):
         if table.name.startswith("uk_"):
             table.drop(op.get_bind(), checkfirst=True)
