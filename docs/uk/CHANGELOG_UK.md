@@ -20,3 +20,6 @@ Added responsive licensed-photo hero, rotating explainer badge, written explaine
 
 ## Phase 4 — About
 Added collage, sourced/demo statistics, accessible narrative tabs, six-step original roadmap, observer-driven sticky illustration, keyboard-focus activation, Embla value carousel, truthful credential disclosure, explore cards and footnotes. Omitted founder quote because no verified quote exists. GSAP, three-photo collage, exact reference crossfades/count-ups and owner milestones remain outstanding.
+
+## Phase 5 — content inventory
+Added shared UK content templates, nine tailored cover pages with exclusions, glossary, FAQs, hospital-list filtering over labelled fictional locations, tier comparison, audience pages, status disclosures, page metadata and real unknown-page handling. Unconnected services are explicitly labelled. Full long-form content, auto-tooltips, article TOCs/progress, canonical sitemap deployment and editorial/comprehension review remain outstanding.
