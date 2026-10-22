@@ -1,0 +1,95 @@
+:root {
+  --font-ui: "Segoe UI", Inter, Arial, sans-serif;
+  --brand-ink: #000b33;
+  --brand-blue: #315aa5;
+  --brand-accent: #087e96;
+  --surface: #ffffff;
+  --surface-muted: #f5f8ff;
+  --text-muted: #52627b;
+  --border-subtle: #d9e3f2;
+  --radius-panel: 20px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  font-family: var(--font-ui);
+  color-scheme: light;
+}
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
+body { font-family: var(--font-ui); }
+button, a, [role="button"], summary { touch-action: manipulation; }
+button, [role="button"] { user-select: none; -webkit-user-select: none; }
+button:not(:disabled):active, .button:active, .m-button-primary:active, .m-button-secondary:active { opacity: .82; }
+button:focus-visible { transition: none; }
+svg { flex-shrink: 0; }
+img, canvas, iframe { max-width: 100%; }
+input, textarea, select { max-width: 100%; }
+.app-shell, .auth-page { min-height: 100dvh; }
+.marketing-layout { min-height: 100svh; }
+.sidebar { padding-top: max(30px, env(safe-area-inset-top)); padding-bottom: max(22px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+.workspace-header { padding-top: env(safe-area-inset-top); min-height: calc(70px + env(safe-area-inset-top)); height: auto; }
+.workspace-footer { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+.app-content main, .surface, .plan-card, .claim-review-detail, .provider-grid > *, .form-grid > *, .section-heading > *, .term-list > div > *, .m-page-shell { min-width: 0; }
+.page-heading, .section-heading, .list-row, .plan-top, .claim-document > div { overflow-wrap: anywhere; }
+.plan-price, .table-scroll { font-variant-numeric: tabular-nums; }
+.plan-price { font-size: clamp(1.35rem, 2.3vw, 1.85rem); overflow-wrap: anywhere; }
+.plan-card { text-align: start; }
+.scheme-card, .partners-card, .hp-plan-card, .hp-partner-card { min-width: 0; overflow-wrap: anywhere; }
+.scheme-price { flex-wrap: wrap; }
+.partners-demo-alert { flex-wrap: wrap; }
+.marketing-layout .scheme-card:focus-visible, .marketing-layout .partners-card:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 3px; transform: none; transition: none; }
+.marketing-layout .scheme-card__action, .marketing-layout .partners-card-action { opacity: 1; transform: none; }
+.marketing-layout .scheme-card::before { transition: opacity 160ms var(--ease-out); }
+.catalogue-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-bottom: 24px; }
+button.plan-card { color: var(--brand-ink); justify-content: flex-start; align-items: stretch; }
+.term-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+.term-list dd, .provider-snapshot dd, .claim-transcript p, .claim-suggestion p, .claim-detail-section p { overflow-wrap: anywhere; }
+.badge { flex-shrink: 0; }
+.messages, .claim-advocate-messages, .notification-popover, .chat-panel__messages, .tabs, .table-scroll { overscroll-behavior: contain; }
+.table-scroll { max-width: 100%; overflow-x: auto; }
+.marketplace-timeline { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.marketplace-timeline li { min-width: 0; }
+.notification-popover { right: 0; max-width: calc(100vw - 32px); }
+.navigation-dismiss { display: none; }
+.mh-header { padding-top: env(safe-area-inset-top); }
+.mh-mobile-panel { top: calc(72px + env(safe-area-inset-top)); padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.marketing-layout .scroll-reveal { opacity: 1; transform: none; transition: none; }
+.mh-mobile-panel { animation: none; }
+/* Motion is reserved for occasional panels; data and keyboard actions stay steady. */
+.notification-popover {
+  transform-origin: top right;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+}
+@starting-style { .notification-popover { opacity: 0; transform: scale(.97); } }
+html:has(:focus-visible) .notification-popover { transition: none; }
+@media (max-width: 800px) {
+  .app-content main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .marketplace-timeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .marketplace-timeline li::after { display: none; }
+  .navigation-dismiss { display: inline-flex; margin-bottom: 12px; }
+  .sidebar:not(.open) { visibility: hidden; }
+  .sidebar { transition: none; }
+  .workspace-header { flex-wrap: wrap; padding-block: 10px; }
+  .workspace-header > span { min-width: 0; }
+}
+@media (max-width: 500px) {
+  .form-grid, .application-fields > div { grid-template-columns: minmax(0, 1fr); }
+  .catalogue-filters { grid-template-columns: minmax(0, 1fr); }
+  .marketplace-timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .list-row > div { min-width: 0; flex-basis: 100%; }
+  .plan-top { flex-wrap: wrap; }
+  .form-footer, .form-actions { flex-wrap: wrap; }
+  .claim-document > div { flex-wrap: wrap; }
+  .claim-file-list li { flex-wrap: wrap; }
+  .claim-file-list select { max-width: 100%; }
+  .claim-emergency-banner { position: static; }
+  .form-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+@media (pointer: coarse) {
+  .field input, .field select, .field textarea, .composer textarea, .chat-panel__composer textarea { font-size: 16px; }
+  button, .button, .tabs button, .quiet, .text-link, .m-text-link { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition-property: opacity, color, background-color !important; transition-duration: 100ms !important; }
+  .notification-popover { transform: none; }
+  :is(a, button, .hover-lift, .scheme-card, .partners-card):hover { transform: none !important; }
+  @starting-style { .notification-popover { transform: none; } }
+}
