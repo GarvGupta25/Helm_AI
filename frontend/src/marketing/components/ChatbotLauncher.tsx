@@ -32,20 +32,27 @@ export function ChatbotLauncher() {
       setAnimated(play && !!player);
       if (play) player?.play(); else player?.pause();
     };
-    // Load the optional mascot after the page; assistant controls work immediately.
-    const timer = window.setTimeout(() => {
-      if (motion.matches) return;
+    // Keep the static launcher immediate; load the optional animation on interaction.
+    let loaded = false;
+    const loadAnimation = () => {
+      if (motion.matches || loaded) return;
+      loaded = true;
       void import('@lottiefiles/dotlottie-web').then(({ DotLottie }) => {
         if (cancelled || !canvas.current) return;
         DotLottie.setWasmUrl('/assets/uk/dotlottie-player.wasm');
         player = new DotLottie({ canvas: canvas.current, src: '/assets/robot.json', autoplay: false, loop: true });
         update();
       }).catch(() => setAnimated(false));
-    }, 1500);
+    };
+    const button = trigger.current;
+    button?.addEventListener('pointerenter', loadAnimation);
+    button?.addEventListener('focus', loadAnimation);
     motion.addEventListener('change', update);
     document.addEventListener('visibilitychange', update);
     return () => {
-      cancelled = true; clearTimeout(timer); player?.destroy();
+      cancelled = true; player?.destroy();
+      button?.removeEventListener('pointerenter', loadAnimation);
+      button?.removeEventListener('focus', loadAnimation);
       motion.removeEventListener('change', update);
       document.removeEventListener('visibilitychange', update);
     };
