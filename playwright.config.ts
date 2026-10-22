@@ -6,6 +6,7 @@ const executablePath = process.platform === 'win32' && existsSync(bundledChrome)
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: ['**/archive/**'],
   timeout: 30_000,
   workers: 2,
   use: {

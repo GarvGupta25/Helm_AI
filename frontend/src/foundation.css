@@ -27,8 +27,8 @@ input, textarea, select { max-width: 100%; }
 .sidebar { padding-top: max(30px, env(safe-area-inset-top)); padding-bottom: max(22px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 .workspace-header { padding-top: env(safe-area-inset-top); min-height: calc(70px + env(safe-area-inset-top)); height: auto; }
 .workspace-footer { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
-.app-content main, .surface, .plan-card, .claim-review-detail, .provider-grid > *, .form-grid > *, .section-heading > *, .term-list > div > *, .m-page-shell { min-width: 0; }
-.page-heading, .section-heading, .list-row, .plan-top, .claim-document > div { overflow-wrap: anywhere; }
+.app-content main, .surface, .plan-card, .form-grid > *, .section-heading > *, .term-list > div > *, .m-page-shell { min-width: 0; }
+.page-heading, .section-heading, .list-row, .plan-top { overflow-wrap: anywhere; }
 .plan-price, .table-scroll { font-variant-numeric: tabular-nums; }
 .plan-price { font-size: clamp(1.35rem, 2.3vw, 1.85rem); overflow-wrap: anywhere; }
 .plan-card { text-align: start; }
@@ -41,7 +41,7 @@ input, textarea, select { max-width: 100%; }
 .catalogue-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-bottom: 24px; }
 button.plan-card { color: var(--brand-ink); justify-content: flex-start; align-items: stretch; }
 .term-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
-.term-list dd, .provider-snapshot dd, .claim-transcript p, .claim-suggestion p, .claim-detail-section p { overflow-wrap: anywhere; }
+.term-list dd { overflow-wrap: anywhere; }
 .badge { flex-shrink: 0; }
 .messages, .claim-advocate-messages, .notification-popover, .chat-panel__messages, .tabs, .table-scroll { overscroll-behavior: contain; }
 .table-scroll { max-width: 100%; overflow-x: auto; }
@@ -77,10 +77,8 @@ html:has(:focus-visible) .notification-popover { transition: none; }
   .list-row > div { min-width: 0; flex-basis: 100%; }
   .plan-top { flex-wrap: wrap; }
   .form-footer, .form-actions { flex-wrap: wrap; }
-  .claim-document > div { flex-wrap: wrap; }
   .claim-file-list li { flex-wrap: wrap; }
   .claim-file-list select { max-width: 100%; }
-  .claim-emergency-banner { position: static; }
   .form-actions { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 }
 @media (pointer: coarse) {

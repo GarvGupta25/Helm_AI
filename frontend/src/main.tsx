@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { Compass, ArrowUpRight, ArrowRight, Mic, ShieldCheck, Layers3, LayoutDashboard, LogOut, Menu, Check, Sparkles, ClipboardCheck, Bell } from 'lucide-react';
@@ -30,9 +30,6 @@ const Intake = React.lazy(() => import('./Shopping').then(module => ({ default: 
 const QuotePage = React.lazy(() => import('./Shopping').then(module => ({ default: module.QuotePage })));
 const ApplicationPage = React.lazy(() => import('./Shopping').then(module => ({ default: module.ApplicationPage })));
 const PolicyPage = React.lazy(() => import('./Shopping').then(module => ({ default: module.PolicyPage })));
-const BrokerWorkspace = React.lazy(() => import('./Broker').then(module => ({ default: module.BrokerWorkspace })));
-const ClaimReview = React.lazy(() => import('./broker/ClaimReview').then(module => ({ default: module.ClaimReview })));
-const ProviderWorkspace = React.lazy(() => import('./provider/ProviderWorkspace').then(module => ({ default: module.ProviderWorkspace })));
 const MarketplaceJourney = React.lazy(() => import('./MarketplaceJourney').then(module => ({ default: module.MarketplaceJourney })));
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
@@ -65,8 +62,24 @@ function PoliciesLink({ onClick }: { onClick: () => void }) {
   return <NavLink to={policy ? `/app/policies/${policy.id}` : '/app'} onClick={onClick}><ShieldCheck size={19}/> Policies & cover</NavLink>;
 }
 
+function PortalNotice({ role, onSignOut }: { role: string; onSignOut: () => Promise<void> }) {
+  const portals: Record<string, { name: string; url: string | undefined }> = {
+    broker: { name: 'Broker', url: import.meta.env.VITE_BROKER_PORTAL_URL },
+    provider: { name: 'Provider', url: import.meta.env.VITE_PROVIDER_PORTAL_URL },
+    staff: { name: 'Staff', url: import.meta.env.VITE_STAFF_PORTAL_URL },
+    admin: { name: 'Staff', url: import.meta.env.VITE_STAFF_PORTAL_URL },
+  };
+  const portal = portals[role] || { name: 'Professional', url: undefined };
+  let portalUrl: string | undefined;
+  try {
+    const url = new URL(portal.url?.trim() || '');
+    if (url.protocol === 'https:' || url.protocol === 'http:') portalUrl = url.href;
+  } catch { /* An unset or invalid placeholder must not become a broken link. */ }
+  return <main className="startup-error"><Brand/><h1>Please use the {portal.name} portal.</h1><p>This website provides customer insurance accounts. Use your organisation's portal for professional work.</p>{portalUrl ? <p><a className="button" href={portalUrl}>Open {portal.name} portal <ArrowUpRight size={17}/></a></p> : <p>The portal address has not been configured. Contact your organisation for the correct address.</p>}<button className="secondary" onClick={() => { void onSignOut(); }}>Sign out</button></main>;
+}
+
 function Shell({ session }: { session: Session | null }) {
-  const [open, setOpen] = useState(false); const [notificationsOpen, setNotificationsOpen] = useState(false); const navigate = useNavigate(); const location = useLocation();
+  const [open, setOpen] = useState(false); const [notificationsOpen, setNotificationsOpen] = useState(false); const navigate = useNavigate();
   const access = useQuery({ queryKey: ['access', session?.user.id], queryFn: () => api<{ role: 'member' | 'broker' | 'provider' }>('/api/me/access'), enabled: !!session });
   const notifications = useQuery<any[]>({ queryKey: ['marketplace-notifications'], queryFn: () => api('/api/marketplace/notifications'), enabled: access.data?.role === 'member', refetchInterval: 5000 });
   useEffect(() => {
@@ -81,7 +94,6 @@ function Shell({ session }: { session: Session | null }) {
     return () => { document.removeEventListener('keydown', dismiss); document.removeEventListener('pointerdown', outside); };
   }, []);
   if (!session) return <Navigate to="/login" replace/>;
-  if (access.data?.role === 'provider' && location.pathname.startsWith('/app')) return <Navigate to="/provider" replace/>;
   async function logout() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     try {
@@ -94,10 +106,12 @@ function Shell({ session }: { session: Session | null }) {
       navigate('/');
     }
   }
-  return <div className="app-shell"><a className="skip-link" href="#workspace">Skip to workspace</a><aside className={`sidebar ${open ? 'open' : ''}`}><Brand/><button className="quiet navigation-dismiss" onClick={() => setOpen(false)}>Close navigation</button><span className="nav-caption">YOUR WORKSPACE</span><nav>{access.data?.role === 'provider' ? <NavLink end to="/provider" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Provider workspace</NavLink> : <><NavLink end to="/app" onClick={() => setOpen(false)}><LayoutDashboard size={19}/> Overview</NavLink><PoliciesLink onClick={() => setOpen(false)}/>{access.data?.role === "broker" && <><NavLink end to="/app/broker" onClick={() => setOpen(false)}><ClipboardCheck size={19}/> Broker workspace</NavLink><NavLink to="/app/broker/claims" onClick={() => setOpen(false)}><FileTextIcon/> Claim review</NavLink></>}</>}<Link to="/faq"><MessageIcon/> About this demo</Link></nav><div className="sidebar-bottom"><div className="sidebar-note"><ShieldCheck size={22}/><strong>Clarity, not guesswork.</strong><p>{access.data?.role === 'provider' ? 'Review the details before every submission.' : 'Your choices stay yours. Review the details before every submission.'}</p></div><button className="quiet" onClick={logout}><LogOut size={17}/> Sign out</button></div></aside><div className="app-content"><header className="workspace-header"><button className="mobile-menu quiet" onClick={() => setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open}><Menu size={23}/></button><span>Individual health insurance <span className="header-divider">/</span> UAE</span><div><span className="badge neutral">Demo workspace</span>{access.data?.role === 'member' && <div className="notification-menu"><button className="quiet notification-bell" onClick={() => setNotificationsOpen(value => !value)} aria-label="Marketplace notifications" aria-expanded={notificationsOpen}><Bell size={19}/>{notifications.data?.length ? <span>{notifications.data.length}</span> : null}</button>{notificationsOpen && <div className="notification-popover">{notifications.data?.length ? notifications.data.map((item, index) => <Link to={`/app/marketplace/${item.case_id}`} onClick={() => setNotificationsOpen(false)} key={`${item.case_id}-${item.provider}-${index}`}><strong>{item.provider}</strong><small>{item.message}</small></Link>) : <p>No marketplace updates yet.</p>}</div>}</div>}<span className="user-avatar" title={session.user.email}>{session.user.email?.[0]?.toUpperCase() || 'H'}</span></div></header><main id="workspace"><Outlet/></main><footer className="workspace-footer">Helm AI · All insurance products and transactions in this workspace are demonstrations.</footer></div></div>;
+  if (access.isPending) return <Loading/>;
+  if (access.error) return <main className="startup-error"><Brand/><h1>We could not check your account access.</h1><ErrorView error={access.error}/><div className="actions"><button onClick={() => { void access.refetch(); }}>Try again</button><button className="secondary" onClick={() => { void logout(); }}>Sign out</button></div></main>;
+  if (access.data?.role !== 'member') return <PortalNotice role={access.data?.role || ''} onSignOut={logout}/>;
+  return <div className="app-shell"><a className="skip-link" href="#workspace">Skip to workspace</a><aside className={`sidebar ${open ? 'open' : ''}`}><Brand/><button className="quiet navigation-dismiss" onClick={() => setOpen(false)}>Close navigation</button><span className="nav-caption">YOUR WORKSPACE</span><nav><NavLink end to="/app" onClick={() => setOpen(false)}><LayoutDashboard size={19}/> Overview</NavLink><PoliciesLink onClick={() => setOpen(false)}/><Link to="/faq"><MessageIcon/> About this demo</Link></nav><div className="sidebar-bottom"><div className="sidebar-note"><ShieldCheck size={22}/><strong>Clarity, not guesswork.</strong><p>Your choices stay yours. Review the details before every submission.</p></div><button className="quiet" onClick={logout}><LogOut size={17}/> Sign out</button></div></aside><div className="app-content"><header className="workspace-header"><button className="mobile-menu quiet" onClick={() => setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open}><Menu size={23}/></button><span>Individual health insurance <span className="header-divider">/</span> UAE</span><div><span className="badge neutral">Demo workspace</span>{access.data?.role === 'member' && <div className="notification-menu"><button className="quiet notification-bell" onClick={() => setNotificationsOpen(value => !value)} aria-label="Marketplace notifications" aria-expanded={notificationsOpen}><Bell size={19}/>{notifications.data?.length ? <span>{notifications.data.length}</span> : null}</button>{notificationsOpen && <div className="notification-popover">{notifications.data?.length ? notifications.data.map((item, index) => <Link to={`/app/marketplace/${item.case_id}`} onClick={() => setNotificationsOpen(false)} key={`${item.case_id}-${item.provider}-${index}`}><strong>{item.provider}</strong><small>{item.message}</small></Link>) : <p>No marketplace updates yet.</p>}</div>}</div>}<span className="user-avatar" title={session.user.email}>{session.user.email?.[0]?.toUpperCase() || 'H'}</span></div></header><main id="workspace"><Outlet/></main><footer className="workspace-footer">Helm AI · All insurance products and transactions in this workspace are demonstrations.</footer></div></div>;
 }
 function MessageIcon() { return <Layers3 size={19}/>; }
-function FileTextIcon() { return <ClipboardCheck size={19}/>; }
 function App() {
   const config = useQuery({ queryKey: ['config'], queryFn: () => api<Config>('/api/config') }); const [session, setSession] = useState<Session | null>(null); const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -128,21 +142,15 @@ function App() {
       <Route path="/legal/disclaimer" element={<DisclaimerPage />} />
     </Route>
 
-    {/* Authenticated app — untouched */}
+    {/* Customer account */}
     <Route path="/login" element={<Login session={session} config={config.data}/>} />
     <Route path="/app" element={<Shell session={session}/>}>
       <Route index element={<Dashboard/>} />
       <Route path="intake/:caseId" element={<Intake config={config.data}/>} />
       <Route path="quotes/:quoteId" element={<QuotePage/>} />
       <Route path="applications/:applicationId" element={<ApplicationPage/>} />
-      <Route path="broker" element={<BrokerWorkspace/>} />
-      <Route path="broker/claims" element={<ClaimReview/>} />
       <Route path="marketplace/:caseId" element={<MarketplaceJourney/>} />
       <Route path="policies/:policyId" element={<PolicyPage config={config.data}/>} />
-    </Route>
-    <Route path="/broker/claims" element={<Navigate to="/app/broker/claims" replace/>} />
-    <Route path="/provider" element={<Shell session={session}/>}>
-      <Route index element={<ProviderWorkspace/>}/>
     </Route>
 
     <Route path="*" element={<Navigate to="/" replace/>} />
