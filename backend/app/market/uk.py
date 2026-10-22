@@ -1,6 +1,6 @@
 """UK demo configuration. No regulatory authorisation is asserted."""
-from decimal import Decimal
 import os
+from decimal import Decimal
 
 LOCALE = "en-GB"
 CURRENCY = "GBP"

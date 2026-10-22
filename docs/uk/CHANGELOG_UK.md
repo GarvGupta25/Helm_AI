@@ -23,3 +23,6 @@ Added collage, sourced/demo statistics, accessible narrative tabs, six-step orig
 
 ## Phase 5 — content inventory
 Added shared UK content templates, nine tailored cover pages with exclusions, glossary, FAQs, hospital-list filtering over labelled fictional locations, tier comparison, audience pages, status disclosures, page metadata and real unknown-page handling. Unconnected services are explicitly labelled. Full long-form content, auto-tooltips, article TOCs/progress, canonical sitemap deployment and editorial/comprehension review remain outstanding.
+
+## Phase 6 — quote journey
+Added structured React Hook Form wizard, postcode validation, medical consent gate, integer-pence server pricing and IPT, transparent ranked results, comparison drawer, frozen quote snapshots, deterministic needs statement, consent records and idempotent £0 confirmation. Anonymous resume uses a capability header and explicit session save. Email delivery, real payment adapters, approved IPIDs and account linking remain outstanding. No real policy is issued.

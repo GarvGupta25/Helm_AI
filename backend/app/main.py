@@ -82,6 +82,9 @@ from .sources import registry
 from .voice import validate_audio
 
 app = FastAPI(title="Helm AI", version="0.1.0")
+from .market.router import router as uk_router
+
+app.include_router(uk_router)
 app.include_router(claim_agent_router)
 app.include_router(broker_claim_router)
 app.include_router(marketplace_broker_router)
