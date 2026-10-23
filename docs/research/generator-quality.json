@@ -1,0 +1,40 @@
+{
+  "source": "synthetic",
+  "version": "synthetic-uk-1",
+  "counts": {
+    "insurers": 12,
+    "families": 96,
+    "variants": 576,
+    "clauses": 6336,
+    "hospitals": 10,
+    "profiles": 10000,
+    "sessions": 9000,
+    "events": 54000,
+    "personas": 60
+  },
+  "age_distribution": {
+    "20": 1579,
+    "50": 1554,
+    "40": 1584,
+    "60": 1543,
+    "30": 1598,
+    "70": 1653,
+    "10": 320,
+    "80": 169
+  },
+  "region_distribution": {
+    "Wales": 1952,
+    "Scotland": 2067,
+    "London": 2063,
+    "England": 1962,
+    "Northern Ireland": 1956
+  },
+  "checks": [
+    "unique variants",
+    "clause references",
+    "coverage status",
+    "positive base prices",
+    "chronology"
+  ],
+  "limitations": "Template-generated labels and prices are not human validation or real market calibration."
+}

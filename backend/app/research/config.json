@@ -1,0 +1,10 @@
+{
+  "version": "synthetic-uk-1", "seed": 23102026,
+  "generated_at": "2026-10-23T00:00:00Z",
+  "insurers": 12, "families": 8, "profiles": 10000, "histories": 3000,
+  "regions": ["London", "England", "Scotland", "Wales", "Northern Ireland"],
+  "standard_weights": {"coverage": 30, "reference_value": 20, "access": 15, "transparency": 15, "service": 10, "flexibility": 10},
+  "context_weights": {"coverage": 25, "budget": 20, "underwriting": 15, "excess": 10, "access": 10, "preferences": 10},
+  "alpha": [0.7, 0.5, 0.3], "memory_days": 90, "session_hours": 24,
+  "source": "synthetic", "learning_enabled": false
+}
