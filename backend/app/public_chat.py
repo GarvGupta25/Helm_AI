@@ -187,7 +187,7 @@ async def stream(body: ChatRequest, request: Request, db: Session = Depends(sess
         yield sse("suggestions", {"items": ["What's an excess?", "What isn't covered?", "Talk to an adviser"]})
         if result.ticket_ref:
             yield sse("handoff", {"ticket_ref": result.ticket_ref, "delivery": "demo-only"})
-        yield sse("done", {"intent": result.intent, "actions": [{"label": "Contact & support", "href": "/contact"}, {"label": "Synthetic research lab", "href": "/research"}]})
+        yield sse("done", {"intent": result.intent, "actions": [{"label": "Contact & support", "href": "/contact"}, {"label": "Get a synthetic quote", "href": "/get-cover/quote"}]})
     return StreamingResponse(events(), media_type="text/event-stream", headers={"X-Accel-Buffering": "no"})
 
 

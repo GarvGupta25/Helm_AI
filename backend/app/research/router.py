@@ -12,10 +12,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from ..db import session
 from ..public_assistant import _check_rate_limit
-from .engine import recommend, simulation
+from .engine import filter_plan, recommend, simulation
 from .generator import CONFIG, generate, validate
 from .intent import extract_intent
 from .models import ResearchRecord, ResearchSession
@@ -58,6 +59,8 @@ def catalogue(db):
     rows = db.scalars(select(ResearchRecord).where(ResearchRecord.kind == "variants")).all()
     if not rows:
         raise HTTPException(503, "Synthetic catalogue not imported. Run the administrator research_data CLI.")
+    if len(rows) != CONFIG["insurers"]*CONFIG["families"]*6:
+        raise HTTPException(503, "The synthetic catalogue is incomplete. Restore the complete version before quoting.")
     return [r.data for r in rows]
 
 
@@ -74,6 +77,7 @@ def own(db: Session = Depends(session), x_research_session: str = Header(default
 
 def save(db, record, data):
     record.data = deepcopy(data)
+    flag_modified(record, "data")
     db.commit()
 
 
@@ -213,6 +217,65 @@ def stored_run(record, run_id):
     if not result:
         raise HTTPException(404, "Run unavailable in this session; only five recent runs retained")
     return result
+
+
+class QuoteConfirmation(BaseModel):
+    run_id: str = Field(max_length=64)
+    plan_id: str = Field(max_length=120)
+    profile_version: int = Field(ge=1)
+    understood_exclusions: bool
+    accepted_status: bool
+    received_key_facts: bool
+    simulation_only: bool
+
+
+@router.get("/quotation/confirmation")
+def latest_confirmation(record=Depends(own)):
+    receipt = record.data.get("latest_confirmation")
+    return {"receipt": receipt if receipt and receipt["profile_version"] == record.data["version"] else None}
+
+
+@router.post("/quotation/confirm")
+def confirm_quotation(body: QuoteConfirmation, record=Depends(own), db: Session = Depends(session)):
+    if not all((body.understood_exclusions, body.accepted_status, body.received_key_facts, body.simulation_only)):
+        raise HTTPException(422, "Read and acknowledge all four review statements first.")
+    # Refresh under a row lock so repeated requests cannot create conflicting selections.
+    db.refresh(record, with_for_update=True)
+    if record.expires_at.replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
+        raise HTTPException(410, "This quote session has expired.")
+    data = deepcopy(record.data)
+    existing = data.get("confirmations", {}).get(body.run_id)
+    if existing:
+        if existing["plan_id"] != body.plan_id or existing["profile_version"] != body.profile_version:
+            raise HTTPException(409, "This comparison was already confirmed with a different selection.")
+        return existing
+    run = stored_run(record, body.run_id)
+    if run["profile_version"] != data["version"] or body.profile_version != data["version"]:
+        raise HTTPException(409, "Your needs changed. Review the latest recommendations before choosing.")
+    selected = next((item for item in run["items"] if item["id"] == body.plan_id), None)
+    if not selected or filter_plan(selected["plan"], Profile(**run["profile_snapshot"])):
+        raise HTTPException(422, "Choose an eligible plan from the confirmed shortlist, not a what-if result.")
+    clauses = []
+    for care in selected["plan"]["limits"]:
+        clause = db.get(ResearchRecord, f"{body.plan_id}:{care}")
+        if not clause or clause.kind != "clauses":
+            raise HTTPException(503, "Required synthetic key facts are missing. Confirmation is unavailable.")
+        clauses.append(clause.data)
+    receipt = {"reference": "DEMO-"+token_urlsafe(9).upper(), "source": "synthetic",
+               "run_id": body.run_id, "profile_version": body.profile_version,
+               "plan_id": body.plan_id, "plan_name": selected["plan"]["name"],
+               "quote": selected["quote"], "plan": selected["plan"], "clauses": clauses,
+               "scores": {key: selected[key] for key in ("standard", "contextual", "fusion", "alpha")},
+               "needs": run["profile_snapshot"], "scenarios": selected["scenarios"],
+               "acknowledged_at": datetime.now(timezone.utc).isoformat(),
+               "acknowledgements": {key: True for key in ("exclusions", "demo_status", "key_facts", "simulation_only")},
+               "paid_pence": 0, "policy_created": False, "account_linked": False, "email_sent": False,
+               "message": "No money collected. No insurance contract created."}
+    data["confirmations"] = dict(list(data.get("confirmations", {}).items())[-19:])
+    data["confirmations"][body.run_id] = receipt
+    data["latest_confirmation"] = receipt
+    save(db, record, data)
+    return receipt
 
 
 @router.get("/recommendations/{run_id}")

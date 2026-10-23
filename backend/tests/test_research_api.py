@@ -80,3 +80,29 @@ def test_state_encrypted_admin_guard_and_exact_confirmation(fixture_client, monk
     assert confirmed.json()["profile"]["required"] == ['mental_health']
     result = confirmed.json()['result']
     assert client.get(f"/api/v1/recommendations/{result['run_id']}/why-not/nonexistent", headers=headers).status_code == 404
+
+
+def test_quote_selection_uses_new_shortlist_and_is_idempotent(fixture_client):
+    client, _, engine = fixture_client
+    _rate_store.clear()
+    seed_research(engine)
+    created = client.post('/api/v1/research/sessions', json={'required': ['mental_health']}).json()
+    headers = {'X-Research-Session': created['session_token']}
+    run = created['result']
+    body = {'run_id': run['run_id'], 'profile_version': run['profile_version'], 'plan_id': run['items'][0]['id'],
+            'understood_exclusions': True, 'accepted_status': True, 'received_key_facts': True, 'simulation_only': True}
+    assert client.post('/api/v1/quotation/confirm', json=body).status_code == 404
+    assert client.post('/api/v1/quotation/confirm', json={**body, 'simulation_only': False}, headers=headers).status_code == 422
+    assert client.post('/api/v1/quotation/confirm', json={**body, 'plan_id': 'fake'}, headers=headers).status_code == 422
+    response = client.post('/api/v1/quotation/confirm', json=body, headers=headers)
+    assert response.status_code == 200, response.text
+    receipt = response.json()
+    assert receipt['quote'] == run['items'][0]['quote']
+    assert receipt['policy_created'] is False and receipt['paid_pence'] == 0
+    assert len(receipt['clauses']) == 11
+    assert client.post('/api/v1/quotation/confirm', json=body, headers=headers).json() == receipt
+    assert client.post('/api/v1/quotation/confirm', json={**body, 'plan_id': run['items'][1]['id']}, headers=headers).status_code == 409
+    assert client.get('/api/v1/quotation/confirmation', headers=headers).json()['receipt'] == receipt
+    updated = client.patch('/api/v1/profile', json={'required': ['physio']}, headers=headers).json()['result']
+    assert client.get('/api/v1/quotation/confirmation', headers=headers).json()['receipt'] is None
+    assert client.post('/api/v1/quotation/confirm', json={**body, 'run_id': updated['run_id']}, headers=headers).status_code == 409
