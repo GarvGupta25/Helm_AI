@@ -77,6 +77,7 @@ from .models import (
 )
 from .payments import razorpay_request, settle, verify_order
 from .provider_console import router as provider_console_router
+from .research.router import router as research_router
 from .services import apply_facts, assigned, command, own, profile, visible_facts
 from .servicing import present_event, rebuild_projection, record_financial_event
 from .sources import registry
@@ -84,6 +85,7 @@ from .voice import validate_audio
 
 app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
+app.include_router(research_router)
 app.include_router(claim_agent_router)
 app.include_router(broker_claim_router)
 app.include_router(marketplace_broker_router)
@@ -94,8 +96,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings().allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PATCH"],
-    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key", "X-Research-Session"],
 )
 
 

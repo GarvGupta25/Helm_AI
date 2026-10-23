@@ -36,6 +36,7 @@ class Profile(BaseModel):
 class Conversation(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     confirm: bool = False
+    external_processing_consent: bool = False
 
 
 class Feedback(BaseModel):
