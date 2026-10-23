@@ -77,6 +77,7 @@ from .models import (
 )
 from .payments import razorpay_request, settle, verify_order
 from .provider_console import router as provider_console_router
+from .public_chat import router as public_chat_router
 from .research.router import router as research_router
 from .services import apply_facts, assigned, command, own, profile, visible_facts
 from .servicing import present_event, rebuild_projection, record_financial_event
@@ -86,6 +87,7 @@ from .voice import validate_audio
 app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
 app.include_router(research_router)
+app.include_router(public_chat_router)
 app.include_router(claim_agent_router)
 app.include_router(broker_claim_router)
 app.include_router(marketplace_broker_router)
@@ -104,7 +106,7 @@ app.add_middleware(
 @app.middleware("http")
 async def request_boundary(request: Request, call_next):
     request.state.request_id = str(uuid4())
-    if request.url.path in {"/api/voice/transcriptions", "/api/documents"}:
+    if request.url.path in {"/api/voice/transcriptions", "/api/documents", "/api/public/assistant/upload", "/api/public/assistant/transcribe"}:
         length = request.headers.get("content-length")
         if not length or not length.isdigit():
             return JSONResponse(
