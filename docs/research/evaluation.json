@@ -1,0 +1,518 @@
+{
+  "version": "synthetic-uk-1",
+  "source": "synthetic",
+  "personas": 60,
+  "hard_filter_violations": 0,
+  "clause_reference_passes": 105,
+  "fixture_hit_at_3": 1.0,
+  "fixture_ndcg_at_3": 1.0,
+  "latency_ms": {
+    "mean": 60.89577833966663,
+    "p95": 142.28179992642254
+  },
+  "labels": "Generated clause/strict-price oracle, not independent human preference labels. Metrics establish fixture agreement only.",
+  "fairness": "No gender, race, religion, commission or click features enter ranking. Age influences synthetic premium explicitly; this does not constitute a full disparate-impact audit.",
+  "learning": "Disabled: no independent evidence of incremental value. Baseline retained.",
+  "cases": [
+    {
+      "id": "persona-00",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-01",
+      "acceptable_count": 504,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-02",
+      "acceptable_count": 256,
+      "returned": [
+        "ins-01-f6-e25000-n2",
+        "ins-07-f3-e25000-n2",
+        "ins-02-f3-e25000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-03",
+      "acceptable_count": 216,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-04",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-05",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-06",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-07",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-08",
+      "acceptable_count": 416,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-04-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-09",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-10",
+      "acceptable_count": 336,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-10-f6-e50000-n2",
+        "ins-05-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-11",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-12",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-13",
+      "acceptable_count": 504,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-14",
+      "acceptable_count": 256,
+      "returned": [
+        "ins-01-f6-e25000-n2",
+        "ins-07-f3-e25000-n2",
+        "ins-02-f3-e25000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-15",
+      "acceptable_count": 216,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-16",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-17",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-18",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-19",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-20",
+      "acceptable_count": 289,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-21",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-22",
+      "acceptable_count": 336,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-23",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-24",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-25",
+      "acceptable_count": 504,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-26",
+      "acceptable_count": 256,
+      "returned": [
+        "ins-07-f3-e25000-n2",
+        "ins-02-f3-e25000-n2",
+        "ins-01-f6-e25000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-27",
+      "acceptable_count": 216,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-28",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-05-f6-e50000-n2",
+        "ins-10-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-29",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-30",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-31",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-32",
+      "acceptable_count": 362,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-33",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-34",
+      "acceptable_count": 336,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-10-f6-e50000-n2",
+        "ins-05-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-35",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-36",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-07-f3-e50000-n2",
+        "ins-05-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-37",
+      "acceptable_count": 504,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-38",
+      "acceptable_count": 256,
+      "returned": [
+        "ins-07-f3-e25000-n2",
+        "ins-02-f3-e25000-n2",
+        "ins-11-f3-e25000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-39",
+      "acceptable_count": 216,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-40",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-41",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-42",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-43",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-44",
+      "acceptable_count": 316,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-45",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-46",
+      "acceptable_count": 336,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-10-f6-e50000-n2",
+        "ins-05-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-47",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-48",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-49",
+      "acceptable_count": 504,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-50",
+      "acceptable_count": 256,
+      "returned": [
+        "ins-02-f3-e25000-n2",
+        "ins-07-f3-e25000-n2",
+        "ins-01-f3-e25000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-51",
+      "acceptable_count": 216,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-52",
+      "acceptable_count": 576,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-01-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-53",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-54",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-55",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-56",
+      "acceptable_count": 266,
+      "returned": [
+        "ins-07-f3-e50000-n2",
+        "ins-02-f3-e50000-n2",
+        "ins-11-f3-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-57",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    },
+    {
+      "id": "persona-58",
+      "acceptable_count": 336,
+      "returned": [
+        "ins-01-f6-e50000-n2",
+        "ins-10-f6-e50000-n2",
+        "ins-05-f6-e50000-n2"
+      ],
+      "no_fit": false
+    },
+    {
+      "id": "persona-59",
+      "acceptable_count": 0,
+      "returned": [],
+      "no_fit": true
+    }
+  ]
+}

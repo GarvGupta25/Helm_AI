@@ -37,4 +37,6 @@ jobs:
         if: always()
         with:
           name: uk-browser-evidence
-          path: docs/uk/evidence
+          path: |
+            docs/uk/evidence
+            docs/chatbot-screenshots

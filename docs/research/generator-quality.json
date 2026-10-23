@@ -10,25 +10,50 @@
     "profiles": 10000,
     "sessions": 9000,
     "events": 54000,
-    "personas": 60
+    "personas": 60,
+    "quote_inputs": 10000,
+    "synthetic_quotes": 10000
   },
   "age_distribution": {
-    "20": 1579,
-    "50": 1554,
-    "40": 1584,
-    "60": 1543,
-    "30": 1598,
-    "70": 1653,
-    "10": 320,
-    "80": 169
+    "20": 1601,
+    "50": 1528,
+    "40": 1591,
+    "70": 1617,
+    "60": 1567,
+    "30": 1609,
+    "80": 158,
+    "10": 329
   },
   "region_distribution": {
-    "Wales": 1952,
-    "Scotland": 2067,
-    "London": 2063,
-    "England": 1962,
-    "Northern Ireland": 1956
+    "Wales": 1967,
+    "Scotland": 2050,
+    "England": 1974,
+    "Northern Ireland": 1990,
+    "London": 2019
   },
+  "reference_quote_monthly_pence": {
+    "min": 3270,
+    "max": 113352
+  },
+  "excess_distribution": {
+    "0": 192,
+    "25000": 192,
+    "50000": 192
+  },
+  "benefit_availability": {
+    "inpatient": 576,
+    "diagnostics": 576,
+    "outpatient": 504,
+    "mental_health": 384,
+    "physio": 432,
+    "cancer": 576,
+    "dental": 72,
+    "maternity": 0,
+    "emergency": 0,
+    "chronic": 0,
+    "pre_existing": 0
+  },
+  "executed_at": "2026-10-23T17:22:07.749379+00:00",
   "checks": [
     "unique variants",
     "clause references",

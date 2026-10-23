@@ -1,0 +1,248 @@
+{
+  "insurers": [
+    {
+      "id": "ins-00",
+      "name": "Fictional Alder Research 1",
+      "strategy": "basic",
+      "source": "synthetic"
+    },
+    {
+      "id": "ins-01",
+      "name": "Fictional Bracken Research 2",
+      "strategy": "outpatient",
+      "source": "synthetic"
+    }
+  ],
+  "families": [
+    {
+      "id": "ins-00-f0",
+      "insurer_id": "ins-00",
+      "tier": 0,
+      "renewal": "annual"
+    },
+    {
+      "id": "ins-00-f1",
+      "insurer_id": "ins-00",
+      "tier": 1,
+      "renewal": "annual"
+    }
+  ],
+  "variants": [
+    {
+      "id": "ins-00-f0-e0-n1",
+      "family_id": "ins-00-f0",
+      "insurer_id": "ins-00",
+      "name": "Research 1 / Tier 1 / List 1 / Excess \u00a30",
+      "version": "synthetic-uk-1",
+      "source": "synthetic",
+      "base_pence": 3650,
+      "excess_pence": 0,
+      "excess_application": "per_person_per_year",
+      "network": 1,
+      "regions": [
+        "London",
+        "England",
+        "Scotland",
+        "Wales",
+        "Northern Ireland"
+      ],
+      "age_min": 18,
+      "age_max": 85,
+      "limits": {
+        "inpatient": 10000000,
+        "diagnostics": 100000,
+        "outpatient": 0,
+        "mental_health": 0,
+        "physio": 0,
+        "cancer": 10000000,
+        "dental": 0,
+        "maternity": 0,
+        "emergency": 0,
+        "chronic": 0,
+        "pre_existing": 0
+      },
+      "copay": 0.1,
+      "underwriting": "full_medical",
+      "pre_existing": "excluded",
+      "referral": "GP referral and preauthorisation required",
+      "service_simulated": 65,
+      "valid_from": "2026-10-23T00:00:00Z",
+      "valid_until": "2027-10-23T00:00:00Z"
+    },
+    {
+      "id": "ins-00-f0-e0-n2",
+      "family_id": "ins-00-f0",
+      "insurer_id": "ins-00",
+      "name": "Research 1 / Tier 1 / List 2 / Excess \u00a30",
+      "version": "synthetic-uk-1",
+      "source": "synthetic",
+      "base_pence": 4100,
+      "excess_pence": 0,
+      "excess_application": "per_person_per_year",
+      "network": 2,
+      "regions": [
+        "London",
+        "England",
+        "Scotland",
+        "Wales",
+        "Northern Ireland"
+      ],
+      "age_min": 18,
+      "age_max": 85,
+      "limits": {
+        "inpatient": 10000000,
+        "diagnostics": 100000,
+        "outpatient": 0,
+        "mental_health": 0,
+        "physio": 0,
+        "cancer": 10000000,
+        "dental": 0,
+        "maternity": 0,
+        "emergency": 0,
+        "chronic": 0,
+        "pre_existing": 0
+      },
+      "copay": 0.1,
+      "underwriting": "full_medical",
+      "pre_existing": "excluded",
+      "referral": "GP referral and preauthorisation required",
+      "service_simulated": 65,
+      "valid_from": "2026-10-23T00:00:00Z",
+      "valid_until": "2027-10-23T00:00:00Z"
+    }
+  ],
+  "clauses": [
+    {
+      "id": "ins-00-f0-e0-n1:inpatient",
+      "variant_id": "ins-00-f0-e0-n1",
+      "category": "inpatient",
+      "status": "covered",
+      "limit_pence": 10000000,
+      "preauthorisation": true,
+      "text": "Synthetic inpatient: covered; annual eligible benefit cap \u00a3100000. GP referral and authorisation required. Existing conditions assessed separately.",
+      "source": "synthetic",
+      "version": "synthetic-uk-1"
+    },
+    {
+      "id": "ins-00-f0-e0-n1:diagnostics",
+      "variant_id": "ins-00-f0-e0-n1",
+      "category": "diagnostics",
+      "status": "covered",
+      "limit_pence": 100000,
+      "preauthorisation": true,
+      "text": "Synthetic diagnostics: covered; annual eligible benefit cap \u00a31000. GP referral and authorisation required. Existing conditions assessed separately.",
+      "source": "synthetic",
+      "version": "synthetic-uk-1"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "generated-00000",
+      "age": 23,
+      "region": "Wales",
+      "adults": 1,
+      "children": 0,
+      "budget_pence": 35000,
+      "priority": "low_excess",
+      "privacy": "synthetic_experiment",
+      "source": "synthetic"
+    },
+    {
+      "id": "generated-00001",
+      "age": 56,
+      "region": "Scotland",
+      "adults": 1,
+      "children": 1,
+      "budget_pence": 10500,
+      "priority": "mental_health",
+      "privacy": "synthetic_experiment",
+      "source": "synthetic"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "generated-00000-s0",
+      "user_id": "generated-00000",
+      "at": "2026-01-01T00:00:00+00:00",
+      "candidate_set_version": "synthetic-uk-1",
+      "eligible_count": 576,
+      "availability_rule": "All generated variants support these generated ages/regions"
+    },
+    {
+      "id": "generated-00000-s1",
+      "user_id": "generated-00000",
+      "at": "2026-01-31T00:00:00+00:00",
+      "candidate_set_version": "synthetic-uk-1",
+      "eligible_count": 576,
+      "availability_rule": "All generated variants support these generated ages/regions"
+    }
+  ],
+  "events": [
+    {
+      "session_id": "generated-00000-s0",
+      "user_id": "generated-00000",
+      "at": "2026-01-01T00:00:00+00:00",
+      "type": "impression",
+      "plan_id": "ins-02-f3-e0-n1",
+      "position": 1,
+      "exposure_probability": 0.008680555555555556,
+      "clicked": false,
+      "explicit_feedback": null
+    },
+    {
+      "session_id": "generated-00000-s0",
+      "user_id": "generated-00000",
+      "at": "2026-01-01T00:00:01+00:00",
+      "type": "impression",
+      "plan_id": "ins-07-f4-e0-n2",
+      "position": 2,
+      "exposure_probability": 0.008680555555555556,
+      "clicked": false,
+      "explicit_feedback": null
+    }
+  ],
+  "quote_inputs": [
+    {
+      "id": "input-0",
+      "profile_id": "generated-00000",
+      "age": 23,
+      "region": "Wales",
+      "adults": 1,
+      "children": 0
+    },
+    {
+      "id": "input-1",
+      "profile_id": "generated-00001",
+      "age": 56,
+      "region": "Scotland",
+      "adults": 1,
+      "children": 1
+    }
+  ],
+  "synthetic_quotes": [
+    {
+      "id": "quote-0",
+      "input_id": "input-0",
+      "plan_id": "ins-00-f0-e0-n1",
+      "source": "synthetic",
+      "version": "synthetic-uk-1",
+      "base_pence": 3991,
+      "tax_pence": 479,
+      "monthly_pence": 4470,
+      "annual_pence": 53640,
+      "assumptions": "Synthetic age/region/household formula, 12% IPT assumption; no real offer."
+    },
+    {
+      "id": "quote-1",
+      "input_id": "input-1",
+      "plan_id": "ins-00-f0-e0-n2",
+      "source": "synthetic",
+      "version": "synthetic-uk-1",
+      "base_pence": 10903,
+      "tax_pence": 1308,
+      "monthly_pence": 12211,
+      "annual_pence": 146532,
+      "assumptions": "Synthetic age/region/household formula, 12% IPT assumption; no real offer."
+    }
+  ]
+}

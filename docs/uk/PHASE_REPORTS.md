@@ -1,5 +1,7 @@
 # Phase reports — implementation checkpoints and outstanding acceptance
 
+> 23 October extension: the synthetic research engine and redesigned public chat have separate [phase delivery and setup](../research/README.md) and [verification](../research/VERIFICATION.md) reports. They supplement these original checkpoints; the remaining original live-release/legacy-data gaps below are not marked complete.
+
 Date: 22/10/2026. Branch: `main`, per the owner's explicit request. Every phase has an engineering checkpoint, but **not all phase acceptance criteria are complete**. No launch approval or owner sign-off is inferred. The source brief was treated as the specification, not as proof that its legal assumptions were correct.
 
 Screenshots and automated reports in `evidence/` describe the final working tree when captured, not every historical phase. Per-phase Lighthouse/a11y captures were not produced and are not backfilled as if they had been. Exact scores are in `PERFORMANCE_ACCESSIBILITY_REPORT.md`; missing measurements remain unverified.

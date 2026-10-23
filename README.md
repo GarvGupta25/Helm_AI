@@ -4,6 +4,12 @@ The new public site explains UK private medical cover and compares fictional pla
 
 Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REPORTS.md), [launch blockers](docs/uk/LAUNCH_READINESS.md), [changelog](docs/uk/CHANGELOG_UK.md) and [measured evidence](docs/uk/PERFORMANCE_ACCESSIBILITY_REPORT.md). The historical customer workflows and professional archives remain preserved and require a separate safe domain/data migration. The historical-term inventory is nonzero; a passing demo build does not mean the whole repository is localised.
 
+### New research and public chat features
+
+The synthetic research workspace is at `/research`: 576 fictional variants, explainable Standard/Contextual/Fusion scores, confirmed preference changes, scenarios, why/why-not, what-if, undo and encrypted opt-in memory. See [research setup and phase report](docs/research/README.md). Full generated datasets are reproducible under ignored `.runtime`; samples/reports are versioned.
+
+The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, Arabic/RTL and dark mode. It is enabled by default in development. For preview and browser QA, set `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
+
 ### Run the isolated UK demo
 
 ```powershell
