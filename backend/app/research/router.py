@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..db import session
 from ..public_assistant import _check_rate_limit
-from .engine import recommend
+from .engine import recommend, simulation
 from .generator import CONFIG, generate, validate
 from .intent import extract_intent
 from .models import ResearchRecord, ResearchSession
@@ -86,7 +86,8 @@ def active_memory(data):
 
 def run_engine(db, data, profile=None):
     result = recommend(catalogue(db), profile or Profile(**data["profile"]), active_memory(data))
-    result.update(run_id=token_urlsafe(16), profile_version=data["version"])
+    result.update(run_id=token_urlsafe(16), profile_version=data["version"],
+                  profile_snapshot=(profile or Profile(**data["profile"])).model_dump(mode="json"))
     before = data.get("runs", [])[-1]["items"] if data.get("runs") else []
     old = {p["id"]: (rank+1, p["fusion"]) for rank, p in enumerate(before)}
     result["deltas"] = [{"id": p["id"], "rank": i+1, "previous_rank": old.get(p["id"], (None, None))[0],
@@ -125,9 +126,11 @@ def validate_profile(body: Profile):
 def create(body: Profile, request: Request, db: Session = Depends(session)):
     _check_rate_limit("research-create:"+(request.client.host if request.client else "unknown"))
     catalogue(db)
+    for field in body.model_fields_set-{"evidence"}:
+        body.evidence[field] = Evidence(value=getattr(body, field))
     data = {"profile": body.model_dump(mode="json"), "version": 1, "history": [], "memory": [],
             "consent": Consent().model_dump(), "runs": [], "feedback": []}
-    record = ResearchSession(data=data, expires_at=datetime.now(timezone.utc)+timedelta(hours=24))
+    record = ResearchSession(data=data, expires_at=datetime.now(timezone.utc)+timedelta(hours=CONFIG["session_hours"]))
     db.add(record)
     db.flush()
     result = run_engine(db, data)
@@ -235,13 +238,33 @@ def why(run_id: str, plan_id: str, record=Depends(own)):
     for item in result["rejected"]:
         if item["id"] == plan_id:
             return {"status": "filtered", "facts": item}
-    return {"status": "not_in_shortlist", "explanation": "Eligible but outside the diverse top three; no coverage failure is implied."}
+    for item in result.get("alternatives", []):
+        if item["id"] == plan_id:
+            return {"status": "eligible_alternative", "facts": item,
+                    "explanation": "Eligible but outside the family-diverse top three. Compare the logged fusion score and quote; no coverage failure is implied."}
+    raise HTTPException(404, "This variant was not evaluated in the stored run")
+
+
+@router.get("/recommendations/{run_id}/simulation/{plan_id}")
+def deeper_simulation(run_id: str, plan_id: str, draws: int = 2000, record=Depends(own)):
+    result = stored_run(record, run_id)
+    item = next((p for p in result["items"] if p["id"] == plan_id), None)
+    if not item:
+        raise HTTPException(404, "Select a shortlisted variant from this run")
+    return {"source": "synthetic", "plan_id": plan_id, **simulation(item["plan"], min(2000, max(500, draws)))}
 
 
 @router.post("/recommendations/{run_id}/explain-chat")
 def explain_chat(run_id: str, body: Conversation, record=Depends(own)):
     result = stored_run(record, run_id)
-    return {"reply": "These are the computed comparison facts. Explanations cannot invent policy terms or change rank.",
+    if any(word in body.message.casefold() for word in ("remember", "history", "past")):
+        return {"reply": "These are the consented soft preferences available to this run. Current confirmed needs take precedence; a click never becomes a requirement.",
+                "memory": active_memory(record.data), "used_in_run": result["memory_used"], "facts": []}
+    known = [p["id"] for p in result["items"]]+[p["id"] for p in result["rejected"]]+[p["id"] for p in result.get("alternatives", [])]
+    mentioned = next((key for key in known if key in body.message), None)
+    if mentioned and "why not" in body.message.casefold():
+        return {"reply": "The stored run gives this reason; no hypothetical rank change has been invented.", "why_not": why(run_id, mentioned, record), "facts": []}
+    return {"reply": "Compare these calculated scores. Fusion combines Standard policy attributes and Contextual fit using the displayed alpha. Coverage statements require the cited synthetic clauses; an unknown existing-condition outcome remains unknown.",
             "facts": [{"id": p["id"], "S": p["standard"]["score"], "C": p["contextual"]["score"], "F": p["fusion"], "clauses": p["evidence_ids"]} for p in result["items"]]}
 
 
@@ -268,10 +291,10 @@ def set_consent(body: Consent, record=Depends(own), db: Session = Depends(sessio
     data = deepcopy(record.data)
     data["consent"] = body.model_dump()
     now = datetime.now(timezone.utc)
-    record.expires_at = now+timedelta(days=90) if body.durable_memory else now+timedelta(hours=24)
+    record.expires_at = now+timedelta(days=CONFIG["memory_days"]) if body.durable_memory else now+timedelta(hours=CONFIG["session_hours"])
     if body.durable_memory:
         data["memory"] = [{"id": field, "field": field, "value": value, "source": "confirmed_memory",
-                           "confirmed": True, "observed_at": now.isoformat(), "valid_until": (now+timedelta(days=90)).isoformat(), "scope": "enduring"}
+                           "confirmed": True, "observed_at": now.isoformat(), "valid_until": (now+timedelta(days=CONFIG["memory_days"])).isoformat(), "scope": "enduring"}
                           for field, value in data["profile"].items() if field == "preferred" and value]
     else:
         data["memory"] = []
@@ -302,7 +325,7 @@ def edit_memory(memory_id: str, body: Evidence, record=Depends(own), db: Session
     data = deepcopy(record.data)
     data["memory"] = [{"id": "preferred", "field": "preferred", **body.model_dump(mode="json"),
                        "source": "confirmed_memory", "confirmed": True, "scope": "enduring",
-                       "valid_until": (datetime.now(timezone.utc)+timedelta(days=90)).isoformat()}]
+                       "valid_until": (datetime.now(timezone.utc)+timedelta(days=CONFIG["memory_days"])).isoformat()}]
     save(db, record, data)
     return data["memory"]
 

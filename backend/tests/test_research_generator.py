@@ -6,6 +6,8 @@ def test_full_generation_integrity():
     report = validate(data)
     assert report["counts"]["variants"] == 576
     assert report["counts"]["profiles"] == 10000
+    assert report["counts"]["synthetic_quotes"] == 10000
+    assert all(q["monthly_pence"] > 0 for q in data["synthetic_quotes"])
     assert len({s["user_id"] for s in data["sessions"]}) == 3000
     assert len(data["personas"]) == 60
     assert len({p["name"] for p in data["insurers"]}) == 12

@@ -12,10 +12,33 @@ CARE = ("inpatient", "diagnostics", "outpatient", "mental_health", "physio", "ca
         "dental", "maternity", "emergency", "chronic", "pre_existing")
 
 
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def validate_config(config):
+    require(config["source"] == "synthetic", "Real product sources are not supported")
+    require(12 <= config["insurers"] <= 20 and 6 <= config["families"] <= 12, "Use 12–20 fictional insurers and 6–12 families")
+    require(sum(config["standard_weights"].values()) == 100, "Standard weights must sum to 100")
+    require(all(w > 0 for w in config["context_weights"].values()), "Context weights must be positive")
+    require(all(.2 <= value <= .8 for value in config["alpha"]), "Alpha is outside safe configured bounds")
+    require(1 <= config["memory_days"] <= 90 and 1 <= config["session_hours"] <= 24, "Retention exceeds demo bounds")
+    require(0 <= config["histories"] <= config["profiles"] <= 20000, "Invalid generation resource bounds")
+
+
+validate_config(CONFIG)
+
+
 def generate(config=None):
+    from .engine import quote
+    from .schemas import Profile
+
     cfg = config or CONFIG
+    validate_config(cfg)
     rng = random.Random(cfg["seed"])
     insurers, families, variants, clauses, profiles, sessions, events, personas = ([] for _ in range(8))
+    quote_inputs, quotes = [], []
     for i in range(cfg["insurers"]):
         insurer = f"ins-{i:02}"
         insurers.append({"id": insurer, "name": f"Fictional {['Alder', 'Bracken', 'Cairn', 'Dapple', 'Elm', 'Fern', 'Grove', 'Hearth', 'Iris', 'Juniper', 'Kestrel', 'Larch'][i % 12]} Research {i+1}",
@@ -61,6 +84,11 @@ def generate(config=None):
                    "children": rng.choice([0, 0, 1, 2]), "budget_pence": rng.randrange(4500, 40001, 500),
                    "priority": latent, "privacy": "synthetic_experiment", "source": "synthetic"}
         profiles.append(profile)
+        quote_input = {"age": profile["age"], "region": profile["region"], "adults": profile["adults"], "children": profile["children"]}
+        quote_inputs.append({"id": f"input-{u}", "profile_id": profile["id"], **quote_input})
+        quoted_plan = variants[u % len(variants)]
+        quotes.append({"id": f"quote-{u}", "input_id": f"input-{u}", "plan_id": quoted_plan["id"],
+                       "source": "synthetic", "version": cfg["version"], **quote(quoted_plan, Profile(**quote_input))})
         if u >= cfg["histories"]:
             continue
         for visit in range(3):
@@ -79,6 +107,7 @@ def generate(config=None):
                 elif latent == "basic":
                     utility = max(0, 2-plan["base_pence"]/10000)
                 utility += rng.random()
+                utility -= min(2, quote(plan, Profile(**quote_input))["monthly_pence"]/profile["budget_pence"])*.5
                 clicked = rng.random() < min(.9, (.15 + utility * .15) / (1 + pos * .2))
                 events.append({"session_id": sid, "user_id": profile["id"], "at": (when + timedelta(seconds=pos)).isoformat(),
                                "type": "impression", "plan_id": plan["id"], "position": pos+1,
@@ -120,24 +149,35 @@ def generate(config=None):
                  for i, (region, network) in enumerate((r, n) for r in cfg["regions"] for n in (1, 2))]
     return {"lineage": cfg, "insurers": insurers, "families": families, "variants": variants,
             "clauses": clauses, "hospitals": hospitals, "profiles": profiles, "sessions": sessions,
-            "events": events, "personas": personas}
+            "events": events, "personas": personas, "quote_inputs": quote_inputs, "synthetic_quotes": quotes}
 
 
 def validate(data):
     plans = data["variants"]
     ids = {p["id"] for p in plans}
-    assert len(ids) == len(plans)
-    assert all(c["variant_id"] in ids and c["status"] in {"covered", "excluded", "unknown", "conditional"} for c in data["clauses"])
-    assert all(e.get("plan_id", next(iter(ids))) in ids for e in data["events"])
-    assert all(p["base_pence"] > 0 and p["limits"]["maternity"] == 0 for p in plans)
+    require(len(ids) == len(plans), "Duplicate variant IDs")
+    require(all(c["variant_id"] in ids and c["status"] in {"covered", "excluded", "unknown", "conditional"} for c in data["clauses"]), "Invalid clause reference or status")
+    require(all(e.get("plan_id", next(iter(ids))) in ids for e in data["events"]), "Invalid exposure plan reference")
+    require(all(p["base_pence"] > 0 and p["limits"]["maternity"] == 0 and p["source"] == "synthetic" for p in plans), "Invalid synthetic policy semantics")
+    families = {f["id"] for f in data["families"]}
+    insurers = {i["id"] for i in data["insurers"]}
+    require(all(p["family_id"] in families and p["insurer_id"] in insurers for p in plans), "Missing family/insurer reference")
+    sessions = {s["id"] for s in data["sessions"]}
+    users = {p["id"] for p in data["profiles"]}
+    require(all(s["user_id"] in users for s in data["sessions"]), "History references an unknown synthetic user")
+    require(all(e["session_id"] in sessions and e["user_id"] in users for e in data["events"]), "History event has broken provenance")
     chronology = defaultdict(list)
     for event in data["events"]:
         chronology[event["session_id"]].append(event["at"])
-    assert all(dates == sorted(dates) for dates in chronology.values())
+    require(all(dates == sorted(dates) for dates in chronology.values()), "History chronology is inconsistent")
     return {"source": "synthetic", "version": data["lineage"]["version"],
             "counts": {k: len(v) for k, v in data.items() if isinstance(v, list)},
             "age_distribution": dict(Counter((p["age"]//10)*10 for p in data["profiles"])),
             "region_distribution": dict(Counter(p["region"] for p in data["profiles"])),
+            "reference_quote_monthly_pence": {"min": min((q["monthly_pence"] for q in data["synthetic_quotes"]), default=0), "max": max((q["monthly_pence"] for q in data["synthetic_quotes"]), default=0)},
+            "excess_distribution": dict(Counter(p["excess_pence"] for p in plans)),
+            "benefit_availability": {care: sum(p["limits"][care] > 0 for p in plans) for care in CARE},
+            "executed_at": datetime.now(timezone.utc).isoformat(),
             "checks": ["unique variants", "clause references", "coverage status", "positive base prices", "chronology"],
             "limitations": "Template-generated labels and prices are not human validation or real market calibration."}
 

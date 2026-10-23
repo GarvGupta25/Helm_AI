@@ -54,3 +54,29 @@ def test_session_isolation_and_server_trust(fixture_client):
     headers = {"X-Research-Session": b["session_token"]}
     assert client.get(f"/api/v1/recommendations/{a['result']['run_id']}", headers=headers).status_code == 404
     assert client.patch("/api/v1/profile", json={"fusion": 100}, headers=headers).status_code == 422
+
+
+def test_state_encrypted_admin_guard_and_exact_confirmation(fixture_client, monkeypatch):
+    from sqlalchemy import text
+    client, _, engine = fixture_client
+    _rate_store.clear()
+    monkeypatch.setenv("SYNTHETIC_ADMIN_TOKEN", "")
+    monkeypatch.setenv("RESEARCH_STATE_KEY", "")
+    seed_research(engine)
+    response = client.post("/api/v1/research/sessions", json={"required": ["mental_health"]})
+    assert response.status_code == 200
+    headers = {"X-Research-Session": response.json()["session_token"]}
+    with engine.connect() as connection:
+        raw = str(connection.execute(text("SELECT data FROM research_session")).scalar())
+        assert 'ciphertext' in raw
+        assert 'mental_health' not in raw
+    assert client.patch("/api/v1/consent", json={"durable_memory": True}, headers=headers).status_code == 503
+    assert client.post("/api/v1/synthetic/generate", json={}).status_code == 403
+    assert client.post("/api/v1/conversation/message", json={"message": "physio", "confirm": True}, headers=headers).status_code == 409
+    client.post("/api/v1/conversation/message", json={"message": "physio"}, headers=headers)
+    assert client.post("/api/v1/conversation/message", json={"message": "dental", "confirm": True}, headers=headers).status_code == 409
+    confirmed = client.post("/api/v1/conversation/message", json={"message": "physio", "confirm": True}, headers=headers)
+    assert confirmed.status_code == 200
+    assert confirmed.json()["profile"]["required"] == ['mental_health']
+    result = confirmed.json()['result']
+    assert client.get(f"/api/v1/recommendations/{result['run_id']}/why-not/nonexistent", headers=headers).status_code == 404

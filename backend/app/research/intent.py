@@ -20,6 +20,12 @@ class Intent(BaseModel):
 
 def extract_intent(message, profile, external_consent=False):
     baseline = extract(message)
+    for operation in baseline.get("operations", []):
+        field = operation["field"]
+        previous = profile.get(field, [])
+        values = operation["values"]
+        baseline["proposed"][field] = ([v for v in previous if v not in values] if operation["op"] == "remove"
+                                      else list(dict.fromkeys([*previous, *values])))
     if baseline.get("safety") or not external_consent or os.environ.get("RESEARCH_LLM_ENABLED", str(settings().research_llm_enabled)).lower() not in {"1", "true", "yes"}:
         return baseline
     key = os.environ.get("GROQ_API_KEY", settings().groq_api_key)
@@ -37,6 +43,12 @@ def extract_intent(message, profile, external_consent=False):
         allowed = {"budget_pence", "strict_budget", "excess_max_pence", "strict_excess", "required", "preferred", "network_min"}
         if set(intent.changes)-allowed:
             raise ValueError("Unsupported change")
+        # An extractor cannot silently retract existing essential benefits.
+        for field in ("required", "preferred"):
+            if field in intent.changes:
+                intent.changes[field] = list(dict.fromkeys([*profile.get(field, []), *intent.changes[field]]))
+        if any(op["op"] == "remove" for op in baseline.get("operations", [])):
+            return baseline
         Profile(**{**profile, **intent.changes})
         return {"proposed": intent.changes, "source_quote": message, "confidence": intent.confidence,
                 "question": intent.clarification or "Confirm these changes before reranking.", "extractor": "groq-schema-validated-v1"}

@@ -6,9 +6,10 @@ import { streamChat } from './useChatStream';
 afterEach(() => vi.restoreAllMocks());
 describe('untrusted message rendering', () => {
   it('renders useful formatting without executable HTML or unsafe links', () => {
-    const { container } = render(<MarkdownReply text={'**Excess**\n\n- A contribution\n\n<script>bad()</script>\n\n[bad](javascript:alert(1))\n\n[Guide](/guides)'}/>);
+    const { container } = render(<MarkdownReply text={'**Excess**\n\n- A contribution\n\n<script>bad()</script>\n\n[bad](javascript:alert(1))\n\n[Guide](/guides)\n\n![tracking](https://example.invalid/pixel)'}/>);
     expect(screen.getByText('Excess').tagName).toBe('STRONG');
     expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('img')).toBeNull();
     expect(container.querySelector('[href^="javascript"]')).toBeNull();
     expect(screen.getByRole('link', { name: 'Guide' }).getAttribute('rel')).toBe('noopener noreferrer');
   });

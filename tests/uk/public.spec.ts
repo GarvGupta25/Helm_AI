@@ -88,8 +88,8 @@ test('quote comparison through idempotent zero-payment confirmation', async ({ p
 
 test('public chat safety and support reference', async ({ page }) => {
   await page.goto('/'); await consent(page); await page.getByRole('button', { name: 'Open the Helm AI assistant' }).click();
-  const input = page.getByRole('textbox', { name: 'Type your message' }); await input.fill('I have chest pain'); await page.getByRole('button', { name: 'Send', exact: true }).click();
+  const input = page.getByRole('textbox', { name: 'Type your message' }); await input.fill('I have chest pain'); await page.getByRole('button', { name: /^Send(?: message)?$/, exact: true }).click();
   await expect(page.getByText(/If this is a medical emergency/)).toBeVisible();
-  await input.fill('I want to complain'); await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await input.fill('I want to complain'); await page.getByRole('button', { name: /^Send(?: message)?$/, exact: true }).click();
   await expect(page.getByText(/Demo support reference:/)).toBeVisible();
 });

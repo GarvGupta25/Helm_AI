@@ -22,6 +22,8 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
   const [generating, setGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [canRetryMessage, setCanRetryMessage] = useState(false);
+  const localError = useCallback((text: string) => { setError(text); setCanRetryMessage(false); }, []);
   const [notice, setNotice] = useState('');
   const [handoff, setHandoff] = useState(false);
   const [topic, setTopic] = useState(0);
@@ -43,8 +45,8 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
   const openRef = useRef(open);
   const lastQuestion = useRef('');
   const t = chatStrings[language];
-  const attachments = useAttachments(setError, t.tooMany);
-  const voice = useVoiceInput(language, setInput, setError, t.denied);
+  const attachments = useAttachments(localError, t.tooMany);
+  const voice = useVoiceInput(language, setInput, localError, t.denied);
   useEffect(() => { openRef.current = open; if (open) textarea.current?.focus(); else voice.stop(true); }, [open, voice.stop]);
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => {
@@ -78,12 +80,14 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
   const feedback = useCallback((id: string, value: 'up' | 'down') => { setMessages(items => items.map(m => m.id === id ? { ...m, feedback: value } : m)); }, []);
   async function send(text: string, regenerate = false) {
     if (generating || rateSeconds || offline || (!text.trim() && !attachments.attachments.length)) return;
+    if (regenerate && [...messages].reverse().find(m => m.role === 'user')?.attachments?.length) { localError(language === 'ar' ? 'أعد إرفاق الملف وأرسل سؤالك من جديد.' : 'Attachments are single-use. Reattach your file and send the question again.'); return; }
     if (attachments.attachments.some(a => a.status !== 'ready')) { setError(t.failed); return; }
     const question = text.trim() || (language === 'ar' ? 'اشرح مصطلحات التأمين في المرفق' : 'Explain an insurance term from my attachment');
     lastQuestion.current = question; setBackup(undefined); setError(''); setNotice(''); setSuggestions([]); setInput(''); setGenerating(true); voice.stop(true);
     const files = regenerate ? [] : attachments.consume();
     const user = { ...makeMessage('user', question), status: 'sending' as const, attachments: files };
     const bot = makeMessage('assistant', '');
+    const actualUserId = regenerate ? [...messages].reverse().find(m => m.role === 'user')?.id || user.id : user.id;
     setMessages(items => [...(regenerate ? items.filter((_, i) => i !== items.length-1 || items[i].role !== 'assistant') : [...items, user]), bot].slice(-200));
     controller.current = new AbortController(); let content = ''; let frame = 0;
     const updateText = () => { setMessages(items => items.map(m => m.id === bot.id ? { ...m, text: content } : m)); frame = 0; };
@@ -95,15 +99,15 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
         if (type === 'error') throw new Error(data.message || t.failed);
         if (type === 'done') setMessages(items => items.map(m => m.id === bot.id ? { ...m, actions: data.actions } : m));
       });
-      setMessages(items => items.map(m => m.id === user.id ? { ...m, status: 'sent' } : m));
+      setMessages(items => items.map(m => m.id === actualUserId ? { ...m, status: 'sent' } : m));
       if (!openRef.current) onUnread();
     } catch (e) {
-      if (controller.current.signal.aborted) { setMessages(items => items.map(m => m.id === bot.id ? { ...m, status: 'stopped' } : m.id === user.id ? { ...m, status: 'sent' } : m)); }
-      else { const message = e instanceof Error ? e.message : t.failed; if (message === 'RATE_LIMIT') setRateSeconds(3600); else setError(message); setMessages(items => items.map(m => m.id === user.id ? { ...m, status: 'failed' } : m)); }
+      if (controller.current.signal.aborted) { setMessages(items => items.map(m => m.id === bot.id ? { ...m, status: 'stopped' } : m.id === actualUserId ? { ...m, status: 'sent' } : m)); }
+      else { const message = e instanceof Error ? e.message : t.failed; if (message === 'RATE_LIMIT') setRateSeconds(3600); else setError(message); setCanRetryMessage(true); setMessages(items => items.map(m => m.id === actualUserId ? { ...m, status: 'failed' } : m)); }
     } finally { if (frame) cancelAnimationFrame(frame); updateText(); setGenerating(false); }
   }
   function download() { const url = URL.createObjectURL(new Blob([messages.map(m => `${new Date(m.at).toISOString()} ${m.role}: ${m.text}`).join('\n\n')], { type: 'text/plain;charset=utf-8' })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'helm-conversation.txt'; anchor.click(); URL.revokeObjectURL(url); setMenu(false); }
-  async function requestHandoff() { setPendingHandoff(true); setError(''); try { const response = await fetch('/api/public/assistant/handoff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: ['General question', 'Complaint', 'Extra support'][topic] }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || t.failed); setMessages(items => [...items, makeMessage('assistant', `${data.reply}\n\nDemo support reference: ${data.ticket_ref}`)]); setHandoff(false); } catch (e) { setError(e instanceof Error ? e.message : t.failed); } finally { setPendingHandoff(false); } }
+  async function requestHandoff() { setCanRetryMessage(false); setPendingHandoff(true); setError(''); try { const response = await fetch('/api/public/assistant/handoff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: ['General question', 'Complaint', 'Extra support'][topic] }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || t.failed); setMessages(items => [...items, makeMessage('assistant', `${data.reply}\n\nDemo support reference: ${data.ticket_ref}`)]); setHandoff(false); } catch (e) { setError(e instanceof Error ? e.message : t.failed); } finally { setPendingHandoff(false); } }
   function chooseFile(accept: string, capture = false) { if (!file.current) return; file.current.accept = accept; if (capture) file.current.setAttribute('capture', 'environment'); else file.current.removeAttribute('capture'); file.current.click(); setAttachMenu(false); }
   return <div ref={panel} id="helm-public-assistant" className={`hc-panel${expanded ? ' hc-panel--expanded' : ''}`} role="dialog" aria-label="Helm AI assistant" dir={language === 'ar' ? 'rtl' : 'ltr'} lang={language} data-drop-label={t.drop} hidden={!open} onDragOver={e => { e.preventDefault(); panel.current?.classList.add('hc-drag'); }} onDragLeave={() => panel.current?.classList.remove('hc-drag')} onDrop={e => { e.preventDefault(); panel.current?.classList.remove('hc-drag'); attachments.add(e.dataTransfer.files, fileConsent); }}>
     <header className="hc-header" role="presentation"><span className="hc-header-avatar" aria-hidden="true"><Bot size={23}/></span><div className="hc-heading"><strong>{t.title}</strong><span><i/>{generating ? t.thinking : t.online}</span></div><button aria-label={t.menu} aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={20}/></button><button aria-label={expanded ? t.collapse : t.expand} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}</button><button aria-label={t.close} onClick={onClose}><X size={20}/></button></header>
@@ -119,7 +123,7 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
     </div>
     {newMessages && <button className="hc-latest" onClick={() => { nearBottom.current = true; log.current?.scrollTo({ top: log.current.scrollHeight }); setNewMessages(false); }}>{t.latest}</button>}
     {notice && <div className="hc-notice" role="status">{notice}{backup && <button onClick={() => { setMessages(backup); setBackup(undefined); setNotice(''); }}>{t.undo}</button>}</div>}
-    {error && <div className="hc-error" role="alert">{error}<button disabled={generating || offline} onClick={() => void send(lastQuestion.current, true)}>{t.retry}</button><button onClick={() => setHandoff(true)}>{t.human}</button></div>}
+    {error && <div className="hc-error" role="alert">{error}<button disabled={generating || offline} onClick={() => { if (canRetryMessage) void send(lastQuestion.current, true); else { setError(''); textarea.current?.focus(); } }}>{t.retry}</button><button onClick={() => setHandoff(true)}>{t.human}</button></div>}
     {rateSeconds > 0 && <div className="hc-error" role="timer">{t.rate} {Math.floor(rateSeconds/60)}:{String(rateSeconds%60).padStart(2, '0')}</div>}
     {!!suggestions.length && !input && !generating && <div className="hc-suggestions">{suggestions.map((s, i) => <button key={s} onClick={() => i === 2 ? setHandoff(true) : void send(s)}>{language === 'ar' ? chatStrings.ar.starters[i] : s}</button>)}</div>}
     <div className="hc-composer-wrap">

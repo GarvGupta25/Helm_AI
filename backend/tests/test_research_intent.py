@@ -31,3 +31,12 @@ def test_invalid_model_data_falls_back(monkeypatch):
     result = extract_intent('physio', Profile().model_dump(), True)
     assert result['proposed'] == {'preferred': ['physio']}
     assert result['provider_status'].startswith('unavailable')
+
+
+def test_add_and_retract_never_erase_other_essential_needs():
+    profile = Profile(required=['mental_health', 'physio'], preferred=['dental']).model_dump()
+    added = extract_intent('Cancer is also essential', profile)
+    assert added['proposed']['required'] == ['mental_health', 'physio', 'cancer']
+    removed = extract_intent('Remove physio', profile)
+    assert removed['proposed']['required'] == ['mental_health']
+    assert removed['proposed']['preferred'] == ['dental']

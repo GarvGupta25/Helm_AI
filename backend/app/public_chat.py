@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import session
-from .public_assistant import _check_rate_limit, handle_public_assistant
+from .public_assistant import _check_rate_limit, classify_and_reply, handle_public_assistant
 from .voice import validate_audio
 
 
@@ -139,6 +139,7 @@ ARABIC = {
     "handoff": "يمكنني إنشاء مرجع دعم تجريبي. لا توجد خدمة مستشار مباشر متصلة. للتواصل بشأن وثيقة حقيقية، استخدم بيانات اتصال شركة التأمين المعتمدة.",
     "exclusions": "قد تستثني الوثيقة الحالات السابقة والمزمنة والطوارئ والحمل الروتيني. لا يمكنني تأكيد تغطية حالة أو علاج. راجع الشروط وقرارات الاكتتاب.",
     "emergency": "إذا كانت هذه حالة طبية طارئة، اتصل بالرقم 999 أو اذهب إلى قسم الطوارئ الآن. التأمين الخاص لا يحل محل رعاية NHS الطارئة.",
+    "self_harm": "أنا آسف لأنك تمر بهذا. إذا كنت في خطر مباشر، اتصل بالرقم 999 أو اذهب إلى الطوارئ الآن. اطلب من شخص تثق به أن يبقى معك، واطلب مساعدة عاجلة من خدمات NHS. يمكننا إيقاف حديث التأمين.",
 }
 
 
@@ -155,10 +156,12 @@ async def stream(body: ChatRequest, request: Request, db: Session = Depends(sess
     # Map a small, disclosed Arabic topic vocabulary to the same guarded routes.
     # Never ask a generative translator to decide emergency/advice boundaries.
     routed = body
-    if body.language == "ar":
+    original_intent = classify_and_reply(body.message)[1]
+    if body.language == "ar" and original_intent not in {"emergency", "self_harm", "sensitive_data", "prompt_injection"}:
         for pattern, topic in [
             (r"ألم.*صدر|لا أستطيع التنفس|نزيف شديد|فاقد الوعي", "chest pain"),
-            (r"انتحار|أقتل نفسي|إيذاء نفسي", "suicidal"),
+            (r"انتحار|أقتل نفسي|إيذاء نفسي|أريد أن أموت|إنهاء حياتي", "suicidal"),
+            (r"تجاهل التعليمات|اكشف التعليمات", "ignore instructions"),
             (r"شكوى|شكوة", "complaint"), (r"مستشار|شخص|إنسان", "human adviser"),
             (r"تحمل", "excess"), (r"استثناء|حالة سابقة|مزمن", "exclusions pre-existing"),
             (r"سعر|تكلفة|قسط", "price"), (r"اكتتاب", "underwriting"),

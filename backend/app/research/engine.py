@@ -2,6 +2,7 @@
 import math
 import random
 import re
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from .generator import CONFIG
@@ -33,8 +34,15 @@ def quote(plan, profile):
             "assumptions": "Synthetic age/region/household formula, 12% IPT assumption; no real offer."}
 
 
-def filter_plan(plan, profile):
+def filter_plan(plan, profile, as_of=None):
     failed = []
+    now = as_of or datetime.now(timezone.utc)
+    try:
+        available = datetime.fromisoformat(plan["valid_from"]) <= now < datetime.fromisoformat(plan["valid_until"])
+    except (ValueError, KeyError):
+        available = False
+    if not available:
+        failed.append({"field": "validity", "reason": "Synthetic variant is outside its documented validity period or evidence is missing", "clause_id": None})
     if profile.region not in plan["regions"] or not plan["age_min"] <= profile.age <= plan["age_max"]:
         failed.append({"field": "availability", "reason": "Age or region outside synthetic offer bounds", "clause_id": None})
     for care in set(profile.required):
@@ -105,15 +113,22 @@ def standard(plan):
     return weighted(components, CONFIG["standard_weights"])
 
 
-def contextual(plan, profile, memory=None):
+def contextual(plan, profile, memory=None, as_of=None):
     priorities = list(set(profile.required + profile.preferred))
     # Memory can fill an absent soft preference only; never alter current constraints.
     remembered = [m for m in (memory or []) if m.get("field") == "preferred" and not profile.preferred and not profile.required]
     if remembered:
         priorities = list(set(remembered[-1]["value"]))
+    coverage_fit = 100*sum(plan["limits"].get(c, 0) > 0 for c in priorities)/len(priorities) if priorities else 50
+    history_strength = 0
+    if remembered:
+        observed = remembered[-1].get("observed_at")
+        age_days = max(0, ((as_of or datetime.now(timezone.utc))-datetime.fromisoformat(observed)).total_seconds()/86400) if observed else 0
+        history_strength = .2*max(0, 1-age_days/CONFIG["memory_days"])
+        coverage_fit = 50+(coverage_fit-50)*history_strength
     premium = quote(plan, profile)["monthly_pence"]
     components = {
-        "coverage": 100*sum(plan["limits"].get(c, 0) > 0 for c in priorities)/len(priorities) if priorities else 50,
+        "coverage": coverage_fit,
         "budget": max(0, 100-100*max(0, premium-profile.budget_pence)/max(1, profile.budget_pence)),
         "underwriting": 0 if profile.existing_condition else 60,
         "excess": max(0, 100-100*max(0, plan["excess_pence"]-profile.excess_max_pence)/50000),
@@ -122,26 +137,30 @@ def contextual(plan, profile, memory=None):
     }
     result = weighted(components, CONFIG["context_weights"])
     result["history_used"] = remembered
+    result["history_strength"] = round(history_strength, 6)
     result["anti_double_counting"] = "Dialogue/history supply preference evidence only; no separate additive reward."
     return result
 
 
-def recommend(plans, profile, memory=None):
+def recommend(plans, profile, memory=None, as_of=None):
     rejected, eligible = [], []
+    clock = as_of or datetime.now(timezone.utc)
     completeness = len([v for v in profile.evidence.values() if v.confirmed and v.source == "current_explicit"])
-    alpha = .7 if completeness < 3 else .5 if completeness < 6 else .3
+    alpha = CONFIG["alpha"][0] if completeness < 3 else CONFIG["alpha"][1] if completeness < 6 else CONFIG["alpha"][2]
     for plan in plans:
-        failures = filter_plan(plan, profile)
+        failures = filter_plan(plan, profile, clock)
         if failures:
             rejected.append({"id": plan["id"], "reasons": failures})
             continue
-        s, c = standard(plan), contextual(plan, profile, memory)
+        s, c = standard(plan), contextual(plan, profile, memory, clock)
         score = round(alpha*s["score"]+(1-alpha)*c["score"], 4)
         eligible.append({"id": plan["id"], "plan": plan, "quote": quote(plan, profile), "standard": s,
                          "contextual": c, "alpha": alpha, "fusion": score,
                          "uncertainty": ["Synthetic data; not validated for real customers", "Existing-condition eligibility unknown until underwriting"],
                          "evidence_ids": [f"{plan['id']}:{care}" for care in set(profile.required+profile.preferred)],
-                         "scenarios": {key: scenario(plan, value) for key, value in SCENARIOS.items()}})
+                         "scenarios": {key: {**scenario(plan, value),
+                                            "annual_total_pence": quote(plan, profile)["annual_pence"]+scenario(plan, value)["member_pence"]}
+                                       for key, value in SCENARIOS.items()}})
     eligible.sort(key=lambda p: (-p["fusion"], p["quote"]["monthly_pence"], p["id"]))
     chosen, families = [], set()
     for item in eligible:
@@ -157,8 +176,12 @@ def recommend(plans, profile, memory=None):
                              "fusion_alpha_plus_05": round(min(.8, alpha+.05)*item["standard"]["score"]+(1-min(.8, alpha+.05))*item["contextual"]["score"], 4)}
     return {"source": "synthetic", "model_version": CONFIG["version"], "alpha": alpha,
             "items": chosen, "rejected": rejected, "eligible_count": len(eligible),
+            "alternatives": [{"id": p["id"], "standard": p["standard"]["score"], "contextual": p["contextual"]["score"],
+                              "fusion": p["fusion"], "quote": p["quote"], "evidence_ids": p["evidence_ids"]}
+                             for p in eligible if p not in chosen],
             "selection": "Score order with at most one variant per family. No silent constraint relaxation.",
-            "no_fit": not chosen, "memory_used": any(p["contextual"]["history_used"] for p in chosen)}
+            "no_fit": not chosen, "memory_used": any(p["contextual"]["history_used"] for p in chosen),
+            "memory_as_of": clock.isoformat() if any(p["contextual"]["history_used"] for p in chosen) else None}
 
 
 def extract(message):
@@ -166,6 +189,9 @@ def extract(message):
     if re.search(r"ignore|system prompt|override|jailbreak|<script", text):
         return {"proposed": {}, "safety": "untrusted_instruction", "question": "Use the preference controls to make a change."}
     changes = {}
+    operations = []
+    if re.search(r"rather than|instead of", text):
+        return {"proposed": {}, "question": "Which benefit should be removed, and which should be added? Use the controls to confirm each change.", "source_quote": message, "confidence": .4}
     budget = re.search(r"(?:budget(?: of)?|pay|afford)\s*(?:up to\s*)?£?\s*(\d+(?:\.\d{1,2})?)", text)
     if not budget and "excess" not in text:
         budget = re.search(r"£\s*(\d+(?:\.\d{1,2})?)", text)
@@ -178,13 +204,18 @@ def extract(message):
         changes["strict_excess"] = bool(re.search(r"must|below|under|maximum|essential", text))
     cares = [care for care, pattern in [("mental_health", "mental health|therapy"), ("physio", "physio"), ("outpatient", "outpatient"), ("cancer", "cancer"), ("dental", "dental"), ("maternity", "maternity")] if re.search(pattern, text)]
     if cares:
-        changes["required" if re.search(r"must|essential|required|mandatory", text) else "preferred"] = cares
+        field = "required" if re.search(r"must|essential|required|mandatory", text) else "preferred"
+        changes[field] = cares
+        operations.append({"field": field, "op": "add", "values": cares})
     if re.search(r"remove|forget|don't need|do not need", text) and cares:
-        changes = {"required": [], "preferred": []}
+        changes.update(required=[], preferred=[])
+        operations = [{"field": field, "op": "remove", "values": cares} for field in ("required", "preferred")]
+    if "flexible" in text and "budget" in text:
+        changes["strict_budget"] = False
     if "hospital" in text and re.search(r"broad|best|wider", text):
         changes["network_min"] = 2
     if re.search(r"surprise|predictab", text) and not excess:
         return {"proposed": changes, "question": "What maximum excess would you be comfortable paying?", "source_quote": message, "confidence": .6}
-    return {"proposed": changes, "source_quote": message, "confidence": .9 if changes else .3,
+    return {"proposed": changes, "operations": operations, "source_quote": message, "confidence": .9 if changes else .3,
             "question": "Confirm these changes before reranking." if changes else "Which budget, excess or benefit would you like to change?",
             "extractor": "deterministic-ontology-v1"}
