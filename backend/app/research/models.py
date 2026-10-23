@@ -6,6 +6,7 @@ from sqlalchemy import JSON, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..models import Base
+from .storage import EncryptedState
 
 
 class ResearchRecord(Base):
@@ -19,6 +20,6 @@ class ResearchRecord(Base):
 class ResearchSession(Base):
     __tablename__ = "research_session"
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: token_urlsafe(32))
-    data: Mapped[dict] = mapped_column(JSON)
+    data: Mapped[dict] = mapped_column(EncryptedState())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

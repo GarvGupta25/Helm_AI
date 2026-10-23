@@ -13,7 +13,9 @@ def seed_research(engine):
         db.commit()
 
 
-def test_research_confirm_undo_whatif_memory_and_delete(fixture_client):
+def test_research_confirm_undo_whatif_memory_and_delete(fixture_client, monkeypatch):
+    from cryptography.fernet import Fernet
+    monkeypatch.setenv("RESEARCH_STATE_KEY", Fernet.generate_key().decode())
     client, _, engine = fixture_client
     _rate_store.clear()
     seed_research(engine)

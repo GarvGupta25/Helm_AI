@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import StreamingResponse
 from groq import Groq
 from PIL import Image, UnidentifiedImageError
+from pillow_heif import register_heif_opener
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -45,8 +46,9 @@ async def lifespan(app):
 
 
 router = APIRouter(prefix="/api/public/assistant", tags=["public chat"], lifespan=lifespan)
+register_heif_opener()
 MAX_FILE = 10*1024*1024
-TTL = min(86400, max(60, int(os.getenv("PUBLIC_UPLOAD_TTL_SECONDS", "86400"))))
+TTL = min(86400, max(60, int(os.getenv("PUBLIC_UPLOAD_TTL_SECONDS", str(settings().public_upload_ttl_seconds)))))
 _uploads: dict[str, dict] = {}
 _upload_lock = Lock()
 
@@ -79,9 +81,9 @@ def extract_file(content, mime):
     else:
         try:
             with Image.open(BytesIO(content)) as image:
-                actual = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}.get(image.format, "")
+                actual = {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp", "HEIF": "image/heic"}.get(image.format, "")
                 if not actual or image.width*image.height > 20000000:
-                    raise HTTPException(422, "Use a JPG, PNG or WebP below 20 million pixels. Convert HEIC first.")
+                    raise HTTPException(422, "Use a JPG, PNG or WebP below 20 million pixels. HEIC is also supported.")
                 image.load()
                 if settings().tesseract_cmd:
                     pytesseract.pytesseract.tesseract_cmd = settings().tesseract_cmd
@@ -91,7 +93,7 @@ def extract_file(content, mime):
                     raise HTTPException(503, "Image reading is unavailable on this server. Use a text PDF or type your question.") from None
         except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning):
             raise HTTPException(422, "This file is not a readable supported image or PDF.") from None
-    if mime != actual:
+    if mime != actual and not (actual == "image/heic" and mime == "image/heif"):
         raise HTTPException(415, "File content does not match its declared type.")
     if re.search(r"passport|identity card|credit card|card number|national insurance|\bP<|(?:\d[ -]?){13,19}", text, re.I):
         raise HTTPException(422, "Identity and payment documents cannot be used in public chat. The file was discarded.")
@@ -114,9 +116,9 @@ def upload(request: Request, file: UploadFile = File(...), consent: bool = Form(
     with _upload_lock:
         if len(_uploads) >= 100:
             raise HTTPException(503, "Temporary attachment capacity reached. Please type your question.")
-        _uploads[key] = {"text": text, "expires": time.monotonic()+TTL}
+        _uploads[key] = {"text": text, "expires": time.monotonic()+max(1, TTL-30)}
     return {"attachment_id": key, "mime": mime, "size": len(content),
-            "expires_at": (datetime.now(timezone.utc)+timedelta(seconds=TTL)).isoformat(),
+            "expires_at": (datetime.now(timezone.utc)+timedelta(seconds=max(1, TTL-30))).isoformat(),
             "notice": "Raw file discarded immediately. Extracted text is temporary, untrusted context; no AI provider receives it."}
 
 
@@ -150,7 +152,22 @@ async def stream(body: ChatRequest, request: Request, db: Session = Depends(sess
             raise HTTPException(410, "An attachment expired or was removed. Attach it again or send text only.")
         contexts = [_uploads.pop(key)["text"] for key in body.attachments]
     # Attachments are data; never execute instructions or turn extracted policy wording into coverage claims.
-    result = await handle_public_assistant(body, request, db)
+    # Map a small, disclosed Arabic topic vocabulary to the same guarded routes.
+    # Never ask a generative translator to decide emergency/advice boundaries.
+    routed = body
+    if body.language == "ar":
+        for pattern, topic in [
+            (r"ألم.*صدر|لا أستطيع التنفس|نزيف شديد|فاقد الوعي", "chest pain"),
+            (r"انتحار|أقتل نفسي|إيذاء نفسي", "suicidal"),
+            (r"شكوى|شكوة", "complaint"), (r"مستشار|شخص|إنسان", "human adviser"),
+            (r"تحمل", "excess"), (r"استثناء|حالة سابقة|مزمن", "exclusions pre-existing"),
+            (r"سعر|تكلفة|قسط", "price"), (r"اكتتاب", "underwriting"),
+            (r"أفضل|تنصح|توصي", "recommend"), (r"تأمين|تغطية", "private health cover"),
+        ]:
+            if re.search(pattern, body.message):
+                routed = body.model_copy(update={"message": topic})
+                break
+    result = await handle_public_assistant(routed, request, db)
     reply = result.reply
     if contexts:
         reply += " I read the attachment as untrusted text. I cannot verify its policy terms or your coverage; ask a general question about an insurance term."
@@ -176,7 +193,7 @@ def transcribe(request: Request, file: UploadFile = File(...), consent: bool = F
     _check_rate_limit("speech:"+(request.client.host if request.client else "unknown"))
     if not consent:
         raise HTTPException(422, "Consent to sending this recording to Groq is required.")
-    key = os.getenv("GROQ_API_KEY", "")
+    key = os.environ.get("GROQ_API_KEY", settings().groq_api_key)
     if not key:
         raise HTTPException(503, "Voice transcription is not configured. Please type your message.")
     content = file.file.read(MAX_FILE+1)

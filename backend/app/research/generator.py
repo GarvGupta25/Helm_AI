@@ -66,10 +66,19 @@ def generate(config=None):
         for visit in range(3):
             sid = f"{profile['id']}-s{visit}"
             when = start + timedelta(days=u % 150 + visit * 30)
-            sessions.append({"id": sid, "user_id": profile["id"], "at": when.isoformat()})
+            sessions.append({"id": sid, "user_id": profile["id"], "at": when.isoformat(),
+                             "candidate_set_version": cfg["version"], "eligible_count": len(variants),
+                             "availability_rule": "All generated variants support these generated ages/regions"})
             shown = rng.sample(variants, 5)  # randomized eligible exposure, not labels
             for pos, plan in enumerate(shown):
-                utility = (plan["limits"].get(latent, 0) > 0) * 2 + rng.random()
+                utility = (plan["limits"].get(latent, 0) > 0) * 2
+                if latent == "access":
+                    utility = plan["network"]
+                elif latent == "low_excess":
+                    utility = (50000-plan["excess_pence"])/25000
+                elif latent == "basic":
+                    utility = max(0, 2-plan["base_pence"]/10000)
+                utility += rng.random()
                 clicked = rng.random() < min(.9, (.15 + utility * .15) / (1 + pos * .2))
                 events.append({"session_id": sid, "user_id": profile["id"], "at": (when + timedelta(seconds=pos)).isoformat(),
                                "type": "impression", "plan_id": plan["id"], "position": pos+1,
@@ -80,12 +89,30 @@ def generate(config=None):
                            "type": "confirmed_revision", "utterance": f"My priority is {value}. Please update it.",
                            "assistant_reply": f"Confirm {value} as your current preference?", "confirmed": True,
                            "field": "priority", "value": value, "retracts": latent if value != latent else None})
+    archetypes = [
+        ("First buyer with sparse priorities", [], {}),
+        ("Outpatient-heavy preference", ["outpatient"], {}),
+        ("Essential mental health, low excess", ["mental_health"], {"strict_excess": True, "excess_max_pence": 25000}),
+        ("Physio and broad local hospital access", ["physio"], {"network_min": 2}),
+        ("Cancer benefit clarity", ["cancer"], {}),
+        ("Existing treatment is not established covered", ["mental_health"], {"existing_condition": True}),
+        ("Maternity misconception", ["maternity"], {}),
+        ("Chronic-care misconception", ["chronic"], {}),
+        ("Strict budget and diagnostic needs", ["diagnostics"], {"strict_budget": True}),
+        ("No fit at a zero budget", ["inpatient"], {"strict_budget": True, "budget_pence": 0}),
+        ("Family with outpatient and therapy priorities", ["outpatient", "mental_health"], {"adults": 2, "children": 2}),
+        ("Existing-condition uncertainty overrides headline", ["pre_existing"], {}),
+    ]
     for i in range(60):
-        must = ["mental_health", "physio", "maternity", "pre_existing", "diagnostics", "chronic"][i % 6]
-        acceptable = [p["id"] for p in variants if p["limits"][must] > 0]
-        personas.append({"id": f"persona-{i:02}", "description": f"Generated age {18+i}, requires {must}; test exact clause eligibility.",
-                         "profile": {"age": 18+i, "region": cfg["regions"][i % 5], "required": [must],
-                                     "budget_pence": 10000+i*200, "strict_budget": i % 2 == 0},
+        title, required, extra = archetypes[i % len(archetypes)]
+        profile = {"age": 18+i, "region": cfg["regions"][i % 5], "required": required,
+                   "budget_pence": 10000+i*200, **extra}
+        acceptable = [p["id"] for p in variants if all(p["limits"][c] > 0 for c in required)
+                      and not (profile.get("existing_condition") and required)
+                      and p["excess_pence"] <= (profile.get("excess_max_pence", 50000) if profile.get("strict_excess") else 50000)
+                      and p["network"] >= profile.get("network_min", 1)]
+        personas.append({"id": f"persona-{i:02}", "description": f"{title}; age {18+i}; {profile['region']}.",
+                         "profile": profile,
                          "acceptable_cover_ids": acceptable, "unsafe_cover_ids": [p["id"] for p in variants if p["id"] not in acceptable],
                          "label_basis": "template clause oracle; requires independent human review"})
     hospitals = [{"id": f"hospital-{i}", "name": f"Fictional Research Hospital {i+1}", "region": region,
@@ -118,8 +145,9 @@ def validate(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--config", type=Path, help="JSON-compatible YAML generator configuration")
     args = parser.parse_args()
-    data = generate()
+    data = generate(json.loads(args.config.read_text(encoding="utf-8")) if args.config else None)
     report = validate(data)
     args.output.mkdir(parents=True, exist_ok=True)
     for key, value in data.items():

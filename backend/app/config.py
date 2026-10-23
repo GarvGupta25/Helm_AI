@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     claim_duplicate_threshold: float = 0.8
     claim_auto_approve_cap_aed: int = 10000
     document_encryption_key: str = ""
+    research_state_key: str = ""
+    research_llm_enabled: bool = False
+    research_intent_model: str = "openai/gpt-oss-20b"
+    public_upload_ttl_seconds: int = 86400
     payment_provider: str = "simulator"
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""

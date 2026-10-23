@@ -3,8 +3,9 @@ import type { StreamEvent } from './types';
 export async function streamChat(body: { message: string; attachments: string[]; language: string }, signal: AbortSignal, event: (type: string, data: StreamEvent) => void) {
   const response = await fetch('/api/public/assistant/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
   if ([404, 405, 501].includes(response.status) || !response.body) {
+    if (body.message.length > 500) throw new Error('Use a message below 500 characters while the fallback service is active.');
     if (body.attachments.length) throw new Error('Attachments need the streaming service. Remove the files and try text only.');
-    const fallback = await fetch('/api/public/assistant/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: body.message.slice(0, 500) }), signal });
+    const fallback = await fetch('/api/public/assistant/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: body.message }), signal });
     if (!fallback.ok) throw new Error(fallback.status === 429 ? 'RATE_LIMIT' : 'Assistant unavailable');
     const data = await fallback.json();
     event('token', { text: data.reply }); event('done', {}); return;

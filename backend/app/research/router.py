@@ -1,21 +1,57 @@
 """Capability-scoped research API: generated catalogue only, bounded session state."""
+import hmac
+import json
+import os
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+from pathlib import Path
 from secrets import token_urlsafe
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import session
 from ..public_assistant import _check_rate_limit
 from .engine import recommend
-from .generator import CONFIG
+from .generator import CONFIG, generate, validate
 from .intent import extract_intent
 from .models import ResearchRecord, ResearchSession
 from .schemas import Consent, Conversation, Evidence, Feedback, Profile
+from .storage import stable_key
 
 router = APIRouter(prefix="/api/v1", tags=["synthetic research"])
+
+
+class GenerateRequest(BaseModel):
+    seed: int = Field(default=CONFIG["seed"], ge=0, le=2147483647)
+    version: str = Field(default=CONFIG["version"], pattern=r"^[A-Za-z0-9_-]{1,60}$")
+
+
+@router.post("/synthetic/generate")
+def generate_exports(body: GenerateRequest, request: Request, authorization: str = Header(default="")):
+    admin = os.getenv("SYNTHETIC_ADMIN_TOKEN", "")
+    if not admin or not hmac.compare_digest(authorization, "Bearer "+admin):
+        raise HTTPException(403, "Developer-only generation is disabled or requires the configured administrator bearer token. CLI generation is available locally.")
+    _check_rate_limit("generator:"+(request.client.host if request.client else "unknown"))
+    data = generate({**CONFIG, "seed": body.seed, "version": body.version})
+    report = validate(data)
+    target = Path(__file__).resolve().parents[3]/".runtime"/f"synthetic-{body.version}-{body.seed}"
+    target.mkdir(parents=True, exist_ok=True)
+    for kind, values in data.items():
+        (target/f"{kind}.json").write_text(json.dumps(values), encoding="utf-8")
+    (target/"quality.json").write_text(json.dumps(report), encoding="utf-8")
+    return {"report": report, "imported": False, "notice": "Generated local exports only. Use the explicit administrator import CLI to activate a catalogue."}
+
+
+@router.get("/evaluation/summary")
+def evaluation_summary():
+    path = Path(__file__).resolve().parents[3]/"docs/research/evaluation.json"
+    if not path.exists():
+        raise HTTPException(503, "Run research_evaluate.py to produce the offline fixture evaluation first.")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def catalogue(db):
@@ -144,11 +180,21 @@ def extraction(body: Conversation, record=Depends(own)):
 
 @router.post("/conversation/message")
 def conversation(body: Conversation, record=Depends(own), db: Session = Depends(session)):
+    digest = sha256(body.message.encode()).hexdigest()
+    if body.confirm:
+        pending = record.data.get("pending", {})
+        if pending.get("hash") != digest or pending.get("version") != record.data["version"]:
+            raise HTTPException(409, "Review the proposed changes for this profile version first.")
+        try:
+            profile = Profile(**{**record.data["profile"], **pending["changes"]})
+        except ValidationError:
+            raise HTTPException(422, "Proposed preference values are outside supported bounds.") from None
+        return apply_profile(db, record, profile)
     proposed = extract_intent(body.message, record.data["profile"], body.external_processing_consent)
-    if not body.confirm or not proposed["proposed"]:
-        return proposed
-    profile = Profile(**{**record.data["profile"], **proposed["proposed"]})
-    return {**proposed, **apply_profile(db, record, profile)}
+    data = deepcopy(record.data)
+    data["pending"] = {"hash": digest, "version": data["version"], "changes": proposed["proposed"]}
+    save(db, record, data)
+    return proposed
 
 
 @router.post("/recommendations")
@@ -217,6 +263,8 @@ def consent(record=Depends(own)):
 
 @router.patch("/consent")
 def set_consent(body: Consent, record=Depends(own), db: Session = Depends(session)):
+    if body.durable_memory and not stable_key():
+        raise HTTPException(503, "Durable memory needs a stable server encryption key. Session-only comparison remains available.")
     data = deepcopy(record.data)
     data["consent"] = body.model_dump()
     now = datetime.now(timezone.utc)

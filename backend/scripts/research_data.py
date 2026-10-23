@@ -17,6 +17,9 @@ def ingest(db, folder):
     report = validate(data)
     for kind in ("insurers", "families", "variants", "clauses", "hospitals"):
         for item in data[kind]:
+            existing = db.get(ResearchRecord, item["id"])
+            if existing and (existing.version != data["lineage"]["version"] or existing.data != item):
+                raise ValueError("Catalogue snapshots are immutable. Use a new catalogue database/version namespace.")
             db.merge(ResearchRecord(id=item["id"], kind=kind, version=data["lineage"]["version"], data=item))
     db.commit()
     return report

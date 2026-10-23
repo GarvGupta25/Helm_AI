@@ -8,6 +8,13 @@ scratch.mkdir(exist_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite:///{(scratch / 'uk-e2e.db').as_posix()}"
 os.environ["GROQ_API_KEY"] = ""
 
+from cryptography.fernet import Fernet  # noqa: E402
+
+research_key = scratch / "research-test.key"
+if not research_key.exists():
+    research_key.write_bytes(Fernet.generate_key())
+os.environ["RESEARCH_STATE_KEY"] = research_key.read_text().strip()
+
 import uvicorn  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 

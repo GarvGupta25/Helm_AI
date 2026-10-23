@@ -166,9 +166,11 @@ def extract(message):
     if re.search(r"ignore|system prompt|override|jailbreak|<script", text):
         return {"proposed": {}, "safety": "untrusted_instruction", "question": "Use the preference controls to make a change."}
     changes = {}
-    budget = re.search(r"£\s*(\d+(?:\.\d{1,2})?)|(?:budget|pay)\s*(\d+)", text)
+    budget = re.search(r"(?:budget(?: of)?|pay|afford)\s*(?:up to\s*)?£?\s*(\d+(?:\.\d{1,2})?)", text)
+    if not budget and "excess" not in text:
+        budget = re.search(r"£\s*(\d+(?:\.\d{1,2})?)", text)
     if budget:
-        changes["budget_pence"] = rounded(float(budget.group(1) or budget.group(2))*100)
+        changes["budget_pence"] = rounded(float(budget.group(1))*100)
         changes["strict_budget"] = bool(re.search(r"strict|cannot exceed|can't exceed|maximum budget", text))
     excess = re.search(r"excess\s*(?:below|under|of|maximum|up to)?\s*£?\s*(\d+)", text)
     if excess:
