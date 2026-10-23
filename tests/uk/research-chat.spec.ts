@@ -9,8 +9,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('research confirmed reranking, what-if, undo, consent and delete', async ({ page }) => {
-  await page.goto('/research');
-  await page.getByRole('button', { name: 'Start session comparison' }).click();
+  await page.goto('/get-cover/quote');
+  await page.getByRole('button', { name: 'Get my recommendations' }).click();
   await expect(page.getByRole('heading', { name: 'Your computed shortlist' })).toBeVisible();
   await expect(page.locator('.research-cards article')).toHaveCount(3);
   await page.getByLabel('Describe a preference change').fill('Mental health is essential, excess below £250');
@@ -18,7 +18,10 @@ test('research confirmed reranking, what-if, undo, consent and delete', async ({
   await expect(page.getByText('Confirm these changes before reranking.')).toBeVisible();
   await page.getByRole('button', { name: 'Confirm these changes', exact: true }).click();
   await expect(page.getByText(/Profile version 2/)).toBeVisible();
+  await page.getByRole('button', { name: 'Select this plan', exact: true }).first().click();
   await page.getByRole('button', { name: 'What if my budget rose by £30?' }).click();
+  await expect(page.getByRole('region', { name: 'Review selected plan' })).not.toBeVisible();
+  await expect(page.locator('.research-cards').getByRole('button', { name: 'Select this plan' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'What-if preview' })).toBeVisible();
   await page.getByRole('button', { name: 'Return to confirmed results' }).click();
   await page.getByRole('button', { name: 'Undo last confirmed change' }).click();

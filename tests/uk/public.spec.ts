@@ -61,29 +61,37 @@ test('mobile navigation traps focus and reduced motion stops loops', async ({ pa
   expect(await page.locator('.uk-video-badge>svg').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
 });
 
-test('quote comparison through idempotent zero-payment confirmation', async ({ page }) => {
+test('576-plan quotation through review and persistent zero-payment confirmation', async ({ page }) => {
   await page.goto('/get-cover/quote'); await consent(page);
-  await page.getByRole('button', { name: 'Just me', exact: true }).click();
-  await page.getByLabel('Your date of birth', { exact: true }).fill('1990-04-12');
-  await page.getByRole('textbox', { name: 'UK postcode', exact: true }).fill('SW1A 1AA');
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await page.getByRole('button', { name: 'See demo quotes', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Compare with clarity.', exact: true })).toBeVisible();
-  await expect(page.getByText('Includes 12% Insurance Premium Tax').first()).toBeVisible();
-  await page.getByLabel('Compare this plan', { exact: true }).nth(0).check();
-  await page.getByLabel('Compare this plan', { exact: true }).nth(1).check();
-  await page.getByRole('button', { name: 'Compare selected', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Compare your selected plans' })).toBeVisible();
-  await page.getByLabel('Show differences only').check(); await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Review Essential', exact: true }).first().click();
-  await expect(page.getByRole('button', { name: 'Complete test payment (£0 collected)' })).toBeDisabled();
-  for (const label of ['I understand the usual exclusions', 'I have read the demonstration status', 'I have read the illustrative key facts', 'I understand no money will be collected']) await page.getByLabel(label, { exact: false }).check();
-  await page.getByRole('button', { name: 'Complete test payment (£0 collected)' }).click();
-  await expect(page.getByRole('heading', { name: 'Demo confirmation', exact: true })).toBeVisible();
-  await expect(page.getByText('No money collected. No insurance contract created.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find cover that fits your needs.' })).toBeVisible();
+  let oldCalls = 0;
+  page.on('request', req => { if (new URL(req.url()).pathname === '/api/uk/quotes') oldCalls++; });
+  await page.getByRole('button', { name: 'Get my recommendations' }).click();
+  await expect(page.locator('.research-cards article')).toHaveCount(3);
+  await expect(page.getByRole('heading', { name: 'Your computed shortlist' })).toBeVisible();
+  await page.locator('.research-cards article').first().getByText('Why this result?', { exact: true }).click();
+  await expect(page.getByText('Standard score contributions').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Select this plan', exact: true }).first().click();
+  const review = page.getByRole('region', { name: 'Review selected plan' });
+  await expect(review).toBeVisible();
+  const confirm = review.getByRole('button', { name: 'Confirm demo selection (£0 collected)' });
+  await expect(confirm).toBeDisabled();
+  await review.getByRole('button', { name: 'Read selected plan key facts' }).click();
+  await expect(page.getByRole('heading', { name: 'Synthetic clause evidence' })).toBeVisible();
+  for (const checkbox of await review.getByRole('checkbox').all()) await checkbox.check();
+  await page.screenshot({ path: 'docs/chatbot-screenshots/quote-review.png' });
+  await confirm.click();
+  await expect(page.getByRole('heading', { name: 'Demo confirmation' })).toBeVisible();
+  await expect(page.getByText('No money collected. No insurance contract created.')).toBeVisible();
+  await page.screenshot({ path: 'docs/chatbot-screenshots/quote-confirmation.png' });
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download confirmation & key facts' }).click();
+  expect((await download).suggestedFilename()).toBe('helm-demo-quote-confirmation.json');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Demo confirmation' })).toBeVisible();
+  expect(oldCalls).toBe(0);
+  await page.goto('/research');
+  await expect(page).toHaveURL(/get-cover\/quote$/);
 });
 
 test('public chat safety and support reference', async ({ page }) => {

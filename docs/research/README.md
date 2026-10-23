@@ -1,10 +1,10 @@
 # UK synthetic recommendation research
 
-This is a working research demo at `/research`, separate from public information chat and the existing quote/customer workflows. No generated product is available for sale. No real insurer catalogue, patient history or provider network is used.
+The recommendation engine now powers the normal **Get a quote** journey at `/get-cover/quote`. `/research` and `/get-cover/compare` redirect there; no separate research page is required. Public information chat and authenticated customer workflows remain separate. No generated product is available for sale. No real insurer catalogue, patient history or provider network is used.
 
 ## Run locally
 
-Use the root README's isolated demo setup. `backend/scripts/uk_test_server.py` creates only UK/research tables in `.runtime/uk-e2e.db`, seeds the catalogue and keeps its test encryption key in ignored `.runtime/research-test.key`. It never connects to the configured customer database. Open `/research` with `npm run dev`.
+Use the root README's isolated demo setup. `backend/scripts/uk_test_server.py` creates only UK/research tables in `.runtime/uk-e2e.db`, seeds the catalogue and keeps its test encryption key in ignored `.runtime/research-test.key`. It never connects to the configured customer database. Open `/get-cover/quote` with `npm run dev`.
 
 To reproduce the full experimental exports:
 
@@ -84,3 +84,5 @@ The existing live-production release guard remains closed. No hosting deployment
 Implemented: deterministic demo, opt-in memory, optional extraction integration and UI/API controls. Synthetic by design: insurers, prices, service metrics, networks, users, interactions and persona labels. Disabled/conditional: learned reranker, live provider calls without consent/configuration. Unverified/external: real-device speech and screen readers, independent preference labels/fairness audit, live PostgreSQL execution, real-world calibration and any production compliance approval.
 
 The generated-label NDCG/Hit metrics establish agreement with a template clause/price oracle only. They are not independent proof of recommendation relevance, customer benefit, learned preferences or fairness. The original UK transformation's remaining live-release and legacy-data blockers remain in `docs/uk/PHASE_REPORTS.md` and `LAUNCH_READINESS.md`; this research extension does not make those complete.
+
+The canonical quotation and post-selection workflow is documented in [QUOTE_WORKFLOW.md](../QUOTE_WORKFLOW.md), including the explicit limits after demo confirmation.

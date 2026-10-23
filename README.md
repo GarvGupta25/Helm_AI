@@ -6,7 +6,7 @@ Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REP
 
 ### New research and public chat features
 
-The synthetic research workspace is at `/research`: 576 fictional variants, explainable Standard/Contextual/Fusion scores, confirmed preference changes, scenarios, why/why-not, what-if, undo and encrypted opt-in memory. See [research setup and phase report](docs/research/README.md). Full generated datasets are reproducible under ignored `.runtime`; samples/reports are versioned.
+The normal **Get a quote** journey at `/get-cover/quote` uses the new recommendation engine: 576 fictional variants, explainable Standard/Contextual/Fusion scores, confirmed preference changes, scenarios, why/why-not, what-if, undo and encrypted opt-in memory. See [research setup and phase report](docs/research/README.md). It includes plan selection, review and a persisted, downloadable £0 demo confirmation. `/research` and `/get-cover/compare` redirect to this same journey. Full generated datasets are reproducible under ignored `.runtime`; samples/reports are versioned.
 
 The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, Arabic/RTL and dark mode. It is enabled by default in development. For preview and browser QA, set `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
 

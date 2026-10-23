@@ -65,7 +65,7 @@ def catalogue(db):
 
 
 def own(db: Session = Depends(session), x_research_session: str = Header(default="")):
-    record = db.get(ResearchSession, x_research_session) if len(x_research_session) == 43 else None
+    record = db.scalar(select(ResearchSession).where(ResearchSession.id == x_research_session).with_for_update()) if len(x_research_session) == 43 else None
     if not record:
         raise HTTPException(404, "Research session not found. Start a new session.")
     if record.expires_at.replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
