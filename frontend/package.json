@@ -9,7 +9,7 @@
     "build:production": "node ../scripts/uk-release-guard.mjs --live && tsc -b && vite build",
     "check": "tsc -b",
     "test": "vitest run --config vitest.config.ts",
-    "lint:uk": "eslint src/uk src/ui src/market",
+    "lint:uk": "eslint src/uk src/ui src/market src/marketing/chat",
     "preview": "vite preview --host 127.0.0.1 --port 4174"
   },
   "dependencies": {
@@ -29,7 +29,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.90.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.8.0",
+    "rehype-sanitize": "^6.0.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

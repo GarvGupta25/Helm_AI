@@ -1,25 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import type { DotLottie } from '@lottiefiles/dotlottie-web';
 import { ChatPanel } from './ChatPanel';
 import './ChatbotLauncher.css';
 
+const ChatWidget = lazy(() => import('../chat/ChatWidget'));
+const NEXT_CHAT_UI = import.meta.env.VITE_NEXT_CHAT_UI === 'true' || (import.meta.env.DEV && import.meta.env.VITE_NEXT_CHAT_UI !== 'false');
 export function ChatbotLauncher() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const greetingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => { try { return NEXT_CHAT_UI && sessionStorage.getItem('helm-chat-open') === 'yes'; } catch { return false; } });
+  const [hasOpened, setHasOpened] = useState(isOpen);
+  const [unread, setUnread] = useState(false);
+  useEffect(() => { try { sessionStorage.setItem('helm-chat-open', isOpen ? 'yes' : 'no'); } catch { /* Optional storage. */ } }, [isOpen]);
   const [animated, setAnimated] = useState(false);
   const [showGreeting, setShowGreeting] = useState(false);
   useEffect(() => {
     try { if (sessionStorage.getItem('helm-greeting-dismissed') === 'yes') return; } catch { /* Storage may be unavailable. */ }
-    greetingTimer.current = setTimeout(() => setShowGreeting(true), 3000);
+    greetingTimer.current = setTimeout(() => setShowGreeting(true), 4000);
     return () => { if (greetingTimer.current) clearTimeout(greetingTimer.current); };
   }, []);
 
   useEffect(() => {
     if (!showGreeting) return;
-    const timeout = window.setTimeout(dismissGreeting, 8000);
+    const timeout = window.setTimeout(dismissGreeting, 6000);
     return () => window.clearTimeout(timeout);
   }, [showGreeting]);
 
@@ -63,11 +68,11 @@ export function ChatbotLauncher() {
     setShowGreeting(false);
     try { sessionStorage.setItem('helm-greeting-dismissed', 'yes'); } catch { /* Session memory is optional. */ }
   }
-  function open() { dismissGreeting(); setIsOpen(true); }
+  function open() { dismissGreeting(); setIsOpen(true); setHasOpened(true); setUnread(false); }
   function close() { setIsOpen(false); trigger.current?.focus(); }
 
   return <div className="chatbot-launcher-root">
-    {isOpen && <ChatPanel onClose={close}/>}
+    {NEXT_CHAT_UI ? hasOpened && <Suspense fallback={null}><ChatWidget open={isOpen} onClose={close} onUnread={() => setUnread(true)}/></Suspense> : isOpen && <ChatPanel onClose={close}/>}
     <div className="chatbot-launcher">
       {showGreeting && !isOpen && <div className="chatbot-greeting-card">
         <button type="button" className="chatbot-greeting-card__open" onClick={open}>
@@ -77,7 +82,8 @@ export function ChatbotLauncher() {
         </button>
         <button type="button" className="chatbot-greeting-card__close" onClick={dismissGreeting} aria-label="Dismiss message"><X size={16}/></button>
       </div>}
-      <button ref={trigger} type="button" className="chatbot-launcher__button" aria-label="Open the Helm AI assistant" aria-expanded={isOpen} aria-controls={isOpen ? 'helm-public-assistant' : undefined} onClick={open}>
+      <button ref={trigger} type="button" className="chatbot-launcher__button" aria-label={isOpen ? "Minimize the Helm AI assistant" : "Open the Helm AI assistant"} aria-expanded={isOpen} aria-controls={isOpen ? 'helm-public-assistant' : undefined} onClick={isOpen ? close : open}>
+        {unread && <span className="chatbot-unread" aria-label="New assistant message"/>}
         {!animated && <MessageCircle size={28} aria-hidden="true"/>}
         <canvas ref={canvas} width={96} height={96} className="chatbot-launcher__canvas" hidden={!animated} aria-hidden="true"/>
       </button>
