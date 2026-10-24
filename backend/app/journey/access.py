@@ -193,6 +193,7 @@ class RecoverVerify(Strict):
     case_id: str
     contact_id: str
     code: str = Field(pattern=r'^\d{6}$')
+    hours: Literal[24,48] = 24
 
 
 @router.post('/access-links/recover/verify')
@@ -210,6 +211,6 @@ def recover_verify(body: RecoverVerify, request: Request, db: Session = Depends(
     check_code(db, contact, body.code)
     if contact.data.get('mode'):
         demo_codes.pop(contact.id,None)
-    result = issue_link(db, case)
+    result = issue_link(db, case,body.hours)
     db.commit()
     return result

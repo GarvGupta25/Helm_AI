@@ -1,0 +1,12 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import {seedVerified} from './helpers';
+for(const width of [1440,375])test(`dashboard comparison PDFs and assistant at ${width}px`,async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('helm-cookie-consent-v1',JSON.stringify({necessary:true})));await page.setViewportSize({width,height:900});await seedVerified(page,2);
+ await page.evaluate(async()=>{const headers={'Content-Type':'application/json','X-Journey-Session':sessionStorage.getItem('helm-journey') || ''};const response=await fetch('/api/journey/wizard/access',{method:'POST',headers,body:JSON.stringify({hours:24})});if(!response.ok)throw new Error('Fixture access failed');const {url}=await response.json();const exchange=await fetch('/api/journey/access-links/exchange',{method:'POST',headers,body:JSON.stringify({token:url.split('#')[1]})});if(!exchange.ok)throw new Error('Fixture exchange failed');});
+ await page.goto('/my-quotes');await expect(page.getByRole('link',{name:'Download synthetic quotation PDF'})).toHaveCount(2,{timeout:25000});await page.getByRole('tab',{name:'Compare',exact:true}).click();await expect(page.getByRole('heading',{name:'Main differences'})).toBeVisible();await expect(page.getByText(/has the lowest monthly premium here/)).toBeVisible();
+ await page.getByRole('tab',{name:'Documents',exact:true}).click();const download=page.waitForEvent('download');await page.getByRole('link',{name:'Download comparison PDF'}).click();expect((await download).suggestedFilename()).toBe('helm-demo-comparison.pdf');
+ await page.getByRole('tab',{name:'Ask Helm',exact:true}).click();await page.getByRole('button',{name:'Recommend',exact:true}).click();await page.getByRole('button',{name:'Which quotation has the highest stored fit?',exact:true}).click();await expect(page.getByRole('log',{name:'Dashboard assistant conversation'})).toContainText('ranking.fusion');
+ await page.getByLabel('Your quotation question',{exact:true}).fill('Is worldwide care guaranteed?');await page.getByRole('button',{name:'Ask about my quotations'}).click();await expect(page.getByRole('log')).toContainText('no coverage, eligibility or price has been guessed');
+ const scan=await new AxeBuilder({page}).include('.w-dashboard').analyze();expect(scan.violations.filter(v=>['serious','critical'].includes(v.impact || ''))).toEqual([]);await page.screenshot({path:`.runtime/wizard-dashboard-${width}.png`});
+});

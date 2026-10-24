@@ -19,3 +19,5 @@
 .w-code{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;max-width:400px;margin:28px 0}.wizard .w-code input{text-align:center;font-size:24px;padding:12px 4px;min-width:0}.w-code+button{margin-top:12px}@media(max-width:520px){.w-code{gap:6px}.wizard .w-code input{font-size:21px}}
 
 .w-dashboard-header{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:36px;font-size:14px}.w-dashboard-tabs{display:flex;gap:8px;overflow:auto;border-bottom:1px solid var(--j-line);padding:8px 0 18px;margin:28px 0}.w-dashboard-tabs button{white-space:nowrap}.w-dashboard-tabs [aria-selected=true]{background:var(--j-navy);color:white}.w-dashboard [role=tabpanel]{min-height:240px}.w-dashboard{max-width:1400px}
+
+.w-frozen-answers a{display:none!important}

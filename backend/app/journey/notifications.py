@@ -36,7 +36,7 @@ def process_notifications(db, clock=None):
             continue
         if job.kind == 'link_reminder':
             grant = db.get(Grant, job.data['grant_id'])
-            if not grant or grant.revoked or grant.used or grant.expires_at.replace(tzinfo=timezone.utc) <= clock:
+            if not grant or grant.revoked or grant.expires_at.replace(tzinfo=timezone.utc) <= clock:
                 job.status = 'cancelled'
                 continue
         quiet = quiet_until(case.data['preferences'], clock)
