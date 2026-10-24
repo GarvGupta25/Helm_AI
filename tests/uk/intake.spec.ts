@@ -5,12 +5,11 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('helm-cookie-consent-v1', JSON.stringify({ necessary: true })));
 });
 
-test('guided intake remains usable on a narrow RTL viewport', async ({ page }) => {
+test('English guided intake remains usable on a narrow viewport', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/get-cover/quote');
   await page.getByRole('button', { name: 'Let the AI ask me', exact: true }).click();
-  await page.getByRole('button', { name: 'العربية', exact: true }).click();
-  await expect(page.locator('.j-interview')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('.j-interview')).toHaveAttribute('dir', 'ltr');
   const scan = await new AxeBuilder({ page }).include('.journey').analyze();
   expect(scan.violations.filter(v => ['serious', 'critical'].includes(v.impact || ''))).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();

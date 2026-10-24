@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-export type Config = { auth_configured: boolean; supabase_url: string; supabase_anon_key: string; ai_available: boolean; voice_available: boolean; payment_provider: string };
+export type Config = { auth_configured: boolean; member_demo_auth?: boolean; supabase_url: string; supabase_anon_key: string; ai_available: boolean; voice_available: boolean; payment_provider: string };
 export let auth: SupabaseClient | null = null;
 export function configureAuth(config: Config) {
   if (config.auth_configured && !auth) auth = createClient(config.supabase_url, config.supabase_anon_key, { auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });

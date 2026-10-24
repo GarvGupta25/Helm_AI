@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowUp, Bot, Check, FileText, Maximize2, Mic, Minimize2, MoreHorizontal, Plus, Square, X } from 'lucide-react';
+import { ArrowUp, Bot, Check, FileText, Camera, ImagePlus, ShieldCheck, X as CloseIcon, Maximize2, Mic, Minimize2, MoreHorizontal, Plus, Square, X } from 'lucide-react';
 import { chatStrings, type ChatLanguage } from './chatStrings';
 import { MessageBubble } from './MessageBubble';
 import { GreetingAnimation } from './GreetingAnimation';
@@ -9,13 +9,16 @@ import { useVoiceInput } from './useVoiceInput';
 import type { Message } from './types';
 import './chat.tokens.css';
 import './chat.css';
+import { FeedbackForm, saveFeedback, type FeedbackTarget } from './FeedbackForm';
+import { useReadAloud } from './useReadAloud';
 
 function restored(): Message[] { try { const stored = JSON.parse(sessionStorage.getItem('helm-chat-v2') || '[]') as Message[]; return Array.isArray(stored) ? stored.filter(m => ['user', 'assistant'].includes(m.role) && typeof m.text === 'string' && Number.isFinite(m.at)).slice(-200) : []; } catch { return []; } }
 const makeMessage = (role: Message['role'], text: string): Message => ({ id: crypto.randomUUID(), role, text, at: Date.now(), status: 'sent' });
 export default function ChatWidget({ open, onClose, onUnread }: { open: boolean; onClose: () => void; onUnread: () => void }) {
   const [messages, setMessages] = useState<Message[]>(restored);
   const [input, setInput] = useState('');
-  const [language, setLanguage] = useState<ChatLanguage>('en');
+  const language: ChatLanguage = 'en';
+  const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget>();
   const [expanded, setExpanded] = useState(false);
   const [menu, setMenu] = useState(false);
   const [attachMenu, setAttachMenu] = useState(false);
@@ -25,6 +28,7 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
   const [canRetryMessage, setCanRetryMessage] = useState(false);
   const localError = useCallback((text: string) => { setError(text); setCanRetryMessage(false); }, []);
   const [notice, setNotice] = useState('');
+  const readAloud = useReadAloud(open, setNotice);
   const [handoff, setHandoff] = useState(false);
   const [topic, setTopic] = useState(0);
   const [pendingHandoff, setPendingHandoff] = useState(false);
@@ -72,18 +76,21 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
     function escape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
       event.stopPropagation();
-      if (preview) setPreview(''); else if (voice.recording) voice.stop(true); else if (menu || attachMenu) { setMenu(false); setAttachMenu(false); } else if (handoff) setHandoff(false); else onClose();
+      if (feedbackTarget) setFeedbackTarget(undefined); else if (preview) setPreview(''); else if (voice.recording) voice.stop(true); else if (menu || attachMenu) { setMenu(false); setAttachMenu(false); } else if (handoff) setHandoff(false); else onClose();
     }
     document.addEventListener('keydown', escape);
     return () => document.removeEventListener('keydown', escape);
-  }, [open, preview, menu, attachMenu, handoff, onClose, voice.recording, voice.stop]);
-  const feedback = useCallback((id: string, value: 'up' | 'down') => { setMessages(items => items.map(m => m.id === id ? { ...m, feedback: value } : m)); }, []);
+  }, [open, preview, menu, attachMenu, handoff, onClose, voice.recording, voice.stop, feedbackTarget]);
+  async function feedback(message: Message, value: 'up' | 'down') {
+    try { await saveFeedback(message, { kind: 'feedback', rating: value }); setMessages(items => items.map(m => m.id === message.id ? { ...m, feedback: value } : m)); setNotice('Thanks — your feedback has been saved.'); if (value === 'down') setFeedbackTarget({ message, kind: 'feedback', rating: value }); }
+    catch (e) { setNotice(e instanceof Error ? e.message : 'Feedback could not be saved.'); }
+  }
   async function send(text: string, regenerate = false) {
     if (generating || rateSeconds || offline || (!text.trim() && !attachments.attachments.length)) return;
-    if (regenerate && [...messages].reverse().find(m => m.role === 'user')?.attachments?.length) { localError(language === 'ar' ? 'أعد إرفاق الملف وأرسل سؤالك من جديد.' : 'Attachments are single-use. Reattach your file and send the question again.'); return; }
+    if (regenerate && [...messages].reverse().find(m => m.role === 'user')?.attachments?.length) { localError('Attachments are single-use. Reattach your file and send the question again.'); return; }
     if (attachments.attachments.some(a => a.status !== 'ready')) { setError(t.failed); return; }
-    const question = text.trim() || (language === 'ar' ? 'اشرح مصطلحات التأمين في المرفق' : 'Explain an insurance term from my attachment');
-    lastQuestion.current = question; setBackup(undefined); setError(''); setNotice(''); setSuggestions([]); setInput(''); setGenerating(true); voice.stop(true);
+    const question = text.trim() || ('Explain an insurance term from my attachment');
+    lastQuestion.current = question; setBackup(undefined); setError(''); setNotice(''); setSuggestions([]); setInput(''); setGenerating(true); voice.stop(true); readAloud.stop(); setFeedbackTarget(undefined);
     const files = regenerate ? [] : attachments.consume();
     const user = { ...makeMessage('user', question), status: 'sending' as const, attachments: files };
     const bot = makeMessage('assistant', '');
@@ -95,7 +102,7 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
       await streamChat({ message: question, attachments: files.map(a => a.id), language }, controller.current.signal, (type, data) => {
         if (type === 'token') { content += data.text || ''; if (!frame) frame = requestAnimationFrame(updateText); }
         if (type === 'suggestions') setSuggestions((data.items || []).filter(s => s.length <= 40).slice(0, 3));
-        if (type === 'handoff' && data.ticket_ref) { content += `\n\n${language === 'ar' ? 'مرجع دعم تجريبي' : 'Demo support reference'}: ${data.ticket_ref}`; updateText(); }
+        if (type === 'handoff' && data.ticket_ref) { content += `\n\nDemo support reference: ${data.ticket_ref}`; updateText(); }
         if (type === 'error') throw new Error(data.message || t.failed);
         if (type === 'done') setMessages(items => items.map(m => m.id === bot.id ? { ...m, actions: data.actions } : m));
       });
@@ -109,15 +116,16 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
   function download() { const url = URL.createObjectURL(new Blob([messages.map(m => `${new Date(m.at).toISOString()} ${m.role}: ${m.text}`).join('\n\n')], { type: 'text/plain;charset=utf-8' })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'helm-conversation.txt'; anchor.click(); URL.revokeObjectURL(url); setMenu(false); }
   async function requestHandoff() { setCanRetryMessage(false); setPendingHandoff(true); setError(''); try { const response = await fetch('/api/public/assistant/handoff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: ['General question', 'Complaint', 'Extra support'][topic] }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || t.failed); setMessages(items => [...items, makeMessage('assistant', `${data.reply}\n\nDemo support reference: ${data.ticket_ref}`)]); setHandoff(false); } catch (e) { setError(e instanceof Error ? e.message : t.failed); } finally { setPendingHandoff(false); } }
   function chooseFile(accept: string, capture = false) { if (!file.current) return; file.current.accept = accept; if (capture) file.current.setAttribute('capture', 'environment'); else file.current.removeAttribute('capture'); file.current.click(); setAttachMenu(false); }
-  return <div ref={panel} id="helm-public-assistant" className={`hc-panel${expanded ? ' hc-panel--expanded' : ''}`} role="dialog" aria-label="Helm AI assistant" dir={language === 'ar' ? 'rtl' : 'ltr'} lang={language} data-drop-label={t.drop} hidden={!open} onDragOver={e => { e.preventDefault(); panel.current?.classList.add('hc-drag'); }} onDragLeave={() => panel.current?.classList.remove('hc-drag')} onDrop={e => { e.preventDefault(); panel.current?.classList.remove('hc-drag'); attachments.add(e.dataTransfer.files, fileConsent); }}>
+  return <div ref={panel} id="helm-public-assistant" className={`hc-panel${expanded ? ' hc-panel--expanded' : ''}`} role="dialog" aria-label="Helm AI assistant" dir="ltr" lang={language} data-drop-label={t.drop} hidden={!open} onDragOver={e => { e.preventDefault(); panel.current?.classList.add('hc-drag'); }} onDragLeave={() => panel.current?.classList.remove('hc-drag')} onDrop={e => { e.preventDefault(); panel.current?.classList.remove('hc-drag'); attachments.add(e.dataTransfer.files, fileConsent); }}>
     <header className="hc-header" role="presentation"><span className="hc-header-avatar" aria-hidden="true"><Bot size={23}/></span><div className="hc-heading"><strong>{t.title}</strong><span><i/>{generating ? t.thinking : t.online}</span></div><button aria-label={t.menu} aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={20}/></button><button aria-label={expanded ? t.collapse : t.expand} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 size={18}/> : <Maximize2 size={18}/>}</button><button aria-label={t.close} onClick={onClose}><X size={20}/></button></header>
-    {menu && <div className="hc-menu"><button onClick={() => { setConfirmNew(true); setMenu(false); }}>{t.newChat}</button><button onClick={() => { setHandoff(true); setMenu(false); }}>{t.human}</button><button onClick={download}>{t.transcript}</button><button onClick={() => { setLanguage(language === 'en' ? 'ar' : 'en'); setMenu(false); }}>English / العربية</button><a href="/legal/privacy">{t.privacy}</a></div>}
+    {menu && <div className="hc-menu"><button onClick={() => { setConfirmNew(true); setMenu(false); }}>{t.newChat}</button><button onClick={() => { setHandoff(true); setMenu(false); }}>{t.human}</button><button onClick={download}>{t.transcript}</button><button onClick={() => { setFeedbackTarget({ message: makeMessage('assistant', ''), kind: 'issue' }); setMenu(false); }}>Report a chat issue</button><a href="/legal/privacy">{t.privacy}</a></div>}
     {offline && <div role="status" className="hc-banner">{t.offline}</div>}
-    {confirmNew && <div className="hc-banner"><p>{t.clearQuestion}</p><button onClick={() => { controller.current?.abort(); setBackup(messages); setMessages([]); setConfirmNew(false); attachments.clear(); setNotice(t.cleared); }}>{t.newChat}</button><button onClick={() => setConfirmNew(false)}>{t.cancel}</button></div>}
+    {confirmNew && <div className="hc-banner"><p>{t.clearQuestion}</p><button onClick={() => { controller.current?.abort(); setBackup(messages); setMessages([]); readAloud.stop(); setFeedbackTarget(undefined); setConfirmNew(false); attachments.clear(); setNotice(t.cleared); }}>{t.newChat}</button><button onClick={() => setConfirmNew(false)}>{t.cancel}</button></div>}
     <div className="hc-scroll" ref={log} onScroll={() => { if (!log.current) return; nearBottom.current = log.current.scrollHeight-log.current.scrollTop-log.current.clientHeight < 70; if (nearBottom.current) setNewMessages(false); }}>
-      {!messages.length && <section className="hc-empty">{open && <GreetingAnimation/>}<p className="hc-eyebrow">{t.subtitle}</p><h2>{t.welcome}</h2><p>{t.intro}</p><div className="hc-starters">{t.starters.map((prompt, index) => <button key={prompt} disabled={generating || offline} onClick={() => index === 3 ? setHandoff(true) : void send(language === 'ar' ? chatStrings.en.starters[index] : prompt)}>{prompt}</button>)}</div><small>{t.sensitive}</small></section>}
+      {!messages.length && <section className="hc-empty">{open && <GreetingAnimation/>}<p className="hc-eyebrow">{t.subtitle}</p><h2>{t.welcome}</h2><p>{t.intro}</p><div className="hc-starters">{t.starters.map((prompt, index) => <button key={prompt} disabled={generating || offline} onClick={() => index === 3 ? setHandoff(true) : void send(prompt)}>{prompt}</button>)}</div><small>{t.sensitive}</small></section>}
       {messages.length > 0 && <p className="hc-date">{t.date}</p>}
-      <div role="log" aria-label={language === 'ar' ? 'سجل المحادثة' : 'Chat conversation'} aria-live={generating ? 'off' : 'polite'} aria-relevant="additions">{messages.map((m, i) => <MessageBubble key={m.id} message={m} language={language} last={i === messages.length-1} generating={generating && i === messages.length-1} onFeedback={feedback} onRegenerate={() => void send([...messages].reverse().find(m => m.role === 'user')?.text || lastQuestion.current, true)} onPreview={setPreview} onNotice={setNotice}/>)}</div>
+      <div role="log" aria-label="Chat conversation" aria-live={generating ? 'off' : 'polite'} aria-relevant="additions">{messages.map((m, i) => <MessageBubble key={m.id} message={m} language={language} last={i === messages.length-1} generating={generating && i === messages.length-1} onFeedback={(message, value) => void feedback(message, value)} onReport={message => setFeedbackTarget({ message, kind: 'issue' })} onRead={readAloud.read} speaking={readAloud.speakingId === m.id} canRead={readAloud.supported} onRegenerate={() => void send([...messages].reverse().find(m => m.role === 'user')?.text || lastQuestion.current, true)} onPreview={setPreview} onNotice={setNotice}/>)}</div>
+      {feedbackTarget && <FeedbackForm key={`${feedbackTarget.message.id}:${feedbackTarget.kind}`} target={feedbackTarget} onClose={() => setFeedbackTarget(undefined)} onSaved={setNotice}/>}
       {generating && !messages.at(-1)?.text && <div className="hc-typing" role="status" aria-label={t.thinking}><span/><span/><span/></div>}
       {handoff && <form className="hc-handoff" onSubmit={e => { e.preventDefault(); void requestHandoff(); }}><h3>{t.handoff}</h3><p>{t.noDelivery}</p><label>{t.topic}<select value={topic} onChange={e => setTopic(+e.target.value)}>{t.topics.map((name, i) => <option value={i} key={name}>{name}</option>)}</select></label><button disabled={pendingHandoff}>{pendingHandoff ? t.thinking : t.handoff}</button><button type="button" onClick={() => setHandoff(false)}>{t.cancel}</button></form>}
     </div>
@@ -125,10 +133,10 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
     {notice && <div className="hc-notice" role="status">{notice}{backup && <button onClick={() => { setMessages(backup); setBackup(undefined); setNotice(''); }}>{t.undo}</button>}</div>}
     {error && <div className="hc-error" role="alert">{error}<button disabled={generating || offline} onClick={() => { if (canRetryMessage) void send(lastQuestion.current, true); else { setError(''); textarea.current?.focus(); } }}>{t.retry}</button><button onClick={() => setHandoff(true)}>{t.human}</button></div>}
     {rateSeconds > 0 && <div className="hc-error" role="timer">{t.rate} {Math.floor(rateSeconds/60)}:{String(rateSeconds%60).padStart(2, '0')}</div>}
-    {!!suggestions.length && !input && !generating && <div className="hc-suggestions">{suggestions.map((s, i) => <button key={s} onClick={() => i === 2 ? setHandoff(true) : void send(s)}>{language === 'ar' ? chatStrings.ar.starters[i] : s}</button>)}</div>}
+    {!!suggestions.length && !input && !generating && <div className="hc-suggestions">{suggestions.map((s, i) => <button key={s} onClick={() => i === 2 ? setHandoff(true) : void send(s)}>{s}</button>)}</div>}
     <div className="hc-composer-wrap">
       {attachments.attachments.length > 0 && <div className="hc-attachments">{attachments.attachments.map(a => <div className="hc-attachment" key={a.id}>{a.url ? <img src={a.url} alt=""/> : <FileText size={24}/>}<span>{a.name}<small>{Math.round(a.size/1024)} KB · {a.status === 'uploading' ? t.upload : a.status === 'error' ? a.error : <Check size={12}/>}</small></span>{a.status === 'uploading' && <progress value={a.progress} max="100" aria-label={t.upload}/>}<button aria-label={`${t.remove}: ${a.name}`} onClick={() => attachments.remove(a.id)}><X size={14}/></button>{a.status === 'error' && <button onClick={() => void attachments.retry(a)}>{t.retry}</button>}</div>)}</div>}
-      {attachMenu && <div className="hc-attach-menu"><p>{t.uploadConsent}</p><label><input type="checkbox" checked={fileConsent} onChange={e => setFileConsent(e.target.checked)}/>{t.consent}</label><button disabled={!fileConsent} onClick={() => chooseFile('image/jpeg,image/png,image/webp,image/heic,image/heif')}>{t.photo}</button><button disabled={!fileConsent} onClick={() => chooseFile('application/pdf')}>{t.pdf}</button><button disabled={!fileConsent} onClick={() => chooseFile('image/*', true)}>{t.camera}</button></div>}
+      {attachMenu && <section className="hc-attach-menu hc-upload-panel" aria-label="Add a sample document"><div className="hc-upload-heading"><span className="hc-upload-symbol"><FileText size={19}/></span><div><strong>Add a little context</strong><span>Sample PDFs and photos · up to 10 MB each</span></div><button type="button" aria-label="Close upload options" onClick={() => setAttachMenu(false)}><CloseIcon size={16}/></button></div><div className="hc-upload-options"><button disabled={!fileConsent} onClick={() => chooseFile('application/pdf')}><FileText size={21}/><strong>{t.pdf}</strong><span>Text documents</span></button><button disabled={!fileConsent} onClick={() => chooseFile('image/jpeg,image/png,image/webp,image/heic,image/heif')}><ImagePlus size={21}/><strong>{t.photo}</strong><span>JPG, PNG or HEIC</span></button><button disabled={!fileConsent} onClick={() => chooseFile('image/*', true)}><Camera size={21}/><strong>{t.camera}</strong><span>Use your camera</span></button></div><label className="hc-upload-consent"><input type="checkbox" checked={fileConsent} onChange={e => setFileConsent(e.target.checked)}/><span>{t.consent}</span></label><p className="hc-upload-privacy"><ShieldCheck size={15}/><span>{t.uploadConsent}</span></p></section>}
       {voiceConsent && <div className="hc-attach-menu"><p>{t.voiceConsent}</p><button onClick={() => { setVoiceConsent(false); void voice.start(); }}>{t.done}</button><button onClick={() => setVoiceConsent(false)}>{t.cancel}</button></div>}
       <form className="hc-composer" onSubmit={e => { e.preventDefault(); void send(input); }}>
         <button type="button" aria-label={t.attach} aria-expanded={attachMenu} disabled={generating} onClick={() => setAttachMenu(!attachMenu)}><Plus size={20}/></button>
@@ -137,7 +145,7 @@ export default function ChatWidget({ open, onClose, onUnread }: { open: boolean;
       </form>
       {input.length >= 1800 && <span className="hc-counter">{input.length}/2000</span>}
       <input ref={file} type="file" hidden multiple onChange={e => { if (e.target.files) attachments.add(e.target.files, fileConsent); e.target.value = ''; }}/>
-      <p className="hc-disclosure">{t.disclosure} <a href="/legal/privacy">{language === 'ar' ? 'الخصوصية' : 'Privacy'}</a> · <button onClick={() => setHandoff(true)}>{t.human}</button><span>{t.temporary}</span></p>
+      <p className="hc-disclosure">{t.disclosure} <a href="/legal/privacy">Privacy</a> · <button onClick={() => setHandoff(true)}>{t.human}</button><span>{t.temporary}</span></p>
     </div>
     {preview && <div className="hc-lightbox" role="dialog" aria-label={t.preview}><button autoFocus aria-label={t.lightbox} onClick={() => setPreview('')}><X/></button><img src={preview} alt={t.preview}/></div>}
   </div>;

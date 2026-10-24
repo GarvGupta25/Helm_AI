@@ -2,6 +2,8 @@
 
 > Updated: 24 October 2026, after implementation of the intake-to-broker demo. Shared repository: [GarvGupta25/Helm_AI](https://github.com/GarvGupta25/Helm_AI). Checkout: `U:\projects\Helm_AI`. Development commits are authored **Utkarsh Raj**.
 
+The current [chat/member update](docs/CHAT_AND_MEMBER_UPDATE.md) adds persisted response feedback and issue reports in a dedicated chatbot database, browser read aloud, a refined PDF/photo/camera panel, English-only active interfaces, and persistent local member registration/login with distinct new-member/policyholder dashboards. `/login` includes both seeded demo accounts. This update supersedes earlier Arabic/RTL and browser-only feedback descriptions below; historical phase reports retain their original scope.
+
 This project helps people understand private medical cover, describe their needs, compare fictional plans, explore policy facts, request synthetic quotations and work with an assigned broker through human sign-off. It is a running local prototype. No real policy, payment or insurer submission is created.
 
 ## Current end-to-end build

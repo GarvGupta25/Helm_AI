@@ -22,12 +22,12 @@ describe('untrusted message rendering', () => {
 
 describe('SSE transport', () => {
   it('buffers fragmented UTF-8 frames and emits done once', async () => {
-    const bytes = new TextEncoder().encode('event: token\ndata: {"text":"مبلغ"}\n\nevent: done\ndata: {}\n\n');
-    const body = new ReadableStream({ start(controller) { controller.enqueue(bytes.slice(0, 35)); controller.enqueue(bytes.slice(35)); controller.close(); } });
+    const bytes = new TextEncoder().encode('event: token\ndata: {"text":"£500"}\n\nevent: done\ndata: {}\n\n');
+    const body = new ReadableStream({ start(controller) { controller.enqueue(bytes.slice(0, bytes.indexOf(0xc2)+1)); controller.enqueue(bytes.slice(bytes.indexOf(0xc2)+1)); controller.close(); } });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(body, { status: 200 }));
     const events: string[] = [];
-    await streamChat({ message: 'excess', attachments: [], language: 'ar' }, new AbortController().signal, (type, data) => events.push(`${type}:${data.text || ''}`));
-    expect(events).toEqual(['token:مبلغ', 'done:']);
+    await streamChat({ message: 'excess', attachments: [], language: 'en' }, new AbortController().signal, (type, data) => events.push(`${type}:${data.text || ''}`));
+    expect(events).toEqual(['token:£500', 'done:']);
   });
   it('reports interrupted streams instead of silently claiming completion', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('event: token\ndata: {"text":"partial"}\n\n'));

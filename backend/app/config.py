@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore")
     app_env: str = "development"
+    member_demo_auth: bool = False
+    chatbot_feedback_database_url: str = ''
     database_url: str = "postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres"
     supabase_url: str = "http://127.0.0.1:54321"
     supabase_anon_key: str = ""

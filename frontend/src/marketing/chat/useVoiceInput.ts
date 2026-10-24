@@ -33,7 +33,7 @@ export function useVoiceInput(language: string, onText: (text: string) => void, 
     try {
       if (Constructor) {
         const instance = new Constructor(); recognition.current = instance;
-        instance.lang = language === 'ar' ? 'ar-GB' : 'en-GB'; instance.interimResults = true; instance.continuous = true;
+        instance.lang = 'en-GB'; instance.interimResults = true; instance.continuous = true;
         instance.onresult = event => onText(Array.from(event.results).map(result => result[0].transcript).join(' ').slice(0, 2000));
         instance.onerror = () => { onError(denied); stop(true); };
         instance.onend = () => setRecording(false);

@@ -25,7 +25,7 @@ def test_guarded_sse_and_language(fixture_client):
     assert 'reviewed-knowledge' in response.text
     assert client.post('/api/public/assistant/stream', json={"message": " "}).status_code == 422
     response = client.post('/api/public/assistant/stream', json={"message": "excess", "language": "ar"})
-    assert 'مبلغ' in response.text
+    assert response.status_code == 422
 
 
 def test_upload_validation_consumption_and_deletion(fixture_client):

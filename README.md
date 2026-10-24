@@ -1,5 +1,7 @@
 # Helm AI — UK private medical cover demonstration
 
+The latest [chat and member-account update](docs/CHAT_AND_MEMBER_UPDATE.md) adds a modern document-upload panel, saved response feedback/issue reports in a separate database, browser read aloud, English-only chat/intake, and two persistent demo member landing pages. Open `/login` to try the new-member and policyholder accounts, or `/signup` to create a fictional local account. The isolated demo API enables these member-only accounts; existing Supabase professional authentication remains separate.
+
 For a detailed explanation of the project, delivered features, architecture, setup, shared-repository workflow, and remaining work, read [Project overview and current build status](PROJECT_OVERVIEW.md).
 
 The intake-to-broker demo is implemented in 18 development checkpoints. Read the [journey progress and verification report](docs/roadmap/JOURNEY_PROGRESS.md), [architecture plan](docs/roadmap/JOURNEY_PLAN.md), and [operator runbook](docs/roadmap/JOURNEY_RUNBOOK.md). The owner authorized continuing phases without repeated approval pauses; outgoing AI-assisted drafts still require in-product human approval.
@@ -14,7 +16,7 @@ The normal **Get a quote** journey at `/get-cover/quote` now starts with a share
 
 The new separate `/broker.html` entry uses the existing Supabase authentication and broker role. Its queue exposes only assigned cases with active sharing consent. Brokers can prepare, edit, approve and simulate delivery of exact document revisions. It stays closed when authentication is not configured. Legacy professional archives remain preserved.
 
-The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, Arabic/RTL and dark mode. It is enabled by default in development. For preview and browser QA, set `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
+The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, English-only controls and dark mode. It is enabled by default in development and built previews. For an explicit preview/QA setting, use `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
 
 ### Run the isolated UK demo
 

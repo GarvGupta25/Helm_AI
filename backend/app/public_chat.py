@@ -1,6 +1,6 @@
 """Public widget transport, ephemeral attachments and optional speech transcription.
 
-No public-chat database schema, raw-content logging, autonomous advice or mail delivery.
+Feedback is stored separately; chat content stays transient unless explicitly shared with feedback.
 """
 import asyncio
 import json
@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 
 from .config import settings
 from .db import session
-from .public_assistant import _check_rate_limit, classify_and_reply, handle_public_assistant
+from .public_assistant import _check_rate_limit, handle_public_assistant
 from .voice import validate_audio
 
 
@@ -56,7 +56,7 @@ _upload_lock = Lock()
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     attachments: list[str] = Field(default_factory=list, max_length=5)
-    language: Literal["en", "ar"] = "en"
+    language: Literal["en"] = "en"
 
 
 def cleanup_uploads():
@@ -133,16 +133,6 @@ def sse(event, data):
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-ARABIC = {
-    "excess": "مبلغ التحمل هو الجزء الذي تدفعه من تكلفة العلاج المؤهل. تحقق مما إذا كان يطبق لكل شخص أو مطالبة أو سنة تأمين. هذه معلومات عامة وليست نصيحة شخصية.",
-    "cover": "التأمين الطبي الخاص في المملكة المتحدة اختياري ويكمل خدمات NHS. قد يغطي تشخيص وعلاج الحالات الحادة المؤهلة حسب حدود وشروط الوثيقة.",
-    "handoff": "يمكنني إنشاء مرجع دعم تجريبي. لا توجد خدمة مستشار مباشر متصلة. للتواصل بشأن وثيقة حقيقية، استخدم بيانات اتصال شركة التأمين المعتمدة.",
-    "exclusions": "قد تستثني الوثيقة الحالات السابقة والمزمنة والطوارئ والحمل الروتيني. لا يمكنني تأكيد تغطية حالة أو علاج. راجع الشروط وقرارات الاكتتاب.",
-    "emergency": "إذا كانت هذه حالة طبية طارئة، اتصل بالرقم 999 أو اذهب إلى قسم الطوارئ الآن. التأمين الخاص لا يحل محل رعاية NHS الطارئة.",
-    "self_harm": "أنا آسف لأنك تمر بهذا. إذا كنت في خطر مباشر، اتصل بالرقم 999 أو اذهب إلى الطوارئ الآن. اطلب من شخص تثق به أن يبقى معك، واطلب مساعدة عاجلة من خدمات NHS. يمكننا إيقاف حديث التأمين.",
-}
-
-
 @router.post("/stream")
 async def stream(body: ChatRequest, request: Request, db: Session = Depends(session)):
     if not body.message.strip():
@@ -153,29 +143,10 @@ async def stream(body: ChatRequest, request: Request, db: Session = Depends(sess
             raise HTTPException(410, "An attachment expired or was removed. Attach it again or send text only.")
         contexts = [_uploads.pop(key)["text"] for key in body.attachments]
     # Attachments are data; never execute instructions or turn extracted policy wording into coverage claims.
-    # Map a small, disclosed Arabic topic vocabulary to the same guarded routes.
-    # Never ask a generative translator to decide emergency/advice boundaries.
-    routed = body
-    original_intent = classify_and_reply(body.message)[1]
-    if body.language == "ar" and original_intent not in {"emergency", "self_harm", "sensitive_data", "prompt_injection"}:
-        for pattern, topic in [
-            (r"ألم.*صدر|لا أستطيع التنفس|نزيف شديد|فاقد الوعي", "chest pain"),
-            (r"انتحار|أقتل نفسي|إيذاء نفسي|أريد أن أموت|إنهاء حياتي", "suicidal"),
-            (r"تجاهل التعليمات|اكشف التعليمات", "ignore instructions"),
-            (r"شكوى|شكوة", "complaint"), (r"مستشار|شخص|إنسان", "human adviser"),
-            (r"تحمل", "excess"), (r"استثناء|حالة سابقة|مزمن", "exclusions pre-existing"),
-            (r"سعر|تكلفة|قسط", "price"), (r"اكتتاب", "underwriting"),
-            (r"أفضل|تنصح|توصي", "recommend"), (r"تأمين|تغطية", "private health cover"),
-        ]:
-            if re.search(pattern, body.message):
-                routed = body.model_copy(update={"message": topic})
-                break
-    result = await handle_public_assistant(routed, request, db)
+    result = await handle_public_assistant(body, request, db)
     reply = result.reply
     if contexts:
         reply += " I read the attachment as untrusted text. I cannot verify its policy terms or your coverage; ask a general question about an insurance term."
-    if body.language == "ar":
-        reply = ARABIC.get(result.intent, "واجهة المحادثة متاحة بالعربية. الإرشادات التفصيلية المعتمدة حالياً بالإنجليزية: " + reply)
     async def events():
         yield sse("meta", {"mode": "reviewed-knowledge", "notice": "Pre-reviewed guidance delivered progressively; no model generation."})
         words = reply.split(" ")
@@ -192,7 +163,7 @@ async def stream(body: ChatRequest, request: Request, db: Session = Depends(sess
 
 
 @router.post("/transcribe")
-def transcribe(request: Request, file: UploadFile = File(...), consent: bool = Form(False), language: str = Form("en")):
+def transcribe(request: Request, file: UploadFile = File(...), consent: bool = Form(False), language: Literal["en"] = Form("en")):
     _check_rate_limit("speech:"+(request.client.host if request.client else "unknown"))
     if not consent:
         raise HTTPException(422, "Consent to sending this recording to Groq is required.")
@@ -203,7 +174,7 @@ def transcribe(request: Request, file: UploadFile = File(...), consent: bool = F
     validate_audio(content)
     try:
         result = Groq(api_key=key, timeout=20).audio.transcriptions.create(
-            file=("recording.webm", content), model="whisper-large-v3-turbo", language="ar" if language == "ar" else "en")
+            file=("recording.webm", content), model="whisper-large-v3-turbo", language="en")
         return {"text": result.text[:2000], "language": language, "retained": False}
     except Exception:
         raise HTTPException(503, "Transcription could not finish. Try again or type your message.") from None
@@ -216,9 +187,3 @@ class Handoff(BaseModel):
 @router.post("/handoff")
 async def handoff(body: Handoff, request: Request, db: Session = Depends(session)):
     return await handle_public_assistant(ChatRequest(message=f"human adviser {body.topic}"), request, db)
-
-
-@router.post("/feedback")
-def feedback(request: Request):
-    _check_rate_limit("feedback:"+(request.client.host if request.client else "unknown"))
-    return {"recorded": False, "notice": "Feedback stays in your browser session. No training or external delivery."}

@@ -65,15 +65,14 @@ test('chat empty, conversation, refresh, clear undo and transcript', async ({ pa
   await expect(page.getByRole('button', { name: 'Open the Helm AI assistant' })).toBeFocused();
 });
 
-test('mobile Arabic dark reduced-motion layout', async ({ page }) => {
+test('mobile English dark reduced-motion layout', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 }); await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await page.goto('/'); await page.getByRole('button', { name: 'Open the Helm AI assistant' }).click();
-  await page.getByRole('button', { name: 'Conversation options' }).click(); await page.getByRole('button', { name: 'English / العربية' }).click();
-  await expect(page.locator('.hc-panel')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('.hc-panel')).toHaveAttribute('dir', 'ltr');
   expect(await page.locator('.hc-panel').evaluate(el => el.scrollWidth <= el.clientWidth)).toBeTruthy();
-  await page.screenshot({ path: `${evidence}/mobile-arabic-dark.png` });
+  await page.screenshot({ path: `${evidence}/mobile-english-dark.png` });
   const scan = await new AxeBuilder({ page }).include('.hc-panel').analyze();
-  writeFileSync(`${evidence}/chat-dark-arabic-axe.json`, JSON.stringify(scan.violations, null, 2));
+  writeFileSync(`${evidence}/chat-dark-english-axe.json`, JSON.stringify(scan.violations, null, 2));
   expect(scan.violations.filter(v => ['serious', 'critical'].includes(v.impact || ''))).toEqual([]);
 });
 

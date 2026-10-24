@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
 from .auth import User, current_user, require_broker
+from .chatbot_feedback import router as chatbot_feedback_router
 from .claim_agent import broker_router as broker_claim_router
 from .claim_agent import router as claim_agent_router
 from .config import settings
@@ -62,6 +63,7 @@ from .marketplace_broker import router as marketplace_broker_router
 from .marketplace_matching import router as marketplace_matching_router
 from .marketplace_models import MarketplacePlan, MarketplacePolicy, Provider, ProviderQuotation
 from .marketplace_selection import router as marketplace_selection_router
+from .member_demo import router as member_demo_router
 from .models import (
     Application,
     Audit,
@@ -98,6 +100,8 @@ app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
+app.include_router(chatbot_feedback_router)
+app.include_router(member_demo_router)
 app.include_router(journey_broker_router)
 app.include_router(journey_review_router)
 app.include_router(journey_compare_router)
@@ -207,6 +211,7 @@ def capabilities():
     cfg = settings()
     return {
         "auth_configured": bool(cfg.supabase_anon_key),
+        "member_demo_auth": cfg.member_demo_auth and cfg.app_env in {'development', 'test'},
         "supabase_url": cfg.supabase_url,
         "supabase_anon_key": cfg.supabase_anon_key,
         "ai_available": bool(cfg.groq_api_key),

@@ -35,7 +35,7 @@ const client = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchO
 
 function Brand() { return <Link to="/" className="brand" aria-label="Helm AI home"><span><Compass size={25}/></span>helm<span className="brand-ai">ai</span></Link>; }
 function Login({ session, config }: { session: Session | null; config: Config }) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'recover' | 'reset'>('login'); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<'login' | 'signup' | 'recover' | 'reset'>(location.pathname === '/signup' ? 'signup' : 'login'); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   useEffect(() => { if (new URLSearchParams(location.search).has('recovery')) setMode('reset'); }, []);
   if (session && mode !== 'reset' && !new URLSearchParams(location.search).has('recovery')) return <Navigate to="/app" replace/>;
@@ -45,13 +45,13 @@ function Login({ session, config }: { session: Session | null; config: Config })
     try {
       if (mode === 'recover') { const { error } = await auth.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login?recovery=1' }); if (error) throw error; setMessage('If this account exists, a recovery link has been sent.'); }
       else if (mode === 'reset') { const { error } = await auth.auth.updateUser({ password }); if (error) throw error; navigate('/app'); }
-      else if (mode === 'signup') { const { data, error } = await auth.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + '/app' } }); if (error) throw error; if (!data.session) setMessage('Check your email to verify your account, then sign in.'); else navigate('/app'); }
+      else if (mode === 'signup') { const { data, error } = await auth.auth.signUp({ email, password, options: { data: { full_name: String(values.get('name') || '').trim() }, emailRedirectTo: location.origin + '/app' } }); if (error) throw error; if (!data.session) setMessage('Check your email to verify your account, then sign in.'); else navigate('/app'); }
       else { const { error } = await auth.auth.signInWithPassword({ email, password }); if (error) throw error; navigate('/app'); }
     } catch (e) { setMessage((e as Error).message); } finally { setBusy(false); }
   }
   return <div className="auth-page"><div className="auth-story"><Brand/><span className="eyebrow">A CLEARER WAY TO FIND COVER</span><h1>Your needs.<br/>Your choices.<br/><span>All connected.</span></h1><p>A little understanding goes a long way.<br/>Let’s find where your cover should start.</p><span className="badge light">Fictional insurance demonstration</span></div><main className="auth-panel"><Link className="text-link" to="/">← Back to Helm</Link><div className="auth-form"><span className="eyebrow">WELCOME TO HELM</span><h2>{mode === 'signup' ? 'Make yourself at home.' : mode === 'recover' ? 'Find your way back.' : mode === 'reset' ? 'Choose a new password.' : 'Good to see you.'}</h2><p>{mode === 'login' ? 'Sign in to pick up where you left off.' : 'Your profile will be saved with your account.'}</p>
     {!config.auth_configured && <div className="notice">Account access is not configured yet. Connect local or hosted Supabase to enable sign-in and saved profiles.</div>}
-    <form onSubmit={submit}>{mode !== 'reset' && <label className="field">Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label>}{mode !== 'recover' && <label className="field">Password<input name="password" type="password" minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required placeholder="At least 8 characters"/></label>}<button disabled={busy || !config.auth_configured}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'recover' ? 'Send recovery link' : mode === 'reset' ? 'Update password' : 'Sign in'}<ArrowRight size={17}/></button></form>
+    <form onSubmit={submit}>{mode === 'signup' && <label className="field">Full name<input name="name" autoComplete="name" required maxLength={100} placeholder="Your name"/></label>}{mode !== 'reset' && <label className="field">Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label>}{mode !== 'recover' && <label className="field">Password<input name="password" type="password" minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required placeholder="At least 8 characters"/></label>}<button disabled={busy || !config.auth_configured}>{busy ? 'Please wait…' : mode === 'signup' ? 'Create account' : mode === 'recover' ? 'Send recovery link' : mode === 'reset' ? 'Update password' : 'Sign in'}<ArrowRight size={17}/></button></form>
     {message && <p className="notice" role="status">{message}</p>}<div className="auth-links"><button className="quiet" onClick={() => { setMessage(''); setMode(mode === 'signup' ? 'login' : 'signup'); }}>{mode === 'signup' ? 'Already have an account? Sign in' : 'New here? Create an account'}</button><button className="quiet" onClick={() => { setMessage(''); setMode('recover'); }}>Forgot password?</button></div><small>Passwords stay in the sign-in flow. Never share passwords, card details or one-time codes with the assistant.</small></div></main></div>;
 }
 
@@ -147,7 +147,7 @@ function App() {
     </Route>
 
     {/* Customer account */}
-    <Route path="/login" element={<Login session={session} config={config.data}/>} />
+    <Route path="/login" element={<Login session={session} config={config.data}/>} /><Route path="/signup" element={<Login session={session} config={config.data}/>} />
     <Route path="/app" element={<Shell session={session}/>}>
       <Route index element={<Dashboard/>} />
       <Route path="intake/:caseId" element={<Intake config={config.data}/>} />

@@ -1,3 +1,7 @@
+# Current update — 24 October 2026
+
+See [chat and member-account delivery](CHAT_AND_MEMBER_UPDATE.md) for the modern upload panel, saved feedback/issues, read aloud and English-only controls. The earlier baseline notes below describe the previous version; Arabic controls and browser-only feedback have been superseded.
+
 # Public assistant redesign and verification
 
 The pre-change audit is `chatbot-audit.md`. The replacement stays under `frontend/src/marketing/chat`; authenticated intake, Shopping, Broker, StaffConsole, servicing and payments were not changed for this widget.

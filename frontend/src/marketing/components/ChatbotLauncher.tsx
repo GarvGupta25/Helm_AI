@@ -5,7 +5,7 @@ import { ChatPanel } from './ChatPanel';
 import './ChatbotLauncher.css';
 
 const ChatWidget = lazy(() => import('../chat/ChatWidget'));
-const NEXT_CHAT_UI = import.meta.env.VITE_NEXT_CHAT_UI === 'true' || (import.meta.env.DEV && import.meta.env.VITE_NEXT_CHAT_UI !== 'false');
+const NEXT_CHAT_UI = import.meta.env.VITE_NEXT_CHAT_UI !== 'false';
 export function ChatbotLauncher() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);

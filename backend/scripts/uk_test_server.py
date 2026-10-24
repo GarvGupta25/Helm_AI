@@ -7,6 +7,9 @@ scratch = root / ".runtime"
 scratch.mkdir(exist_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite:///{(scratch / 'uk-e2e.db').as_posix()}"
 os.environ["GROQ_API_KEY"] = ""
+os.environ["APP_ENV"] = "development"
+os.environ["MEMBER_DEMO_AUTH"] = "true"
+os.environ["CHATBOT_FEEDBACK_DATABASE_URL"] = f"sqlite:///{(scratch / 'chatbot-feedback.db').as_posix()}"
 
 from cryptography.fernet import Fernet  # noqa: E402
 
@@ -22,6 +25,7 @@ from app.db import engine  # noqa: E402
 from app.journey import case_models as journey_case_models  # noqa: E402, F401
 from app.journey import models as journey_models  # noqa: E402, F401
 from app.market.seed import seed  # noqa: E402
+from app.member_demo import seed_demo_members  # noqa: E402
 from app.models import Base  # noqa: E402
 from app.research.generator import CONFIG, generate  # noqa: E402
 from app.research.models import (  # noqa: E402
@@ -29,9 +33,10 @@ from app.research.models import (  # noqa: E402
     ResearchSession,  # noqa: E402, F401
 )
 
-Base.metadata.create_all(engine(), tables=[table for table in Base.metadata.tables.values() if table.name.startswith(("uk_", "research_", "journey_"))])
+Base.metadata.create_all(engine(), tables=[table for table in Base.metadata.tables.values() if table.name.startswith(("uk_", "research_", "journey_", "member_demo_"))])
 with Session(engine()) as db:
     print(seed(db), flush=True)
+    print({"demo_members_created": seed_demo_members(db)}, flush=True)
     data = generate({**CONFIG, "profiles": 0, "histories": 0})
     for kind in ("insurers", "families", "variants", "clauses", "hospitals"):
         for item in data[kind]:
