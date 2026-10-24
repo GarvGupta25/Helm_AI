@@ -88,6 +88,20 @@ def view(run_id: str, body: ViewFilters, record=Depends(owned), db: Session = De
     return {'items':shown,'count':len(shown),'profile_unchanged':True,'profile_version':record.version}
 
 
+class Compared(Strict):
+    plan_ids: list[str] = Field(min_length=2,max_length=3)
+
+
+@router.post('/runs/{run_id}/comparison')
+def comparison(run_id: str, body: Compared, record=Depends(owned), db: Session = Depends(session)):
+    from .explanations import main_differences
+    row=run_owned(db,record,run_id)
+    items=[item for item in row.data['result']['items'] if item['id'] in body.plan_ids]
+    if len(items)!=len(body.plan_ids) or len(set(body.plan_ids))!=len(body.plan_ids):
+        raise HTTPException(422,'Compare two or three distinct current plans')
+    return {'main_differences':main_differences(items),'sources':[item['id'] for item in items],'profile_version':record.version}
+
+
 @router.get("/runs/{run_id}")
 def get_run(run_id: str, record=Depends(owned), db: Session = Depends(session)):
     row = run_owned(db, record, run_id)

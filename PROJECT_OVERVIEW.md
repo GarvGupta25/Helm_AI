@@ -724,3 +724,5 @@ The current phase plan is `docs/ux/GUIDED_JOURNEY_PLAN.md`; audited contracts an
 Wizard Phase 1: set `VITE_QUOTE_WIZARD=true` before starting Vite/building to enable per-step `/get-cover/quote/*`. Default false preserves legacy; `/get-cover/legacy-intake` is always available. `playwright.wizard.config.ts` starts the flag-on test frontend at 4175; normal preview remains4174. Autosave writes drafts, confirmation alone changes ranking inputs.
 
 Wizard Phase5: flag-on `/get-cover/plans` is a separate10-option page with view-only filters. `/get-cover/compare` is no longer a redirect when the flag is on; compare/detail/selection UI follows in Phases6–7. Legacy flag-off routes remain. The API defaults to3 for compatibility, with validated `?limit=10` for wizard runs.
+
+Wizard Phase7: flag-on `/get-cover/compare` and `/get-cover/selection` are separate pages. The canonical reviewed receipt is `/api/journey/selection`,1–3 plans and exact named sharing consent. It does not create a policy/payment/account link or contact an insurer. `/api/v1/quotation/confirm` remains the isolated legacy single-plan demo contract.
