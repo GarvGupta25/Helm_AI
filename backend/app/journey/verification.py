@@ -133,6 +133,21 @@ def window(db,key):
     return row
 
 
+def reserve_send(db,session_id,channel,value):
+    number_key=keyed('otp-number:'+channel+':'+value)
+    session_key=keyed('otp-session:'+session_id)
+    windows={key:window(db,key) for key in sorted([number_key,session_key])}
+    for key,row in windows.items():
+        sends=[at for at in row.data.get('sends',[]) if datetime.fromisoformat(at)>now()-timedelta(hours=1)]
+        if len(sends)>=3:
+            raise HTTPException(429,'Maximum3 codes per hour for this contact or session. Try later.')
+        if key==number_key and sends and (now()-datetime.fromisoformat(sends[-1])).total_seconds()<60:
+            raise HTTPException(429,'Wait60 seconds before sending another code')
+        row.data={**row.data,'sends':[*sends,now().isoformat()]}
+        row.expires_at=now()+timedelta(hours=2)
+    return windows[number_key]
+
+
 @router.get('/verify/config')
 def configuration():
     return {'mode':settings().otp_delivery_mode,'real_delivery':settings().otp_delivery_mode!='console','notice':'Local codes are simulations. Official delivery requires an allow-listed test contact and configured provider.'}
@@ -147,18 +162,7 @@ def start(body:Start,request:Request,record=Depends(owned),db:Session=Depends(se
     _check_rate_limit('wizard-otp:'+(request.client.host if request.client else 'unknown'))
     value=destination(body.channel,body.country_code,body.number)
     transport=provider(body.channel,value)
-    number_key=keyed('otp-number:'+body.channel+':'+value)
-    session_key=keyed('otp-session:'+record.id)
-    windows={key:window(db,key) for key in sorted([number_key,session_key])}
-    number_window=windows[number_key]
-    for key,row in windows.items():
-        sends=[at for at in row.data.get('sends',[]) if datetime.fromisoformat(at)>now()-timedelta(hours=1)]
-        if len(sends)>=3:
-            raise HTTPException(429,'Maximum3 codes per hour for this contact or session. Try later.')
-        if key==number_key and sends and (now()-datetime.fromisoformat(sends[-1])).total_seconds()<60:
-            raise HTTPException(429,'Wait60 seconds before sending another code')
-        row.data={**row.data,'sends':[*sends,now().isoformat()]}
-        row.expires_at=now()+timedelta(hours=2)
+    number_window=reserve_send(db,record.id,body.channel,value)
     contact=Contact(session_id=record.id,channel=body.channel,lookup_hash=keyed(value),data={})
     db.add(contact)
     db.flush()

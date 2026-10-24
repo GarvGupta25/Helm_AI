@@ -82,7 +82,7 @@ test('confirmed intake produces a persistent selectable comparison and a nonsele
     return jobs.find((job: { kind: string }) => job.kind === 'access_link').content.url as string;
   });
   await page.goto(privateUrl);
-  await page.getByRole('button', { name: 'Open private dashboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue to my quotes', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Your quotations, together.' })).toBeVisible();
   await expect(page).toHaveURL(/\/quote-dashboard$/);
   await expect(async () => {

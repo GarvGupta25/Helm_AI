@@ -10,7 +10,7 @@ const Dashboard = lazy(() => import('./journey/Dashboard'));
 function Entry() {
   const { pathname } = useLocation();
   if (pathname === '/login' || pathname === '/signup' || pathname === '/member' || pathname.startsWith('/member/')) return <MemberApp/>;
-  if (pathname === '/quote-dashboard') return <Dashboard/>;
+  if (pathname === '/quote-dashboard' || pathname === '/my-quotes') return <Dashboard/>;
   if (/^\/(?:app\/)?(?:broker|provider|staff)(?:\/|$)/.test(pathname)) return <Navigate to="/" replace/>;
   return pathname === '/login' || pathname === '/app' || pathname.startsWith('/app/') ? <CustomerApp/> : <PublicApp/>;
 }

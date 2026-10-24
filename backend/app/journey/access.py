@@ -14,7 +14,7 @@ from ..config import settings
 from ..db import session
 from ..models import now
 from ..public_assistant import _check_rate_limit
-from .case_models import Case, Contact, Grant, Job
+from .case_models import Case, Contact, Grant, Job, OtpWindow
 from .cases import active, audit, case_owned, live_case
 from .contact import check_code, keyed, normalize
 from .router import digest, owned
@@ -135,20 +135,58 @@ def recover(body: Recovery, request: Request, db: Session = Depends(session)):
     contact_id = token_urlsafe(16)
     try:
         live_case(case)
-        destination = normalize(body.channel, body.destination)
         contacts = db.scalars(select(Contact).where(Contact.id.in_(case.data['contact_ids']), Contact.channel == body.channel)).all()
+        if any(c.data.get('mode') for c in contacts):
+            from .verification import destination as normalized
+            destination=normalized(body.channel,'+44',body.destination)
+        else:
+            destination = normalize(body.channel, body.destination)
         contact = next((c for c in contacts if c.lookup_hash == keyed(destination) and c.verified_at), None)
         if contact:
+            if contact.data.get('mode'):
+                from .verification import provider, reserve_send
+                if contact.data['mode']!=settings().otp_delivery_mode:
+                    raise HTTPException(503,'The original verification transport is unavailable')
+                transport=provider(body.channel,destination)
+                quota=reserve_send(db,case.session_id,body.channel,destination)
+                quota.data={**quota.data,'active_contact_id':contact.id}
             code = f'{randbelow(1000000):06}'
             data = deepcopy(contact.data)
             data.update(challenge_hash=keyed(contact.id+code), expires_at=(now()+timedelta(minutes=10)).isoformat(), attempts=0, consumed=False, recovery_case=case.id)
             contact.data = data
             contact_id = contact.id
-            db.add(Job(case_id=case.id, contact_id=contact.id, kind='verification', dedupe_key='recovery:'+token_urlsafe(16), status='delivered_demo', due_at=now(), data={'code': code, 'expires_at': data['expires_at'], 'notice': 'Recovery verification in your private demo mailbox.'}))
+            if contact.data.get('mode'):
+                contact.data={**data,'sent_at':now().isoformat(),'delivery_status':'pending'}
+                db.commit()
+                try:
+                    transport.send(destination,code,contact.id)
+                except Exception:
+                    contact.data={**contact.data,'consumed':True,'delivery_status':'failed'}
+                    db.commit()
+                    raise HTTPException(503,'Recovery delivery is unavailable') from None
+                contact.data={**contact.data,'delivery_status':'sent'}
+            else:
+                db.add(Job(case_id=case.id, contact_id=contact.id, kind='verification', dedupe_key='recovery:'+token_urlsafe(16), status='delivered_demo', due_at=now(), data={'code': code, 'expires_at': data['expires_at'], 'notice': 'Recovery verification in your private demo mailbox.'}))
             db.commit()
     except HTTPException:
         pass
-    return {'contact_id': contact_id, 'notice': 'If the case and verified contact match, a code is available in your protected demo mailbox. Enter it to request a new link.'}
+    return {'contact_id': contact_id, 'notice': 'If the case and verified contact match, a code is available in your protected local inbox or configured channel. Enter it to request a new link.'}
+
+
+@router.get('/access-links/recovery-demo-code/{contact_id}')
+def recovery_demo_code(contact_id: str,request:Request,db:Session=Depends(session)):
+    from .verification import demo_codes
+    if settings().otp_delivery_mode!='console' or settings().app_env not in {'development','test'}:
+        raise HTTPException(404,'Local recovery inbox unavailable')
+    mailbox=valid_grant(db,request.cookies.get('helm_demo_mailbox',''),'demo_mailbox')
+    contact=db.get(Contact,contact_id)
+    if not contact or contact.id not in mailbox.data['contacts'] or not contact.data.get('recovery_case'):
+        raise HTTPException(404,'Recovery code unavailable')
+    live_case(db.get(Case,contact.data['recovery_case']))
+    entry=demo_codes.get(contact.id)
+    if not entry or entry[1]<=now() or contact.data.get('consumed'):
+        raise HTTPException(410,'Recovery code expired or consumed')
+    return {'code':entry[0],'notice':'Local simulation only; real ownership is not proved.'}
 
 
 class RecoverVerify(Strict):
@@ -164,7 +202,14 @@ def recover_verify(body: RecoverVerify, request: Request, db: Session = Depends(
     contact = db.scalar(select(Contact).where(Contact.id == body.contact_id).with_for_update())
     if not contact or contact.id not in case.data['contact_ids'] or contact.data.get('recovery_case') != case.id:
         raise HTTPException(422, 'Code could not be verified')
+    if contact.data.get('mode'):
+        from .verification import demo_codes
+        quota=db.get(OtpWindow,keyed('otp-number:'+contact.channel+':'+contact.data['destination']))
+        if not quota or quota.data.get('active_contact_id')!=contact.id or contact.data.get('delivery_status')!='sent':
+            raise HTTPException(410,'This code was replaced or delivery failed')
     check_code(db, contact, body.code)
+    if contact.data.get('mode'):
+        demo_codes.pop(contact.id,None)
     result = issue_link(db, case)
     db.commit()
     return result

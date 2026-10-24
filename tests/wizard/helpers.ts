@@ -18,3 +18,11 @@ export async function seedSelection(page:Page) {
   const response=await fetch('/api/journey/selection',{method:'POST',headers,body:JSON.stringify({run_id:run.run_id,expected_version:run.profile_version,plan_ids:[item.id],insurer_consent_id:consent.id})});if(!response.ok)throw new Error('Fixture selection failed');
  });
 }
+export async function seedVerified(page:Page) {
+ await seedSelection(page);
+ await page.evaluate(async()=>{
+  const headers={'Content-Type':'application/json','X-Journey-Session':sessionStorage.getItem('helm-journey') || ''};
+  const response=await fetch('/api/journey/verify/start',{method:'POST',headers,body:JSON.stringify({channel:'email',country_code:'+44',number:`access-${Date.now()}@example.test`,consent:true})});if(!response.ok)throw new Error('Fixture verification start failed');
+  const {code}=await(await fetch('/api/journey/verify/demo-code',{headers})).json();const verified=await fetch('/api/journey/verify/check',{method:'POST',headers,body:JSON.stringify({code})});if(!verified.ok)throw new Error('Fixture verification failed');
+ });
+}

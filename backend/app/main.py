@@ -60,6 +60,7 @@ from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
 from .journey.selection import router as journey_selection_router
 from .journey.verification import router as journey_verification_router
+from .journey.wizard_access import router as journey_wizard_access_router
 from .market.router import router as uk_router
 from .marketplace_broker import marketplace_worklist_items
 from .marketplace_broker import router as marketplace_broker_router
@@ -105,6 +106,7 @@ app.include_router(research_router)
 app.include_router(journey_router)
 app.include_router(journey_selection_router)
 app.include_router(journey_verification_router)
+app.include_router(journey_wizard_access_router)
 app.include_router(journey_interviewer_router)
 app.include_router(chatbot_feedback_router)
 app.include_router(member_demo_router)
@@ -149,6 +151,7 @@ async def request_boundary(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = request.state.request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers['Referrer-Policy'] = 'no-referrer'
     response.headers["Cache-Control"] = "no-store"
     response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=(self)"
     return response

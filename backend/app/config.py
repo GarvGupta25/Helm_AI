@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ''
     whatsapp_graph_version: str = ''
     whatsapp_auth_template: str = ''
+    whatsapp_utility_template: str = ''
+    public_quote_origin: str = ''
     whatsapp_template_language: str = 'en'
     smtp_host: str = ''
     smtp_port: int = 465

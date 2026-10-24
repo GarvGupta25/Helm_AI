@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from ..db import session
 from ..models import now
 from .access import dashboard_case, same_origin
-from .case_models import Document, Job, Quotation, QuoteRequest
+from .case_models import Document, Grant, Job, Quotation, QuoteRequest
 from .cases import audit, present_case
 from .policy import Question, answer
 
@@ -44,9 +44,13 @@ def quotation_owned(db, case, ident):
 def dashboard(case=Depends(dashboard_case), db: Session = Depends(session)):
     from datetime import timezone
     rows = db.scalars(select(Quotation).join(QuoteRequest).where(QuoteRequest.case_id == case.id)).all()
+    active_link=db.scalar(select(Grant).where(Grant.case_id==case.id,Grant.kind=='magic_link',Grant.revoked.is_(False)))
     return {**present_case(db, case), 'quotations': [{'id': row.id, 'item': row.data['item'], 'expires_at': row.expires_at,
         'status': 'expired' if row.expires_at.replace(tzinfo=timezone.utc) <= now() else 'received'} for row in rows],
-        'messages': [m for m in case.data.get('messages', []) if m.get('audience') == 'customer']}
+        'messages': [m for m in case.data.get('messages', []) if m.get('audience') == 'customer'],
+        'plan_requests':[{'plan_id':item['id'],'name':item['plan']['name'],'status':'received' if any(q.plan_id==item['id'] for q in rows) else request.status}
+            for request in db.scalars(select(QuoteRequest).where(QuoteRequest.case_id==case.id)) for item in request.data['items']],
+        'access_expires_at':active_link.expires_at if active_link else None}
 
 
 def pdf_document(case, quotation):

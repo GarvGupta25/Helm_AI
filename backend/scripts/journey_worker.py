@@ -1,6 +1,7 @@
-"""Run the isolated synthetic journey worker. No external delivery adapters exist."""
+"""Run the isolated synthetic worker; default delivery stays in the demo inbox."""
 import argparse
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -9,6 +10,8 @@ scratch = root / ".runtime"
 scratch.mkdir(exist_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite:///{(scratch / 'uk-e2e.db').as_posix()}"
 os.environ["GROQ_API_KEY"] = ""
+if '--allow-configured-sandbox' not in sys.argv:
+    os.environ['OTP_DELIVERY_MODE'] = 'console'
 if not (scratch / "research-test.key").exists():
     raise SystemExit("Start the isolated demo API first to initialize its local key and tables.")
 os.environ["RESEARCH_STATE_KEY"] = (scratch / "research-test.key").read_text().strip()
@@ -24,6 +27,7 @@ from app.journey.worker import process_quotes  # noqa: E402
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true")
+    parser.add_argument('--allow-configured-sandbox',action='store_true',help='Use explicitly configured, allow-listed notification transports')
     args = parser.parse_args()
     feedback_cleanup_at = 0
     while True:

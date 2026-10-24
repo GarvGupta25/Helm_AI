@@ -1,4 +1,5 @@
 from datetime import timedelta, timezone
+from typing import Protocol
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -7,6 +8,10 @@ from ..models import now
 from .case_models import Case, Document, Job, Quotation, QuoteRequest
 from .cases import active, audit, live_case, source_current
 from .router import digest
+
+
+class InsurerAdapter(Protocol):
+    def request(self,payload,attempt): ...
 
 
 class SimulatedInsurerAdapter:
