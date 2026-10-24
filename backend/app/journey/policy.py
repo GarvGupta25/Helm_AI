@@ -5,6 +5,7 @@ from pydantic import Field
 from sqlalchemy.orm import Session
 
 from ..db import session
+from ..public_assistant import _check_rate_limit
 from ..research.engine import SCENARIOS, scenario
 from .compare import run_owned
 from .router import owned, save
@@ -82,6 +83,7 @@ def plan_from_run(db, record, run_id, plan_id):
 
 @router.post("/runs/{run_id}/plans/{plan_id}/questions")
 def question(run_id: str, plan_id: str, body: Question, record=Depends(owned), db: Session = Depends(session)):
+    _check_rate_limit('journey-policy:'+record.id+':'+plan_id)
     return answer(plan_from_run(db, record, run_id, plan_id), body.question)
 
 
@@ -89,6 +91,12 @@ def question(run_id: str, plan_id: str, body: Question, record=Depends(owned), d
 def facts(run_id: str, plan_id: str, record=Depends(owned), db: Session = Depends(session)):
     item = plan_from_run(db, record, run_id, plan_id)
     return {"plan": item["plan"], "quote": item["quote"], "scenarios": item["scenarios"]}
+
+
+@router.get('/runs/{run_id}/plans/{plan_id}/explanation')
+def explain(run_id: str, plan_id: str, record=Depends(owned), db: Session = Depends(session)):
+    from .explanations import explanation
+    return explanation(plan_from_run(db,record,run_id,plan_id),record.version)
 
 
 @router.post("/runs/{run_id}/plans/{plan_id}/flag-question")
