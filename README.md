@@ -2,7 +2,7 @@
 
 For a detailed explanation of the project, delivered features, architecture, setup, shared-repository workflow, and remaining work, read [Project overview and current build status](PROJECT_OVERVIEW.md).
 
-The proposed intake-to-broker expansion is documented in the [Phase 0 journey architecture plan](docs/roadmap/JOURNEY_PLAN.md). It requires owner approval before application development and between subsequent phases.
+The intake-to-broker demo is implemented in 18 development checkpoints. Read the [journey progress and verification report](docs/roadmap/JOURNEY_PROGRESS.md), [architecture plan](docs/roadmap/JOURNEY_PLAN.md), and [operator runbook](docs/roadmap/JOURNEY_RUNBOOK.md). The owner authorized continuing phases without repeated approval pauses; outgoing AI-assisted drafts still require in-product human approval.
 
 The new public site explains UK private medical cover and compares fictional plans with server-calculated, tax-inclusive prices. It includes a structured quote demo and a reviewed information assistant. No money is collected or insurance contract created. This is **not ready for a real UK insurance launch**.
 
@@ -10,7 +10,9 @@ Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REP
 
 ### New research and public chat features
 
-The normal **Get a quote** journey at `/get-cover/quote` uses the new recommendation engine: 576 fictional variants, explainable Standard/Contextual/Fusion scores, confirmed preference changes, scenarios, why/why-not, what-if, undo and encrypted opt-in memory. See [research setup and phase report](docs/research/README.md). It includes plan selection, review and a persisted, downloadable £0 demo confirmation. `/research` and `/get-cover/compare` redirect to this same journey. Full generated datasets are reproducible under ignored `.runtime`; samples/reports are versioned.
+The normal **Get a quote** journey at `/get-cover/quote` now starts with a shared manual/guided intake. Confirm answers, compare up to three deterministic fictional recommendations, ask cited policy questions, verify a fictional contact, and review named sharing consent before requesting simulated quotations. A private 24/48-hour link opens received quotations, PDF downloads, policy Q&A and broker messages. The prior research comparison and £0 confirmation remain available at `/get-cover/legacy-demo`; `/research` and `/get-cover/compare` lead to the canonical intake.
+
+The new separate `/broker.html` entry uses the existing Supabase authentication and broker role. Its queue exposes only assigned cases with active sharing consent. Brokers can prepare, edit, approve and simulate delivery of exact document revisions. It stays closed when authentication is not configured. Legacy professional archives remain preserved.
 
 The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, Arabic/RTL and dark mode. It is enabled by default in development. For preview and browser QA, set `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
 
@@ -22,7 +24,9 @@ npm --prefix frontend ci
 uv sync --project backend --locked --group dev
 # Terminal 1: explicitly uses a scratch SQLite database, never your configured database
 uv run --project backend python backend/scripts/uk_test_server.py
-# Terminal 2
+# Terminal 2: delayed insurer replies, private demo notifications and retention
+uv run --project backend python backend/scripts/journey_worker.py
+# Terminal 3
 npm run dev
 ```
 
@@ -37,7 +41,7 @@ The public pages work without an API; the quote and assistant require the test A
 - Customer marketplace quotations and activation progress.
 - Customer policies, coverage, documents, claims/status/appeals, servicing, payment schedules/receipts, nearby-care map and Ask Helm.
 
-Customer requests for broker review, provider quotations and claim status continue to use the same backend. Their professional processing portals are preserved separately under archive/.
+Historical customer requests for broker review, provider quotations and claim status continue to use the same backend. Those older professional portals remain in archive/. The new journey broker portal at /broker.html is additive and uses separate journey tables.
 
 ## Preserved professional portals
 
@@ -71,7 +75,7 @@ uv run --project backend uvicorn app.main:app --host 127.0.0.1 --port 8000
 uv run --project backend python -m app.worker
 ```
 
-Keep the same backend auth, models, API contracts, Supabase schema/RLS and migrations. No database reset, seeding or migration command is required for the frontend split. The existing scripts/start-prototype.ps1 remains pending an ownership decision; it was not run during this task.
+Keep the same backend auth, models, API contracts, Supabase schema/RLS and migrations. The earlier frontend split required no database reset. The new journey adds Alembic revisions 0003–0005; follow the journey runbook for an existing environment. The isolated test server creates only scratch demo tables. The existing scripts/start-prototype.ps1 remains pending an ownership decision; it was not run during this task.
 
 Backend environment variable names and historical full-stack setup details are preserved in [the original README](archive/_original_copies/README.md). Do not copy server secrets to frontend configuration. The existing frontend API helper obtains public Supabase configuration from GET /api/config and continues using the existing auth/session implementation.
 

@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('research confirmed reranking, what-if, undo, consent and delete', async ({ page }) => {
-  await page.goto('/get-cover/quote');
+  await page.goto('/get-cover/legacy-demo');
   await page.getByRole('button', { name: 'Get my recommendations' }).click();
   await expect(page.getByRole('heading', { name: 'Your computed shortlist' })).toBeVisible();
   await expect(page.locator('.research-cards article')).toHaveCount(3);

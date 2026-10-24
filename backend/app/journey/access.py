@@ -26,7 +26,9 @@ router = APIRouter(prefix="/api/journey", tags=["private demo access"])
 def same_origin(request):
     origin = request.headers.get("origin")
     configured = origin in settings().allowed_origins
-    if request.headers.get("sec-fetch-site") == "cross-site" or (origin and urlparse(origin).netloc != request.url.netloc and not configured):
+    parsed = urlparse(origin or '')
+    matches = (parsed.scheme, parsed.netloc) == (request.url.scheme, request.url.netloc)
+    if request.headers.get("sec-fetch-site") == "cross-site" or (origin and not matches and not configured):
         raise HTTPException(403, "Use this dashboard's own origin")
 
 

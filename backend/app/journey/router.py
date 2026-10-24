@@ -45,7 +45,7 @@ def present(record):
     return {"profile": profile.model_dump(mode="json"), "draft": data["draft"], "version": record.version,
             "draft_revision": data["draft_revision"], "draft_hash": digest(data["draft"]),
             "latest_run": data.get("latest_run"), "shortlist": data.get("shortlist", {}),
-            "health_consent": data.get("health_consent", False), "completeness": completeness(profile), "expires_at": record.expires_at}
+            "health_consent": data.get("health_consent", False), "completeness": completeness(profile, strict=False), "expires_at": record.expires_at}
 
 
 @router.post("/sessions")
@@ -180,6 +180,9 @@ def health_consent(body: HealthPermission, record=Depends(owned), db: Session = 
     data["health_consent"] = body.accepted
     data["health_consent_event"] = {"wording": body.wording_version, "at": now().isoformat(), "accepted": body.accepted}
     if not body.accepted:
+        from .case_models import Case
+        from .models import JourneyRun
+        from .retention import delete_cases
         # Withdrawal removes sensitive answers from current and historic intake snapshots.
         for key in ("draft", "confirmed"):
             p = JourneyProfile.model_validate(data.get(key, {})).model_dump(mode="json")
@@ -190,6 +193,14 @@ def health_consent(body: HealthPermission, record=Depends(owned), db: Session = 
             data[key] = JourneyProfile.model_validate(p).model_dump(mode="json")
         for row in db.scalars(select(ProfileVersion).where(ProfileVersion.session_id == record.id)):
             db.delete(row)
+        for row in db.scalars(select(JourneyRun).where(JourneyRun.session_id == record.id)):
+            db.delete(row)
+        delete_cases(db, db.scalars(select(Case).where(Case.session_id == record.id).with_for_update()).all())
+        data['latest_run'] = None
+        data['shortlist'] = {}
+        data['flagged_questions'] = []
+        for consent in data.get('sharing_consents', []):
+            consent['revoked'] = True
         record.version += 1
         data["draft_revision"] += 1
     save(db, record, data)

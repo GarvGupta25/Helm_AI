@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import engine  # noqa: E402
 from app.journey.notifications import process_notifications  # noqa: E402
+from app.journey.retention import purge_expired  # noqa: E402
 from app.journey.worker import process_quotes  # noqa: E402
 
 if __name__ == "__main__":
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     while True:
         with Session(engine()) as db:
-            print({"synthetic_requests_processed": process_quotes(db), "demo_notifications_processed": process_notifications(db)}, flush=True)
+            print({"synthetic_requests_processed": process_quotes(db), "demo_notifications_processed": process_notifications(db), "expired_cases_purged": purge_expired(db)}, flush=True)
         if args.once:
             break
         time.sleep(2)

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import session
+from ..public_assistant import _check_rate_limit
 from ..research.router import catalogue
 from .models import JourneyRun
 from .recommendations import compute
@@ -12,6 +13,10 @@ from .router import digest, owned, save
 from .schemas import JourneyProfile, Strict
 
 router = APIRouter(prefix="/api/journey", tags=["journey comparison"])
+
+
+def current_catalogue(db):
+    return sorted(catalogue(db), key=lambda plan: plan['id'])
 
 
 def run_owned(db, record, ident, current=True):
@@ -25,17 +30,18 @@ def run_owned(db, record, ident, current=True):
 
 @router.post("/recommendations")
 def recommendations(record=Depends(owned), db: Session = Depends(session)):
+    _check_rate_limit('journey-compute:'+record.id)
     if not record.version:
         raise HTTPException(422, "Confirm your intake answers first")
     profile = JourneyProfile.model_validate(record.data["confirmed"])
     try:
-        result = compute(catalogue(db), profile)
+        result = compute(current_catalogue(db), profile)
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
     rows = db.scalars(select(JourneyRun).where(JourneyRun.session_id == record.id).order_by(JourneyRun.created_at)).all()
     for row in rows[:-4]:
         db.delete(row)
-    row = JourneyRun(session_id=record.id, profile_version=record.version, data={"result": result, "catalogue_hash": digest(catalogue(db))})
+    row = JourneyRun(session_id=record.id, profile_version=record.version, data={"result": result, "catalogue_hash": digest(current_catalogue(db))})
     db.add(row)
     db.flush()
     data = deepcopy(record.data)
@@ -72,13 +78,14 @@ def shortlist(body: Selection, record=Depends(owned), db: Session = Depends(sess
 
 @router.post("/runs/{run_id}/what-if")
 def what_if(run_id: str, body: JourneyProfile, record=Depends(owned), db: Session = Depends(session)):
+    _check_rate_limit('journey-compute:'+record.id)
     from .router import check_sensitive
     check_sensitive(body, record)
     row = run_owned(db, record, run_id)
-    if digest(catalogue(db)) != row.data["catalogue_hash"]:
+    if digest(current_catalogue(db)) != row.data["catalogue_hash"]:
         raise HTTPException(409, "Catalogue changed; create a new comparison")
     try:
-        result = compute(catalogue(db), body)
+        result = compute(current_catalogue(db), body)
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
     return {"hypothetical": True, "profile_unchanged": True, "result": result}

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..db import session
 from ..models import now
-from .case_models import Case, Contact, QuoteRequest
+from .case_models import Case, Contact, Job, QuoteRequest
 from .compare import run_owned
 from .models import JourneySession
 from .router import digest, owned
@@ -52,6 +52,12 @@ def source_current(db, case):
     source = db.scalar(select(JourneySession).where(JourneySession.id == case.session_id).with_for_update())
     if not source or source.version != case.data["profile_version"]:
         raise HTTPException(409, "The confirmed intake changed. Review a new selection before dispatch.")
+
+
+def broker_notice(db, case):
+    if case.broker_id and active(case, 'broker_share', ['helm-demo-broker']):
+        db.add(Job(case_id=case.id, kind='broker_case', dedupe_key='broker-case:'+case.id, status='delivered_demo', due_at=now(),
+                   data={'text': 'A consented synthetic case is ready for review.', 'external_sent': False, 'broker_id': case.broker_id, 'channel': 'private_broker_inbox'}))
 
 
 def requests_for(db, case):
@@ -122,6 +128,7 @@ def request_quotes(body: RequestQuotes, record=Depends(owned), db: Session = Dep
     db.add(case)
     db.flush()
     audit(case, "selection_review_confirmed", selected_count=len(items), insurer_count=len(insurers))
+    broker_notice(db, case)
     for insurer in sorted(insurers):
         db.add(QuoteRequest(case_id=case.id, insurer_id=insurer, due_at=now()+timedelta(seconds=3),
             data={"items": [i for i in items if i["plan"]["insurer_id"] == insurer], "adapter": "simulated-insurer-v1", "profile_version": record.version}))

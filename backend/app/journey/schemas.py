@@ -114,7 +114,7 @@ HELP = {
 }
 
 
-def completeness(profile: JourneyProfile):
+def completeness(profile: JourneyProfile, strict=True):
     missing = []
     def add(field):
         missing.append({"field": field, "help": HELP[field]})
@@ -125,7 +125,9 @@ def completeness(profile: JourneyProfile):
     if not profile.cover.start_date:
         add("cover")
     elif not 0 <= (profile.cover.start_date-date.today()).days <= 365:
-        raise ValueError("Start date must be today through 365 days ahead")
+        if strict:
+            raise ValueError("Start date must be today through 365 days ahead")
+        add('cover')
     if profile.budget.choice is None or (profile.budget.choice == "amount" and profile.budget.monthly_pence is None):
         add("budget")
     if profile.excess.choice is None or (profile.excess.choice == "amount" and profile.excess.max_pence is None):

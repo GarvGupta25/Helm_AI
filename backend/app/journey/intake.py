@@ -9,6 +9,8 @@ def propose(field: str, text: str, profile: JourneyProfile):
     """Controlled interviewer: captured fields, never provider-authored advice."""
     if field not in HELP:
         raise ValueError("Choose a supported intake question")
+    if re.search(r'ignore (?:all|previous)|system prompt|jailbreak|<script', text, re.I):
+        raise ValueError('Enter only your answer to the selected question, or use the manual form')
     text = text.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩٫", "0123456789."))
     for arabic, english in {"إنجلترا": "England", "انجلترا": "England", "لندن": "London", "اسكتلندا": "Scotland", "ويلز": "Wales", "أيرلندا الشمالية": "Northern Ireland", "لا تفضيل": "no preference", "لا هدف": "no target", "لا يوجد": "none", "صارم": "strict", "أوسع": "broader", "قياسية": "standard", "السرطان": "cancer", "الصحة النفسية": "mental health", "العيادات الخارجية": "outpatient"}.items():
         text = text.replace(arabic, english)

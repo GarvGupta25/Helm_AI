@@ -14,7 +14,7 @@ from ..db import session
 from ..models import now, uid
 from .access import dashboard_case, same_origin
 from .case_models import Approval, Case, Contact, Document, Grant, Job
-from .cases import active, audit, live_case, present_case, source_current
+from .cases import active, audit, broker_notice, live_case, present_case, source_current
 from .contact import contact_owned
 from .router import digest, owned
 from .schemas import Strict
@@ -66,6 +66,7 @@ def early_handoff(body: Handoff, record=Depends(owned), db: Session = Depends(se
     db.add(row)
     db.flush()
     audit(row, 'early_broker_handoff_confirmed')
+    broker_notice(db, row)
     db.commit()
     return present_case(db, row)
 
@@ -82,6 +83,8 @@ def dashboard_handoff(request: Request, case=Depends(dashboard_case), db: Sessio
     case.data = data
     case.broker_id = case.broker_id or os.getenv('JOURNEY_DEMO_BROKER_ID') or None
     audit(case, 'dashboard_broker_handoff_confirmed')
+    if not db.scalar(select(Job.id).where(Job.dedupe_key == 'broker-case:'+case.id)):
+        broker_notice(db, case)
     db.commit()
     return {'notice': 'Shared with your assigned demo broker.' if case.broker_id else 'Broker sharing recorded. Pending administrator assignment; no broker can see this case yet.'}
 
@@ -102,6 +105,13 @@ def dashboard_withdraw(request: Request, case=Depends(dashboard_case), db: Sessi
 @router.get('/broker/me')
 def me(user: User = Depends(require_broker)):
     return {'id': user.id, 'role': 'broker'}
+
+
+@router.get('/broker/inbox')
+def broker_inbox(user: User = Depends(require_broker), db: Session = Depends(session)):
+    rows = db.execute(select(Job, Case).join(Case, Job.case_id == Case.id).where(Job.kind == 'broker_case', Case.broker_id == user.id, Case.expires_at > now()).order_by(Job.created_at.desc())).all()
+    return {'items': [{'id': j.id, 'case_id': c.id, 'text': j.data['text'], 'created_at': j.created_at, 'external_sent': False}
+                      for j, c in rows if not c.data.get('withdrawn') and active(c, 'broker_share', ['helm-demo-broker'])][:50]}
 
 
 @router.get('/broker/cases')

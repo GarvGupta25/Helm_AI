@@ -39,7 +39,7 @@ def process_quotes(db, clock=None, adapter=None):
         try:
             items = adapter.request(request.data, request.attempts)
             expected = {item["id"]: item for item in request.data["items"]}
-            if any(item["id"] not in expected or item != expected[item["id"]] for item in items):
+            if len({item['id'] for item in items}) != len(items) or any(item["id"] not in expected or item != expected[item["id"]] for item in items):
                 raise ValueError("Invalid simulated response")
             for item in items:
                 document = Document(case_id=case.id, kind="synthetic_quotation", content_hash=digest(item), ai_drafted=False,

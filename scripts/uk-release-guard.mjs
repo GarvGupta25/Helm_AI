@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const live = process.argv.includes('--live') || process.env.HELM_RELEASE_MODE === 'live';
-const paths = ['frontend/src/uk', 'frontend/src/market'];
+const paths = ['frontend/src/uk', 'frontend/src/market', 'frontend/src/journey', 'frontend/src/broker'];
 const errors = [];
 function scan(path) {
   if (statSync(path).isDirectory()) { for (const name of readdirSync(path)) scan(resolve(path, name)); return; }

@@ -62,7 +62,7 @@ test('mobile navigation traps focus and reduced motion stops loops', async ({ pa
 });
 
 test('576-plan quotation through review and persistent zero-payment confirmation', async ({ page }) => {
-  await page.goto('/get-cover/quote'); await consent(page);
+  await page.goto('/get-cover/legacy-demo'); await consent(page);
   await expect(page.getByRole('heading', { name: 'Find cover that fits your needs.' })).toBeVisible();
   let oldCalls = 0;
   page.on('request', req => { if (new URL(req.url()).pathname === '/api/uk/quotes') oldCalls++; });

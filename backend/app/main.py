@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from .auth import User, current_user, require_broker
 from .claim_agent import broker_router as broker_claim_router
@@ -166,6 +167,11 @@ async def database_error(request, exc):
             "retryable": True,
         },
     )
+
+
+@app.exception_handler(StaleDataError)
+async def stale_update(request, exc):
+    return JSONResponse(status_code=409, content={'code': 'stale_update', 'message': 'This case changed. Refresh before trying again.', 'retryable': True})
 
 
 @app.exception_handler(RequestValidationError)

@@ -72,3 +72,26 @@ def test_early_incomplete_handoff_is_consented_and_deduplicated(fixture_client):
     assert first.json()['broker_assigned'] is False
     assert client.post('/api/journey/broker-handoff', headers=headers, json=payload).json()['id'] == first.json()['id']
     assert client.get('/api/journey/broker/cases').status_code == 403
+
+
+def test_missing_intake_handoff_and_broker_notice_are_private(fixture_client, monkeypatch):
+    from app.public_assistant import _rate_store
+    _rate_store.clear()
+    client, owner, _ = fixture_client
+    broker = User(str(uuid4()), 'broker@example.test', 'broker')
+    monkeypatch.setenv('JOURNEY_DEMO_BROKER_ID', broker.id)
+    created = client.post('/api/journey/sessions').json()
+    headers = {'X-Journey-Session': created['session_token']}
+    contact_id = client.post('/api/journey/contacts/challenges', headers=headers, json={'channel': 'email', 'destination': 'early@example.test', 'demo_acknowledged': True}).json()['contact_id']
+    code = client.get('/api/journey/demo/inbox', headers=headers).json()[0]['content']['code']
+    client.post('/api/journey/contacts/verify', headers=headers, json={'contact_id': contact_id, 'code': code})
+    consent = client.post('/api/journey/consents', headers=headers, json={'purpose': 'broker_share', 'recipients': ['helm-demo-broker'], 'accepted': True, 'wording_version': 'journey-sharing-v1'}).json()
+    response = client.post('/api/journey/broker-handoff', headers=headers, json={'contact_id': contact_id, 'consent_id': consent['id'], 'expected_version': 0, 'demo_acknowledged': True})
+    assert response.status_code == 200, response.text
+    assert response.json()['requests'] == []
+    owner[0] = broker
+    inbox = client.get('/api/journey/broker/inbox').json()['items']
+    assert len(inbox) == 1 and inbox[0]['external_sent'] is False
+    assert 'early@example.test' not in str(inbox)
+    owner[0] = User(str(uuid4()), 'other@example.test', 'broker')
+    assert client.get('/api/journey/broker/inbox').json()['items'] == []

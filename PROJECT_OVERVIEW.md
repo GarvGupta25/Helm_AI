@@ -1,7 +1,90 @@
 # Helm AI — Project Overview and Current Build Status
 
-> Updated: 24 October 2026. Implementation baseline: commit `5e8596d`.
-> This document describes the current repository, the product direction, delivered features, development workflow, and remaining work. It is a project handover document, not a production acceptance certificate.
+> Updated: 24 October 2026, after implementation of the intake-to-broker demo. Shared repository: [GarvGupta25/Helm_AI](https://github.com/GarvGupta25/Helm_AI). Checkout: `U:\projects\Helm_AI`. Development commits are authored **Utkarsh Raj**.
+
+This project helps people understand private medical cover, describe their needs, compare fictional plans, explore policy facts, request synthetic quotations and work with an assigned broker through human sign-off. It is a running local prototype. No real policy, payment or insurer submission is created.
+
+## Current end-to-end build
+
+| Phase | Delivered behavior | Boundary |
+| --- | --- | --- |
+| 0 | Repository audit, canonical schema, architecture, case states, API/data/risk plan | Original gates were superseded by the owner's instruction to continue phasewise without repeated approval pauses |
+| 1 | Shared manual/guided intake, validated draft, live summary, missing-field recovery, explicit confirmation, history/undo, consent, RTL | Controlled extraction fallback; no external LLM call |
+| 2 | Canonical adapter, age-rated family demo rules, deterministic Standard/Contextual/Fusion scores, hard filters, comparison, saved shortlist and what-if | Fictional family terms and prices; no silent hard-limit relaxation |
+| 3 | Per-policy questions, field/clause citations, deterministic scenario tool, refusal for unknown facts, saved broker questions | Bounded session-only conversation; 50-question factual evaluation corpus |
+| 4 | Plan review, fake contact verification, named insurer/broker consent, channel and quiet-hour choices, private idempotent cases, delayed fictional insurer responses | Nothing is sent to a real insurer or contact channel |
+| 5 | 24/48-hour hashed links, deliberate exchange, private dashboard, status/comparison/PDF/Q&A, recovery, opt-out and persisted reminders | Contact ownership and delivery are simulations; recovery needs the protected demo mailbox |
+| 6 | Early/selection-boundary handoff, scoped broker queue, notes/messages, source-linked documents, audited states and exact-revision human approval/delivery | Broker sign-in requires configured Supabase identity/role; submitted means simulated dispatch |
+
+The new journey is additive. The earlier UK educational site, premium navy/white/teal public chat composer and stable scroll geometry remain. Historical customer policies, claims, servicing and professional archive files remain separate from this UK demonstration.
+
+## What a visitor can do
+
+1. Open `/get-cover/quote`, choose manual or guided mode and switch while retaining answers in the same draft.
+2. Enter fictional household ages or birth dates, UK region, cover date, budget/excess/hospital choices and essential benefits. Missing, declined, no preference and explicit none are distinct.
+3. Review hard limits versus preferences and confirm the shared summary. Optional health-preference answers need a separate explicit processing permission. The system does not request diagnoses, bank details or identity documents for this journey.
+4. Request recommendations at any point. Missing mandatory fields receive targeted recovery actions. A complete confirmed version produces up to three deterministic fictional options with prices, exclusions, evidence and reasons.
+5. Compare and shortlist plans, ask plan-specific questions and explore a nonselectable what-if. Editing needs a new confirmation before it can affect a request.
+6. Review the selection and exact payload; verify a fictional contact using the private demo inbox; separately choose insurer sharing, broker sharing and notifications.
+7. Receive delayed synthetic quotations through the local worker. Open a private dashboard link, compare received documents, download a PDF, ask questions, send a broker message or reverify for access recovery.
+8. Request broker help before completion, or create the selection-boundary case after review. Cases without active broker consent/assignment remain private.
+
+## What a broker can do
+
+The separate `/broker.html` entry uses the existing Supabase client. Server-side Supabase verification and administrator-controlled `app_metadata.helm_role = broker` are required. There is no public fake-broker login.
+
+An authorized broker sees only assigned, consented cases. The workspace offers a paginated queue with state, case-reference and expiry filters; full profile/hard-limit summaries; verified demo contacts; consent and preferences; selected plans and insurer response statuses; saved policy questions; private notes; a customer thread; documents and an audit timeline.
+
+The broker moves a case through explicit states, prepares an internal summary/information request/cover check/insurer request, edits it, completes a review checklist and approves the exact document revision, content fingerprint, recipients, purpose and profile version. A later edit invalidates approval. Simulated delivery rechecks current authority and facts. Client-supplied role or approval identities cannot authorize dispatch. Closed cases need a reason and do not reopen implicitly.
+
+If authentication is unconfigured, the portal displays setup guidance. If a case has no configured broker assignment, it remains pending and private. An operator-only scratch-data assignment command is documented in the runbook.
+
+## Architecture and source map
+
+| Layer | Main locations | Role |
+| --- | --- | --- |
+| Public application | `frontend/src/uk`, `frontend/src/marketing/chat`, `frontend/src/main.tsx` | Education, navigation, information assistant and routing |
+| New customer journey | `frontend/src/journey` | Intake, comparison, policy questions, reviewed request, private inbox and dashboard |
+| Separate broker entry | `frontend/broker.html`, `frontend/src/broker` | Authenticated case queue and human document review |
+| Journey API | `backend/app/journey` | Ownership, validation, recommendations, contacts, consent, requests, access, broker scoping, approval and retention |
+| Existing research engine | `backend/app/research` | Deterministic fictional plans, scoring, price/cost calculations and clauses |
+| New database revisions | `backend/migrations/versions/0003*` through `0005*` | Additive journey storage and replay-safe access exchange |
+| Isolated demo processes | `backend/scripts/uk_test_server.py`, `journey_worker.py`, `journey_assign.py` | Scratch API/seed, delayed jobs/retention and operator assignment |
+| Tests | `backend/tests/test_journey*`, `tests/uk`, `tests/e2e` | New security/lifecycle coverage and public/customer regressions |
+| Historical systems | Existing customer/backend services, `archive/` | Preserved older workflows and professional source |
+
+React 19, TypeScript, Vite, FastAPI, SQLAlchemy/Alembic, ReportLab, the existing cryptography layer and Supabase Auth are reused. No new dependency was needed. The broker portal uses Vite's multipage build in the same frontend package. It does not restore the archived portal's obsolete runtime wholesale.
+
+## Identity, data and privacy
+
+The anonymous session is the guest identity and stores only a capability digest. Sensitive profile/case/contact/document/job JSON uses the existing server-only encrypted storage. A verified demo contact does not create an authenticated customer account or merge cases by matching email. Two visitors using the same fictional email remain independent.
+
+The eleven additive `journey_` tables hold sessions, immutable profile versions, frozen runs, contacts, cases, insurer requests, documents, quotations, approvals, delivery jobs and scoped access grants. Small bounded consent/note/message/question/audit records live in encrypted aggregate JSON rather than separate generic tables. Limits and the simplification from the Phase 0 proposal are detailed in the runbook.
+
+Intake lasts 24 hours. Separately consented case snapshots and the protected demo mailbox last up to seven days. Quotations last up to 48 hours; links last 24/48 hours; dashboard cookies last at most two hours and cannot outlive their parent. OTPs last ten minutes and allow at most five guesses. The worker performs expiry cleanup. Health-consent withdrawal removes sensitive current/history/derived-case copies. Sharing withdrawal blocks affected access and future jobs.
+
+Random access links are stored hashed; the encrypted fake inbox is the only simulated delivery location. Tokens leave the URL fragment before deliberate exchange. Role, assignment, purpose, consent, expiry and exact revision are checked server-side. Controlled notifications respect channel opt-in, quiet hours and time zones. There are no actual email/WhatsApp/insurer transports in the new journey.
+
+## Run, test and work together
+
+See the [operator runbook](docs/roadmap/JOURNEY_RUNBOOK.md) for exact setup, three process commands, broker auth/assignment, migration steps and a manual journey walkthrough. The local preview is [127.0.0.1:4174](http://127.0.0.1:4174); the canonical intake is [/get-cover/quote](http://127.0.0.1:4174/get-cover/quote) and broker entry is [/broker.html](http://127.0.0.1:4174/broker.html).
+
+The shared source of truth remains the same [GitHub repository](https://github.com/GarvGupta25/Helm_AI). Fetch/pull before work, preserve a collaborator's changes, commit meaningful checkpoints as **Utkarsh Raj**, fetch/integrate again, then push without force. Never commit environment files, credentials, scratch databases or generated dependencies. [AGENTS.md](AGENTS.md) records this workflow.
+
+Actual verification results and all 18 implementation checkpoints are recorded in [JOURNEY_PROGRESS.md](docs/roadmap/JOURNEY_PROGRESS.md). The earlier [architecture plan](docs/roadmap/JOURNEY_PLAN.md) remains the design reference; its historical approval gates do not supersede the owner's later instruction to continue. The prior research comparison/£0 confirmation is preserved at `/get-cover/legacy-demo` and its browser regressions remain active.
+
+## What remains before a live launch
+
+- Real verified contact delivery, cross-device recovery, email transport, WhatsApp business onboarding/approved templates/session windows, insurer agreements/APIs and payment/policy issuance are outside this delivery.
+- Intake and drafting currently use controlled deterministic fallbacks. There is no configured external LLM journey integration; any later provider needs explicit scope/data consent and must preserve exact human approval of outgoing drafts.
+- Supabase broker identity/role/assignment must be configured for a real signed-in demonstration. UI fixtures and API test identities are clearly separated from that setup.
+- PostgreSQL concurrency and row-locking, multi-worker delivery behavior, operational supervision, backups/retention monitoring and production deployment have not been certified by SQLite tests.
+- Physical mobile scrolling/microphone behavior, real screen-reader workflows and live provider accessibility checks remain manual work. Automated axe checks cover tested views only.
+- Regulatory/business placeholders, approved product documents, legal/privacy/security/compliance review and the historical domain/data migration remain launch blockers. [build:production remains intentionally blocked](docs/uk/LAUNCH_READINESS.md).
+
+## Earlier website baseline (historical reference)
+
+The sections below were written for implementation baseline `5e8596d`, before the journey expansion. Statements about the then-current quote route, unavailable delivery and archived professional portal describe that earlier baseline. Use the current sections above and the journey progress/runbook for today's behavior.
 
 ## Contents
 
