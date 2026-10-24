@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
+from app.journey.intake import propose
 from app.journey.schemas import JourneyProfile, Person, completeness
 
 
@@ -23,3 +24,13 @@ def test_age_bounds_roles_and_unknown_fields():
         JourneyProfile(prices={"monthly": 1})
     with pytest.raises(ValidationError):
         JourneyProfile(benefits={"required": ["cancer"], "preferred": ["cancer"]})
+
+
+def test_guided_arabic_and_additive_required_benefits():
+    p = propose('people', '٣٥، ٨', JourneyProfile())
+    assert [person.age_years for person in p.people] == [35, 8]
+    p = propose('benefits', 'الصحة النفسية', p)
+    p = propose('benefits', 'add cancer', p)
+    assert set(p.benefits.required) == {'mental_health', 'cancer'}
+    p = propose('benefits', 'remove cancer', p)
+    assert p.benefits.required == ['mental_health']

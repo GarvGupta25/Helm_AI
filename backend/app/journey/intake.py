@@ -9,6 +9,9 @@ def propose(field: str, text: str, profile: JourneyProfile):
     """Controlled interviewer: captured fields, never provider-authored advice."""
     if field not in HELP:
         raise ValueError("Choose a supported intake question")
+    text = text.translate(str.maketrans("٠١٢٣٤٥٦٧٨٩٫", "0123456789."))
+    for arabic, english in {"إنجلترا": "England", "انجلترا": "England", "لندن": "London", "اسكتلندا": "Scotland", "ويلز": "Wales", "أيرلندا الشمالية": "Northern Ireland", "لا تفضيل": "no preference", "لا هدف": "no target", "لا يوجد": "none", "صارم": "strict", "أوسع": "broader", "قياسية": "standard", "السرطان": "cancer", "الصحة النفسية": "mental health", "العيادات الخارجية": "outpatient"}.items():
+        text = text.replace(arabic, english)
     lower = text.casefold()
     draft = profile.model_dump(mode="json")
     numbers = re.findall(r"\d+(?:\.\d{1,2})?", text)
@@ -49,5 +52,17 @@ def propose(field: str, text: str, profile: JourneyProfile):
         benefits = [care for care in CARE if care.replace("_", " ") in lower or care in lower]
         if not benefits and not flexible:
             raise ValueError("Name a supported benefit, or say none")
-        draft[field] = {"required": [] if "prefer" in lower else benefits, "preferred": benefits if "prefer" in lower else []}
+        required = list(profile.benefits.required or [])
+        preferred = list(profile.benefits.preferred)
+        if flexible:
+            required, preferred = [], []
+        elif any(word in lower for word in ("remove", "no longer", "don't need")):
+            required = [b for b in required if b not in benefits]
+            preferred = [b for b in preferred if b not in benefits]
+        elif "prefer" in lower:
+            preferred = list(dict.fromkeys(preferred+[b for b in benefits if b not in required]))
+        else:
+            required = list(dict.fromkeys(required+benefits))
+            preferred = [b for b in preferred if b not in required]
+        draft[field] = {"required": required, "preferred": preferred}
     return JourneyProfile.model_validate(draft)
