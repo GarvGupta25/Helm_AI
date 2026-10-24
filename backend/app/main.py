@@ -46,6 +46,7 @@ from .domain import (
     plans,
     reassess_fit,
 )
+from .journey.cases import router as journey_cases_router
 from .journey.compare import router as journey_compare_router
 from .journey.contact import router as journey_contact_router
 from .journey.policy import router as journey_policy_router
@@ -95,6 +96,7 @@ app.include_router(journey_router)
 app.include_router(journey_compare_router)
 app.include_router(journey_policy_router)
 app.include_router(journey_contact_router)
+app.include_router(journey_cases_router)
 app.include_router(public_chat_router)
 app.include_router(claim_agent_router)
 app.include_router(broker_claim_router)
