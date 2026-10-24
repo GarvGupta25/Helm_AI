@@ -26,3 +26,8 @@ The repository has older authenticated customer policy/claims/servicing workflow
 - Screenshot evidence: `docs/chatbot-screenshots/quote-review.png`, `quote-confirmation.png` and the refreshed comparison screenshot. The existing original-production blockers remain documented separately.
 
 Verification for this integration: 33 focused backend tests passed, including the new confirmation checks; all 15 public/quotation/chat browser tests and all nine existing customer browser tests passed. Frontend build/typecheck, scoped ESLint, Ruff and diff whitespace checks passed. No payment or customer-database mutation was performed.
+
+
+## Guided quote redesign — 25 October 2026
+
+The current phase plan is `docs/ux/GUIDED_JOURNEY_PLAN.md`; audited contracts and decisions are in `docs/ux/WIZARD_SPEC.md`, captured design tokens in `docs/ux/DESIGN_TOKENS_CAPTURED.md`, and actual per-phase results in `docs/ux/WIZARD_PROGRESS.md`. The owner explicitly authorised progressing through phases without repeated approval requests. Preserve the English-only interface, legacy fallback, deterministic engine and professional authorisation. Reuse existing `/api/journey` services rather than create a second `/api/v1` journey.

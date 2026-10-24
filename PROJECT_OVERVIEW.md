@@ -715,3 +715,8 @@ Some older phase and archive documents describe an earlier branch state or a pro
 - [ ] Commit intended files under the correct contributor identity.
 - [ ] Integrate new shared updates and push the finished commits.
 - [ ] Report the resulting commit, check results, and material remaining limitations.
+
+
+## Guided quote redesign — 25 October 2026
+
+The current phase plan is `docs/ux/GUIDED_JOURNEY_PLAN.md`; audited contracts and decisions are in `docs/ux/WIZARD_SPEC.md`, captured design tokens in `docs/ux/DESIGN_TOKENS_CAPTURED.md`, and actual per-phase results in `docs/ux/WIZARD_PROGRESS.md`. The owner explicitly authorised progressing through phases without repeated approval requests. Preserve the English-only interface, legacy fallback, deterministic engine and professional authorisation. Reuse existing `/api/journey` services rather than create a second `/api/v1` journey.
