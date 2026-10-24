@@ -19,6 +19,7 @@ import uvicorn  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import engine  # noqa: E402
+from app.journey import models as journey_models  # noqa: E402, F401
 from app.market.seed import seed  # noqa: E402
 from app.models import Base  # noqa: E402
 from app.research.generator import CONFIG, generate  # noqa: E402
@@ -27,7 +28,7 @@ from app.research.models import (  # noqa: E402
     ResearchSession,  # noqa: E402, F401
 )
 
-Base.metadata.create_all(engine(), tables=[table for table in Base.metadata.tables.values() if table.name.startswith(("uk_", "research_"))])
+Base.metadata.create_all(engine(), tables=[table for table in Base.metadata.tables.values() if table.name.startswith(("uk_", "research_", "journey_"))])
 with Session(engine()) as db:
     print(seed(db), flush=True)
     data = generate({**CONFIG, "profiles": 0, "histories": 0})
