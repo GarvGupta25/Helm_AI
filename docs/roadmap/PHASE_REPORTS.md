@@ -23,3 +23,13 @@ Implementation choice: immutable version-qualified family facts are frozen in en
 Delivered plan/run-owned fact retrieval, cited premium/benefit/exclusion/underwriting/network answers, deterministic fixed-scenario calculations, unknown/refusal paths, and private saved broker questions. The UI keeps at most 20 escaped plain-text turns per plan/run in browser-tab storage, supports clearing, shows source fields/versions, and restores focus when closed.
 
 The versioned evaluation corpus contains 50 questions: 40 supported fact/scenario questions and 10 unknown/adversarial questions, each checked against three different synthetic policies. No external provider writes customer-facing prose; answers use controlled templates. Broker questions are saved, not delivered without later sharing consent and assignment.
+
+Checks: all 51 policy tests, TypeScript and scoped ESLint passed. The later real-API browser flow also exercised a policy premium answer and focus return.
+
+## Phase 4 — verified demo requests
+
+Delivered fake contact verification with keyed OTP digests, expiry/attempt limits, protected inboxes and replay rejection; explicit versioned insurer/broker/channel consent; up-to-three plan review; optional dual contact channels; quiet-hour preferences; private seven-day case snapshots; grouped per-insurer idempotent requests; deterministic delayed insurer simulation; bounded timeout retries; partial-response support; immutable synthetic quotation documents.
+
+Checks: contact/request/worker tests all passed (3 focused tests), including contact ownership boundaries, consent withdrawal, duplicate requests, timeout retry and duplicate worker runs. Build, TypeScript and lint passed. All three intake/browser flows passed, including policy questions, fake OTP capture/verification and creation of a consented request.
+
+The worker runner explicitly selects the scratch database/key and cannot send externally. Consent/audit/message collections are bounded encrypted case/session records rather than extra relational tables; this avoids a second identity system while preserving typed API contracts. Relational case/request/document/approval/grant/job tables enforce the critical boundaries. Account linking to legacy customer records remains intentionally absent.
