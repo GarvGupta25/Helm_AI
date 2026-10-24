@@ -9,3 +9,11 @@ Delivered isolated encrypted draft sessions, explicit missing fields, a canonica
 Checks: canonical schema/intake API tests, TypeScript/build, manual-to-chat persistence browser flow, scoped axe and narrow RTL layout. Exact final counts are recorded in the final verification section when the complete journey is checked.
 
 Limits: no live LLM calls, no diagnoses, no real submissions; extraction supports the documented controlled question vocabulary. Birth dates are optional alternatives to ages. The new recommendation adapter is Phase 2.
+
+## Phase 2 — recommendations and exploration
+
+Delivered deterministic per-adult rating with explicit fictional child/family terms, version-qualified frozen plan snapshots, effective-date/underwriting/outpatient hard filters, unchanged reference weights, no-target budget neutrality, current-run ownership, persistent shortlist/remove, three-plan price/limit comparison, saved-run restoration, profile history, and nonselectable what-if previews.
+
+Checks: 24 schema/intake/recommendation/existing-engine tests passed, the comparison ownership/preview API test passed, scoped ESLint and build passed, and all three intake/comparison/RTL browser tests passed. A browser check caught delayed checkbox feedback; selection now responds immediately and rolls back on server rejection.
+
+Implementation choice: immutable version-qualified family facts are frozen in encrypted run/quotation snapshots rather than overwriting existing research catalogue records or adding a duplicate catalogue database. Single-adult arithmetic is covered by compatibility vectors. Family terms remain invented demo assumptions, not underwriting evidence.

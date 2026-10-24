@@ -9,6 +9,7 @@ export type Profile = {
   benefits: { required: string[] | null; preferred: string[] }; health: { existing_condition_scenario?: string | null };
 };
 export type IntakeState = { profile: Profile; draft: Profile; version: number; draft_revision: number; draft_hash: string; health_consent: boolean;
+  latest_run?: string | null; shortlist?: { plan_ids?: string[] };
   completeness: { ready: boolean; missing: { field: string; help: string }[]; answered: number; total: number; recommended: string[] } };
 let capability = '';
 try { capability = sessionStorage.getItem('helm-journey') || ''; } catch { /* In-memory session remains usable. */ }

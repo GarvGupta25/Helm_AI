@@ -44,6 +44,7 @@ def present(record):
     profile = JourneyProfile.model_validate(data.get("confirmed", {}))
     return {"profile": profile.model_dump(mode="json"), "draft": data["draft"], "version": record.version,
             "draft_revision": data["draft_revision"], "draft_hash": digest(data["draft"]),
+            "latest_run": data.get("latest_run"), "shortlist": data.get("shortlist", {}),
             "health_consent": data.get("health_consent", False), "completeness": completeness(profile), "expires_at": record.expires_at}
 
 
@@ -131,6 +132,8 @@ def confirm(body: Confirmation, record=Depends(owned), db: Session = Depends(ses
         raise HTTPException(409, "This demo keeps up to 50 confirmed versions. Start a new session.")
     data = deepcopy(record.data)
     data["confirmed"] = current.model_dump(mode="json")
+    data["latest_run"] = None
+    data["shortlist"] = {}
     record.version += 1
     db.add(ProfileVersion(session_id=record.id, version=record.version, data={"profile": data["confirmed"], "source": body.source}))
     save(db, record, data)

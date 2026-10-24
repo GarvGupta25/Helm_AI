@@ -31,3 +31,28 @@ test('manual and guided modes share saved answers without invented defaults', as
   await expect(page.getByRole('region', { name: 'Missing essential answers' })).toBeVisible();
   await expect(page.getByText('Confirmed version 1.', { exact: false })).toBeVisible();
 });
+
+test('confirmed intake produces a persistent selectable comparison and a nonselectable preview', async ({ page }) => {
+  await page.goto('/get-cover/quote');
+  await page.getByRole('button', { name: 'Add adult', exact: true }).click();
+  await page.getByLabel('Person 1 age', { exact: true }).fill('35');
+  await page.getByLabel('Region · mandatory', { exact: true }).selectOption('England');
+  await page.getByLabel('Cover start date · mandatory', { exact: true }).fill(new Date().toISOString().slice(0, 10));
+  await page.getByLabel('Monthly budget · mandatory choice', { exact: true }).selectOption('amount');
+  await page.getByLabel('Budget in pounds', { exact: true }).fill('150');
+  await page.getByLabel('Maximum excess · mandatory choice', { exact: true }).selectOption('50000');
+  await page.getByLabel('Hospital list · mandatory choice', { exact: true }).selectOption('1');
+  await page.getByRole('checkbox', { name: 'I have reviewed my essential benefits, including choosing none' }).check();
+  await page.getByRole('button', { name: 'Get recommendations', exact: true }).click();
+  await expect(page.locator('.j-card')).toHaveCount(3);
+  await page.locator('.j-card input[type=checkbox]').first().check();
+  await page.getByRole('button', { name: 'Review selected plans (1)', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Review your selected plans' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.j-card input[type=checkbox]').first()).toBeChecked();
+  await page.getByRole('button', { name: 'Preview £30 more budget' }).click();
+  await expect(page.getByText('What-if preview. You cannot select these results.')).toBeVisible();
+  await expect(page.locator('.j-card input[type=checkbox]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Return to confirmed results' }).click();
+  await expect(page.locator('.j-card input[type=checkbox]').first()).toBeChecked();
+});

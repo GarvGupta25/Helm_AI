@@ -2,6 +2,7 @@ import { cloneElement, useEffect, useId, useRef, useState, type ReactElement } f
 import { ArrowRight, Check, MessageCircle, Plus, Undo2 } from 'lucide-react';
 import { journey, openJourney, pence, type IntakeState, type Profile } from './api';
 import './journey.css';
+import Recommendations, { type Comparison } from './Recommendations';
 
 const questions: Record<string, string> = {
   people: 'Who needs cover? Enter each age, for example 35, 32, 8. No names or diagnosis details.',
@@ -38,10 +39,13 @@ export default function Intake() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [result, setResult] = useState<Comparison>();
+  const [history, setHistory] = useState<{ version: number; source: string; created_at: string }[]>([]);
   const [missing, setMissing] = useState<{ field: string; help: string }[]>([]);
   const opening = useRef<Promise<IntakeState> | null>(null);
   function accept(data: IntakeState) { setState(data); setDraft(data.draft); }
   useEffect(() => { let cancelled = false; opening.current ||= openJourney(); void opening.current.then(data => { if (!cancelled) accept(data); }).catch(e => { if (!cancelled) setError(String(e.message)); }); return () => { cancelled = true; }; }, []);
+  useEffect(() => { let cancelled = false; if (state?.latest_run) void journey<Comparison>(`/runs/${state.latest_run}`).then(data => { if (!cancelled) setResult(data); }).catch(e => { if (!cancelled) setNotice(e.message); }); return () => { cancelled = true; }; }, [state?.latest_run]);
   async function perform(action: () => Promise<void>) { setBusy(true); setError(''); try { await action(); } catch (e) { setError(e instanceof Error ? e.message : 'Please try again.'); } finally { setBusy(false); } }
   function change<K extends keyof Profile>(key: K, value: Profile[K]) { setDraft(old => old ? { ...old, [key]: value } : old); setNotice('Draft changed. Review and confirm before recommending.'); }
   async function saveDraft() { const data = await journey<IntakeState>('/intake/draft', { expected_revision: state!.draft_revision, profile: draft }, 'PATCH'); accept(data); return data; }
@@ -50,7 +54,8 @@ export default function Intake() {
     const confirmed = await journey<IntakeState>('/profile/confirm', { expected_version: saved.version, draft_hash: saved.draft_hash, source: mode === 'chat' ? 'guided_chat' : 'manual' });
     accept(confirmed); setMissing(confirmed.completeness.missing);
     if (!confirmed.completeness.ready) { setQuestion(confirmed.completeness.missing[0].field); setNotice('Answer the missing essentials below. Your confirmed answers are saved.'); return; }
-    setNotice('Your confirmed profile is ready for recommendations.');
+    setResult(await journey<Comparison>('/recommendations', {}));
+    setNotice('Recommendations use your confirmed profile. Draft changes will need a new confirmation.');
   }
   async function capture() {
     const saved = await saveDraft();
@@ -81,6 +86,8 @@ export default function Intake() {
       </div>}
       {missing.length > 0 && <div className="j-missing" role="region" aria-label="Missing essential answers"><h2>A few essentials are missing.</h2>{missing.map(item => <p key={item.field}>{item.help} <button onClick={() => { setQuestion(item.field); setMode('chat'); }}>Answer in chat</button> <button onClick={() => { setMode('manual'); requestAnimationFrame(() => document.getElementById(`j-${item.field}`)?.focus()); }}>Go to form</button></p>)}</div>}
     </div><aside className="j-summary"><p className="uk-eyebrow">YOUR SHARED PROFILE</p><h2>What we understand.</h2><p>Confirmed version {state.version}. Draft changes are reviewed before use.</p><progress value={state.completeness.answered} max={state.completeness.total} aria-label="Confirmed intake progress"/><p>{state.completeness.answered} of {state.completeness.total} essentials confirmed.</p><dl><dt>People in this draft</dt><dd>{draft.people.map(p => p.age_years ?? p.date_of_birth ?? 'Age missing').join(', ') || 'Not answered'}</dd><dt>Region</dt><dd>{draft.location.region || 'Not answered'}</dd><dt>Start date</dt><dd>{draft.cover.start_date || 'Not answered'}</dd><dt>Must-have benefits</dt><dd>{draft.benefits.required === null ? 'Not answered' : draft.benefits.required.join(', ') || 'None selected'}</dd><dt>Budget / excess</dt><dd>{draft.budget.choice || 'Missing'} / {draft.excess.choice || 'Missing'}</dd></dl><button disabled={busy} onClick={() => void perform(async () => { await saveDraft(); setNotice('Draft saved to this private session.'); })}>Save draft</button><button disabled={busy || state.version < 2} onClick={() => void perform(async () => accept(await journey<IntakeState>('/profile/undo', { expected_version: state.version })))}><Undo2 size={15}/> Undo confirmed change</button><details><summary>Review all captured fields</summary><pre>{JSON.stringify(draft, null, 2)}</pre></details></aside></div>
+    <details><summary>Confirmed profile history</summary><button onClick={() => void perform(async () => setHistory(await journey('/profile/history')))}>Load confirmed versions</button>{history.map(item => <p key={item.version}>Version {item.version} · {item.source} · {new Date(item.created_at).toLocaleString()}</p>)}</details>
+    {result && result.profile_version === state.version && <Recommendations key={result.run_id} result={result} profile={state.profile} initialSelected={state.shortlist?.plan_ids}/>}
     <div className="j-action"><span>Confirm the reviewed summary and check essential answers.</span><button className="uk-button primary" disabled={busy} onClick={() => void perform(recommend)}>{busy ? 'Saving…' : mode === 'chat' ? 'Recommend me' : 'Get recommendations'} <ArrowRight size={18}/></button></div>
   </section>;
 }
