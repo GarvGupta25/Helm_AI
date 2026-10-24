@@ -14,7 +14,27 @@ function PanelLinks({ index, close }: { index: number; close?: () => void }) { c
 function Header() {
   const [scrolled, setScrolled] = useState(false); const [hidden, setHidden] = useState(false); const [menu, setMenu] = useState(false); const [search, setSearch] = useState(false); const [query, setQuery] = useState(''); const [nav, setNav] = useState('');
   const reduced = useReducedMotion(); const location = useLocation(); const touchY = useRef(0);
-  useEffect(() => { let previous = window.scrollY; const update = () => { const y = window.scrollY; setScrolled(y > 80); setHidden(y > previous + 5 && y > 180); previous = y; }; window.addEventListener('scroll', update, { passive: true }); return () => window.removeEventListener('scroll', update); }, []);
+  useEffect(() => {
+    let previous = Math.max(0, window.scrollY);
+    let directionStart = previous;
+    let direction = 0;
+    const update = () => {
+      const y = Math.max(0, window.scrollY);
+      const nextDirection = Math.sign(y - previous);
+      setScrolled(y > 80);
+      if (nextDirection && nextDirection !== direction) {
+        directionStart = previous;
+        direction = nextDirection;
+      }
+      // Accumulate movement so small wheel/momentum events cannot flicker the header.
+      if (y <= 180) setHidden(false);
+      else if (Math.abs(y - directionStart) >= 24) setHidden(direction > 0);
+      previous = y;
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
   useEffect(() => { setMenu(false); setSearch(false); setNav(''); }, [location.pathname]);
   useEffect(() => { const key = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setSearch(true); } }; document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key); }, []);
   return <><a className="uk-skip" href="#uk-main">Skip to main content</a><div className="uk-demo">Demo — not a real insurance service <span>UK private medical cover · fictional plans</span></div><header className={`uk-header ${scrolled && !reduced ? 'pill' : ''} ${hidden && !nav && !reduced ? 'hidden' : ''}`}><Brand/><Navigation.Root className="uk-desktop-nav" delayDuration={120} skipDelayDuration={150} value={nav} onValueChange={setNav}><Navigation.List>{audiences.map((item, index) => <Navigation.Item key={item.path} value={item.path}><Navigation.Trigger>{item.name}<ChevronDown size={13}/></Navigation.Trigger><Navigation.Content className="uk-mega"><div className="uk-mega-feature"><Eyebrow>HELM FOR YOU</Eyebrow><h2>{item.title}</h2><Link to={item.path}>View all <span className="uk-arrow-circle"><ArrowUpRight size={22}/></span></Link></div><PanelLinks index={index}/><div className="uk-mega-promo"><Eyebrow>LET’S GET STARTED</Eyebrow><h3>{item.promo}</h3><p>{item.description}</p><Link to={item.destination}>{item.action} ↗</Link></div></Navigation.Content></Navigation.Item>)}</Navigation.List></Navigation.Root><div className="uk-header-actions"><button className="uk-icon" aria-label="Search website" onClick={() => setSearch(true)}><Search size={19}/></button><details className="uk-language"><summary aria-label="Language: English"><Globe2 size={17}/> EN</summary><div>English (UK)<p>Other languages: <Link to="/extra-support">ask for support</Link></p></div></details><details className="uk-login"><summary>Log in <ChevronDown size={13}/></summary><div><Link to="/login">Member log in</Link><Link to="/advisers/portal">Adviser access</Link><Link to="/insurers/portal">Insurer access</Link></div></details><Link className="uk-header-cta" to="/get-cover/quote">Get a quote <ArrowUpRight size={17}/></Link><button className="uk-icon uk-mobile-menu" aria-label="Open navigation" onClick={() => setMenu(true)}><Menu/></button></div></header>

@@ -8,6 +8,4 @@
 .uk-site .uk-stats .uk-eyebrow{color:#172c32}
 .uk-site .uk-premium dt,.uk-site .uk-premium dd{color:#172c32}
 .uk-site .uk-life-grid h3{color:#172c32}
-/* Let browsers defer offscreen layout while retaining content, anchors and keyboard access. */
-.uk-site #uk-main>.uk-section:not(:first-child),.uk-site #uk-main>.uk-final,.uk-site .uk-footer{content-visibility:auto;contain-intrinsic-size:auto 700px}
 @media(prefers-reduced-motion:reduce){.uk-story-visual{position:relative;top:auto}.uk-hero-photo{transform:none}.uk-header.hidden{transform:none}}

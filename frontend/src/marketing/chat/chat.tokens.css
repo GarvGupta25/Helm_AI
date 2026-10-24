@@ -1,3 +1,55 @@
-.hc-panel{--hc-ink:#10251e;--hc-muted:#4e6259;--hc-bg:#fff;--hc-surface:#f1f5f2;--hc-hover:#e1ece5;--hc-border:#7f9387;--hc-accent:#00694d;--hc-user:#143e2e;--hc-danger:#a02520;--hc-radius:20px;--hc-font:Inter,system-ui,sans-serif;--hc-shadow:0 18px 64px #10251e30,0 2px 10px #10251e15}
-@media(prefers-color-scheme:dark){.hc-panel{--hc-ink:#f2f7f4;--hc-muted:#b5c7bc;--hc-bg:#11251d;--hc-surface:#21392e;--hc-hover:#2c4b3c;--hc-border:#849e90;--hc-accent:#89e5bb;--hc-user:#285940;--hc-danger:#ffb6af}}
-[data-theme=dark] .hc-panel{--hc-ink:#f2f7f4;--hc-muted:#b5c7bc;--hc-bg:#11251d;--hc-surface:#21392e;--hc-hover:#2c4b3c;--hc-border:#849e90;--hc-accent:#89e5bb;--hc-user:#285940;--hc-danger:#ffb6af}
+.hc-panel {
+  --hc-ink: #162b40;
+  --hc-muted: #5b6d7d;
+  --hc-bg: #fff;
+  --hc-surface: #f3f6f8;
+  --hc-hover: #e8f2f1;
+  --hc-border: #d5dfe6;
+  --hc-accent: #087c7a;
+  --hc-user: #142c43;
+  --hc-danger: #b02b32;
+  --hc-composer-bg: #fff;
+  --hc-composer-edge: #8c9eac;
+  --hc-composer-footer: #f8fafb;
+  --hc-focus: #087c7a;
+  --hc-primary-hover: #23465e;
+  --hc-radius: 20px;
+  --hc-font: Inter, system-ui, sans-serif;
+  --hc-shadow: 0 18px 64px #142c4324, 0 2px 10px #142c4310;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hc-panel {
+    --hc-ink: #edf3f8;
+    --hc-muted: #a8b8c6;
+    --hc-bg: #101e2d;
+    --hc-surface: #172a3d;
+    --hc-hover: #203a4c;
+    --hc-border: #344c60;
+    --hc-accent: #76d6ce;
+    --hc-user: #223f59;
+    --hc-danger: #ffb6b9;
+    --hc-composer-bg: #172a3d;
+    --hc-composer-edge: #657e94;
+    --hc-composer-footer: #101e2d;
+    --hc-focus: #76d6ce;
+    --hc-primary-hover: #315570;
+  }
+}
+
+[data-theme=dark] .hc-panel {
+  --hc-ink: #edf3f8;
+  --hc-muted: #a8b8c6;
+  --hc-bg: #101e2d;
+  --hc-surface: #172a3d;
+  --hc-hover: #203a4c;
+  --hc-border: #344c60;
+  --hc-accent: #76d6ce;
+  --hc-user: #223f59;
+  --hc-danger: #ffb6b9;
+  --hc-composer-bg: #172a3d;
+  --hc-composer-edge: #657e94;
+  --hc-composer-footer: #101e2d;
+  --hc-focus: #76d6ce;
+  --hc-primary-hover: #315570;
+}
