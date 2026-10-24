@@ -23,7 +23,7 @@ class OfficialNotification:
         parsed=urlparse(config.public_quote_origin)
         if parsed.scheme!='https' or not parsed.netloc or parsed.username or parsed.password or parsed.path not in {'','/'} or parsed.query or parsed.fragment:
             raise ValueError('Configure an HTTPS public quotation origin')
-        absolute=config.public_quote_origin.rstrip('/')+(url if url.startswith('/my-quotes#') else '/my-quotes')
+        absolute=config.public_quote_origin.rstrip('/')+(url if url.startswith('/my-quotes#') or url=='/broker.html' else '/my-quotes')
         if contact.channel=='whatsapp':
             if not (config.whatsapp_access_token and config.whatsapp_phone_number_id.isdigit() and re.fullmatch(r'v\d+\.\d+',config.whatsapp_graph_version) and config.whatsapp_utility_template):
                 raise ValueError('Configure an approved WhatsApp utility template')

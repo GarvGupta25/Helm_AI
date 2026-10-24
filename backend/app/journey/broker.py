@@ -13,9 +13,10 @@ from ..auth import User, require_broker
 from ..db import session
 from ..models import now, uid
 from .access import dashboard_case, same_origin
-from .case_models import Approval, Case, Contact, Document, Grant, Job
+from .case_models import Approval, Case, Contact, Document, Grant, Job, Quotation, QuoteRequest
 from .cases import active, audit, broker_notice, live_case, present_case, source_current
 from .contact import contact_owned
+from .models import JourneyRun
 from .router import digest, owned
 from .schemas import Strict
 
@@ -47,6 +48,9 @@ class Handoff(Strict):
     consent_id: str
     expected_version: int
     demo_acknowledged: Literal[True]
+    preferred_channel: Literal['email','whatsapp','callback'] = 'email'
+    best_time: str = Field(default='',max_length=120)
+    note: str = Field(default='',max_length=1000)
 
 
 @router.post('/broker-handoff')
@@ -59,9 +63,12 @@ def early_handoff(body: Handoff, record=Depends(owned), db: Session = Depends(se
     row = db.scalar(select(Case).where(Case.request_key == key))
     if row:
         return present_case(db, live_case(row))
+    shortlisted=record.data.get('shortlist') or {}
+    run=db.scalar(select(JourneyRun).where(JourneyRun.id==shortlisted.get('run_id'),JourneyRun.session_id==record.id,JourneyRun.profile_version==record.version))
+    selection=[item for item in run.data['result']['items'] if item['id'] in shortlisted.get('plan_ids',[])] if run else []
     row = Case(session_id=record.id, contact_id=contact.id, request_key=key, broker_id=os.getenv('JOURNEY_DEMO_BROKER_ID') or None,
                expires_at=now()+timedelta(days=7), data={'profile_version': record.version, 'profile': record.data.get('confirmed', {}),
-               'selected': [], 'consents': [consent], 'contact_ids': [contact.id], 'preferences': {'channels': ['dashboard'], 'quiet_start': 22, 'quiet_end': 8, 'time_zone': 'Europe/London'},
+               'selected': selection, 'consents': [consent], 'contact_ids': [contact.id], 'preferences': {'channels': ['dashboard'], 'quiet_start': 22, 'quiet_end': 8, 'time_zone': 'Europe/London','preferred_channel':body.preferred_channel,'best_time':body.best_time,'visitor_note':body.note},
                'flagged_questions': record.data.get('flagged_questions', []), 'notes': [], 'messages': [], 'audit': [], 'trigger': 'early_broker_request'})
     db.add(row)
     db.flush()
@@ -114,6 +121,13 @@ def broker_inbox(user: User = Depends(require_broker), db: Session = Depends(ses
                       for j, c in rows if not c.data.get('withdrawn') and active(c, 'broker_share', ['helm-demo-broker'])][:50]}
 
 
+def next_deadline(db,case):
+    dates=[case.expires_at.replace(tzinfo=timezone.utc)]
+    dates += [value.replace(tzinfo=timezone.utc) for value in db.scalars(select(Grant.expires_at).where(Grant.case_id==case.id,Grant.kind=='magic_link',Grant.revoked.is_(False)))]
+    dates += [value.replace(tzinfo=timezone.utc) for value in db.scalars(select(Quotation.expires_at).join(QuoteRequest).where(QuoteRequest.case_id==case.id))]
+    return min(dates)
+
+
 @router.get('/broker/cases')
 def queue(status: str = '', urgency: Literal['all', 'expiring'] = 'all', search: str = Query(default='', max_length=36), offset: int = Query(default=0, ge=0),
           limit: int = Query(default=20, ge=1, le=50), user: User = Depends(require_broker), db: Session = Depends(session)):
@@ -122,19 +136,22 @@ def queue(status: str = '', urgency: Literal['all', 'expiring'] = 'all', search:
         query = query.where(Case.status == status)
     if search:
         query = query.where(Case.id.startswith(search, autoescape=True))
-    if urgency == 'expiring':
-        query = query.where(Case.expires_at <= now()+timedelta(hours=24))
     # Scope before counts and pagination; encrypted consent stays authoritative.
     rows = [r for r in db.scalars(query) if not r.data.get('withdrawn') and active(r, 'broker_share', ['helm-demo-broker'])]
+    deadlines={r.id:next_deadline(db,r) for r in rows}
+    rows.sort(key=lambda r:(deadlines[r.id],r.id))
+    if urgency=='expiring':
+        rows=[r for r in rows if deadlines[r.id]<=now()+timedelta(hours=24)]
     return {'total': len(rows), 'items': [{'id': r.id, 'state': r.status, 'version': r.version, 'expires_at': r.expires_at,
-            'urgency': 'expiring' if r.expires_at.replace(tzinfo=timezone.utc) < now()+timedelta(hours=24) else 'normal',
+            'next_deadline':deadlines[r.id], 'urgency': 'expiring' if deadlines[r.id] < now()+timedelta(hours=24) else 'normal',
             'notice': 'Consented case ready for review'} for r in rows[offset:offset+limit]]}
 
 
 def detail(db, case):
     contacts = db.scalars(select(Contact).where(Contact.id.in_(case.data['contact_ids']))).all()
     documents = db.scalars(select(Document).where(Document.case_id == case.id)).all()
-    return {**present_case(db, case), 'contacts': [{'id': c.id, 'channel': c.channel, 'destination': c.data['destination'], 'verified_in_demo': bool(c.verified_at)} for c in contacts],
+    from .explanations import main_differences
+    return {**present_case(db, case), 'summary':{'profile_version':case.data['profile_version'],'hard_requirements':{key:value for key,value in case.data['profile'].items() if key in {'budget','excess','hospital_list','benefits','cover','outpatient'}},'selected_summary':main_differences(case.data['selected']),'open_question_count':len(case.data.get('flagged_questions',[]))},'contacts': [{'id': c.id, 'channel': c.channel, 'destination': c.data['destination'], 'verified_in_demo': bool(c.verified_at)} for c in contacts],
             'preferences': case.data['preferences'], 'questions': case.data.get('flagged_questions', []), 'notes': case.data.get('notes', []),
             'messages': case.data.get('messages', []), 'audit': case.data['audit'], 'checklist': case.data.get('checklist', {}),
             'documents': [{'id': d.id, 'kind': d.kind, 'revision': d.revision, 'hash': d.content_hash, 'ai_drafted': d.ai_drafted,

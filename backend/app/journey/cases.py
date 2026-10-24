@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..db import session
 from ..models import now
 from .case_models import Case, Contact, Job, QuoteRequest
@@ -58,6 +59,8 @@ def broker_notice(db, case):
     if case.broker_id and active(case, 'broker_share', ['helm-demo-broker']):
         db.add(Job(case_id=case.id, kind='broker_case', dedupe_key='broker-case:'+case.id, status='delivered_demo', due_at=now(),
                    data={'text': 'A consented synthetic case is ready for review.', 'external_sent': False, 'broker_id': case.broker_id, 'channel': 'private_broker_inbox'}))
+        if settings().broker_notification_destination:
+            db.add(Job(case_id=case.id,kind='broker_notice',dedupe_key='broker-notice:'+case.id,status='queued',due_at=now(),data={'broker_id':case.broker_id,'text':'A consented case is ready in your private broker workspace.','url':'/broker.html'}))
 
 
 def requests_for(db, case):

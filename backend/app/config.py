@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     whatsapp_auth_template: str = ''
     whatsapp_utility_template: str = ''
     public_quote_origin: str = ''
+    broker_notification_destination: str = ''
+    broker_notification_channel: str = 'email'
     whatsapp_template_language: str = 'en'
     smtp_host: str = ''
     smtp_port: int = 465

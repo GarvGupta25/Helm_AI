@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, FileText, MessageCircle } from 'lucide-react';
 import { journey } from '../api';
 import type { Comparison } from '../Recommendations';
-import BrokerHandoff from '../BrokerHandoff';
+import BrokerContact from './BrokerContact';
 import { firstMissing, guardedStep, pathFor, problem, skipped, stages, steps } from './steps';
 import { useWizardProfile } from './useWizardProfile';
 import StepFields from './StepFields';
@@ -37,6 +37,6 @@ export default function WizardApp() {
     {model.error && <div className="j-error" role="alert">{model.error}<button onClick={()=>void perform(async()=>{await model.flush();})}>Retry saving</button></div>}
     {!step?<><p className="uk-lead">About five minutes. Choose how you’d like to tell us what matters. Switch at any time.</p><div className="w-mode-cards">{[['manual','Fill it in myself','Simple questions, at your own pace.'],['chat','Let the AI ask me','Guided questions with clear answers and a review.']].map(([value,title,text])=><button key={value} onClick={()=>{choose(value);navigate(pathFor('consent'));}}>{value==='manual'?<FileText/>:<MessageCircle/>}<strong>{title}</strong><span>{text}</span><ArrowRight size={20}/></button>)}</div></>:<div className="w-step">{mode==='chat' && !['consent','ready','review'].includes(id)?<GuidedIntake key={id} id={id} model={model}/>:<StepFields key={id} id={id} model={model}/>}</div>}
     {step && <div className="w-action"><button onClick={()=>void perform(()=>go(steps[index-1]?.id || ''))}><ArrowLeft size={16}/> Back</button>{optional && <button disabled={busy || !canShow} onClick={()=>void perform(showPlans)}>Show my plans</button>}<span id="w-next-reason">{reason || (optional?'Optional answers can be added later.':'Your draft is saved before continuing.')}</span>{step.tier==='Optional' && mode!=='chat' && <button onClick={()=>void perform(async()=>{for(const [key,value] of Object.entries(skipped(id,draft)))model.change(key as keyof typeof draft,value as never);await go(steps[index+1]?.id || 'review');})}>Skip</button>}<button className="uk-button primary" disabled={busy || !!reason} aria-describedby="w-next-reason" onClick={()=>void perform(()=>['ready','review'].includes(id)?showPlans():go(steps[index+1]?.id || 'review'))}>{['ready','review'].includes(id)?'Show my plans':'Next'} <ArrowRight size={16}/></button></div>}
-    <BrokerHandoff prepare={()=>model.confirm(mode==='chat'?'guided_chat':'manual')}/>
+    <BrokerContact prepare={()=>model.confirm(mode==='chat'?'guided_chat':'manual')}/>
   </section>;
 }
