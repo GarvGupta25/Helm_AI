@@ -6,6 +6,8 @@
 **Author for this work:** Utkarsh Raj  
 **Status:** Phase 0 plan ready for owner approval. Phases 1–6 have not started.
 
+**Execution update:** The owner subsequently authorized proceeding phase by phase without asking for approval at every boundary. Development may proceed through Phases 1–6 using the proposed demo defaults. Reports and meaningful commits remain required; human approval of application-generated artifacts and the prohibition on live integrations remain unchanged. The original gate language below records the planning baseline.
+
 ## 1. Scope, gates, and decisions to approve
 
 The supplied master prompt defines a synthetic journey from shared manual/chat intake through recommendations, policy questions, simulated insurer quotations, a private dashboard, and assigned-broker review. It explicitly requires: **“Phase 0 is planning only. Write no application code until I approve it.”** It also requires a report and approval after each subsequent phase.
