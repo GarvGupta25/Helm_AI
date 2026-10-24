@@ -75,7 +75,7 @@ class Verify(Strict):
 def check_code(db, contact, code):
     from datetime import datetime
     data = deepcopy(contact.data)
-    if contact.verified_at or data.get("consumed") or datetime.fromisoformat(data["expires_at"]) <= now():
+    if data.get("consumed") or datetime.fromisoformat(data["expires_at"]) <= now():
         raise HTTPException(410, "Verification code expired or already used")
     if data["attempts"] >= 5:
         raise HTTPException(429, "Verification attempt limit reached")

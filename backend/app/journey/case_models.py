@@ -99,6 +99,7 @@ class Grant(Base):
     case_id: Mapped[str | None] = mapped_column(ForeignKey("journey_case.id"), nullable=True, index=True)
     contact_id: Mapped[str] = mapped_column(ForeignKey("journey_contact.id"), index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    parent_id: Mapped[str | None] = mapped_column(ForeignKey("journey_access_grant.id"), nullable=True, unique=True)
     kind: Mapped[str] = mapped_column(String(24))
     data: Mapped[dict] = mapped_column(EncryptedState(), default=dict)
     used: Mapped[bool] = mapped_column(Boolean, default=False)
