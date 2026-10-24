@@ -57,3 +57,13 @@ export function guardedStep(requested: string, p: Profile) {
   const target = steps.findIndex(s => s.id === requested);
   return steps.slice(0, Math.max(0,target)).find(s => s.tier === 'Mandatory' && problem(s.id,p))?.id;
 }
+export function skipped(id:string,p:Profile):Partial<Profile> {
+  switch(id){
+    case 'optional/existing-cover':return {cover:{...p.cover,existing_cover:null}};
+    case 'optional/underwriting':return {cover:{...p.cover,underwriting:null,underwriting_required:false}};
+    case 'optional/outpatient':return {outpatient:{minimum_annual_pence:null,required:false}};
+    case 'optional/postcode':return {location:{...p.location,postcode:null}};
+    case 'optional/conditions':return {health:{existing_condition_scenario:null}};
+    default:return {};
+  }
+}

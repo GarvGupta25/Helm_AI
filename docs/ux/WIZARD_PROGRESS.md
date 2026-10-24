@@ -27,3 +27,9 @@ Phase 0 baseline correction: first run was 7 passed / 1 rate-limited, not eight 
 - Fixed a server-default normalization autosave loop found by browser checks; regression test proves a normalized acknowledgement stops resaving.
 - Verification:15 frontend unit tests passed; TypeScript/scoped lint passed. All3 wizard browser tests passed24.3s, including actual API-backed desktop1440/mobile375 mandatory path, saved refresh, payload assertions, light/dark and scoped axe. First browser retries exposed normalization and too-fast test navigation; fixed application normalization and made test wait for route changes. Repeated sessions hit existing limiter; restarted only isolated API before final run, no limit change.
 - 60-persona canonical form/extractor contract replay passed (1 pytest,0.22s): seven common fields exactly match. This is schema/extractor replay, not60 full browser journeys. Physical devices/screen readers and live providers unverified.
+
+## Phase 3 — optional details, review and early plans
+- Re-read full source plan and Phase3 prompt. Added the5 optional screens with exact values, help, explicit Skip-to-null behavior, hard toggles, persistent Show my plans, grouped review, exact edit-return links, saved draft, version history and Undo.
+- Optional answers never gate recommendations. Skipping clears an earlier answer to not-answered instead of converting to no. View changes require a new canonical confirmation.
+- Moved the public launcher above the sticky controls after screenshot review found overlap at375px.
+- Verification:2 actual API browser journeys passed16.2s at1440/375: skip all optional fields, obtain a stored recommendation run, edit-return, create another confirmed version and Undo/history. Scoped lint and TypeScript passed. Plans destination UI is implemented in Phase5; current navigation alone is not claimed as a finished plans page. Manual devices and screen readers remain unverified.
