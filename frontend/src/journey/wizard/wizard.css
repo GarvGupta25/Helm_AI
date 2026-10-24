@@ -5,3 +5,7 @@
 .w-person,.w-benefit{margin:18px 0}.w-person-fields{display:grid;grid-template-columns:1fr 1fr;gap:20px}.w-benefit .w-options{margin-bottom:0}.w-step>.j-field{max-width:420px}.w-step>p{max-width:60ch}@media(max-width:520px){.w-person-fields{grid-template-columns:1fr}}
 
 .helm-wizard-active .chatbot-launcher{bottom:150px}.wizard .w-summary dd a{display:inline-block;margin-inline-start:8px;min-height:36px;text-decoration:underline!important}.wizard .w-step>p{line-height:1.65}
+
+.w-question{padding:24px;background:var(--uk-mint);color:var(--j-navy);border-radius:20px;margin-bottom:24px}.w-guided form{margin:24px 0}.helm-wizard-active[data-wizard-mode=chat] .chatbot-launcher-root{display:none}
+
+.helm-wizard-active[data-wizard-mode=chat] .w-action{position:static}.wizard :is(button,input,textarea){scroll-margin-block:150px}

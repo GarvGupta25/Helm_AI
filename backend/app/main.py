@@ -54,6 +54,7 @@ from .journey.cases import router as journey_cases_router
 from .journey.compare import router as journey_compare_router
 from .journey.contact import router as journey_contact_router
 from .journey.dashboard import router as journey_dashboard_router
+from .journey.interviewer import router as journey_interviewer_router
 from .journey.policy import router as journey_policy_router
 from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
@@ -100,6 +101,7 @@ app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
+app.include_router(journey_interviewer_router)
 app.include_router(chatbot_feedback_router)
 app.include_router(member_demo_router)
 app.include_router(journey_broker_router)

@@ -13,8 +13,8 @@ export type IntakeState = { profile: Profile; draft: Profile; version: number; d
   completeness: { ready: boolean; missing: { field: string; help: string }[]; answered: number; total: number; recommended: string[] } };
 let capability = '';
 try { capability = sessionStorage.getItem('helm-journey') || ''; } catch { /* In-memory session remains usable. */ }
-export async function journey<T>(path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST'): Promise<T> {
-  const response = await fetch(`/api/journey${path}`, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Journey-Session': capability }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+export async function journey<T>(path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST', options: {signal?:AbortSignal;keepalive?:boolean} = {}): Promise<T> {
+  const response = await fetch(`/api/journey${path}`, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Journey-Session': capability }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), ...options });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || (typeof data.detail === 'string' ? data.detail : data.field_errors?.map((e: { message: string }) => e.message).join(' ')) || 'Please check your answers and try again.');
   return data as T;

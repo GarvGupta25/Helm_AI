@@ -1,0 +1,10 @@
+{
+  "personas": 60,
+  "compared_top_level_fields": 540,
+  "matching_fields": 540,
+  "field_agreement_percent": 100.0,
+  "average_mandatory_turns": 7.0,
+  "provider_calls": 0,
+  "deterministic_fallback_percent": 100,
+  "method": "Synthetic extractor replay of seven common fields; nine canonical sections including defaults compared. Not live model accuracy or 60 browser journeys."
+}
