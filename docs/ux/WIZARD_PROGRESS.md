@@ -10,4 +10,6 @@ Source: GUIDED_JOURNEY_PLAN.md; owner authorised autonomous phase progression on
 
 Remaining phases 1–13 are pending. No live delivery or manual-device claims.
 
-Phase 0 verification: 8 baseline captures passed (1440/375, light/dark media, LTR/structural RTL) under docs/ux/baselines. Current quote has no actual dark skin; baseline captures this gap. No application source was modified. UI/UX Pro Max search retrieved progressive disclosure and accessible controls; existing Helm palette and Inter/Instrument Serif retained over generic generated suggestions.
+Phase 0 verification: 7 baseline captures passed; the eighth encountered the existing session-creation rate limit and will be retried with a shared test session. Seven captured views (1440/375, light/dark media, LTR/structural RTL) under docs/ux/baselines. Current quote has no actual dark skin; baseline captures this gap. No application source was modified. UI/UX Pro Max search retrieved progressive disclosure and accessible controls; existing Helm palette and Inter/Instrument Serif retained over generic generated suggestions.
+
+Phase 0 baseline correction: first run was 7 passed / 1 rate-limited, not eight successful tests. Restarted only the owned isolated API, preserved the limiter, and captured all eight layouts in one private session: 1 baseline matrix test passed (8 screenshots), 10.9s. No capability/code/token is visible in captures.
