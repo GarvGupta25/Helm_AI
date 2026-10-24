@@ -1,0 +1,84 @@
+from copy import deepcopy
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..db import session
+from ..research.router import catalogue
+from .models import JourneyRun
+from .recommendations import compute
+from .router import digest, owned, save
+from .schemas import JourneyProfile, Strict
+
+router = APIRouter(prefix="/api/journey", tags=["journey comparison"])
+
+
+def run_owned(db, record, ident, current=True):
+    run = db.scalar(select(JourneyRun).where(JourneyRun.id == ident, JourneyRun.session_id == record.id))
+    if not run:
+        raise HTTPException(404, "Comparison unavailable in this session")
+    if current and run.profile_version != record.version:
+        raise HTTPException(409, "Your needs changed. Generate a new comparison first.")
+    return run
+
+
+@router.post("/recommendations")
+def recommendations(record=Depends(owned), db: Session = Depends(session)):
+    if not record.version:
+        raise HTTPException(422, "Confirm your intake answers first")
+    profile = JourneyProfile.model_validate(record.data["confirmed"])
+    try:
+        result = compute(catalogue(db), profile)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
+    rows = db.scalars(select(JourneyRun).where(JourneyRun.session_id == record.id).order_by(JourneyRun.created_at)).all()
+    for row in rows[:-4]:
+        db.delete(row)
+    row = JourneyRun(session_id=record.id, profile_version=record.version, data={"result": result, "catalogue_hash": digest(catalogue(db))})
+    db.add(row)
+    db.flush()
+    data = deepcopy(record.data)
+    data["latest_run"] = row.id
+    data["shortlist"] = []
+    save(db, record, data)
+    return {**result, "run_id": row.id, "profile_version": row.profile_version}
+
+
+@router.get("/runs/{run_id}")
+def get_run(run_id: str, record=Depends(owned), db: Session = Depends(session)):
+    row = run_owned(db, record, run_id)
+    return {**row.data["result"], "run_id": row.id, "profile_version": row.profile_version}
+
+
+class Selection(Strict):
+    run_id: str
+    expected_version: int
+    plan_ids: list[str]
+
+
+@router.put("/shortlist")
+def shortlist(body: Selection, record=Depends(owned), db: Session = Depends(session)):
+    row = run_owned(db, record, body.run_id)
+    if body.expected_version != record.version or len(body.plan_ids) != len(set(body.plan_ids)) or len(body.plan_ids) > 3:
+        raise HTTPException(422, "Choose up to three distinct plans from the current comparison")
+    if not set(body.plan_ids) <= {item["id"] for item in row.data["result"]["items"]}:
+        raise HTTPException(422, "Select plans from the confirmed shortlist, not a what-if preview")
+    data = deepcopy(record.data)
+    data["shortlist"] = {"run_id": row.id, "plan_ids": body.plan_ids, "profile_version": record.version}
+    save(db, record, data)
+    return data["shortlist"]
+
+
+@router.post("/runs/{run_id}/what-if")
+def what_if(run_id: str, body: JourneyProfile, record=Depends(owned), db: Session = Depends(session)):
+    from .router import check_sensitive
+    check_sensitive(body, record)
+    row = run_owned(db, record, run_id)
+    if digest(catalogue(db)) != row.data["catalogue_hash"]:
+        raise HTTPException(409, "Catalogue changed; create a new comparison")
+    try:
+        result = compute(catalogue(db), body)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
+    return {"hypothetical": True, "profile_unchanged": True, "result": result}

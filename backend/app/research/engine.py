@@ -27,6 +27,9 @@ def quote(plan, profile):
     age_factor = Decimal("1.018") ** (profile.age - 18)
     region = Decimal("1.20") if profile.region == "London" else Decimal("1")
     household = Decimal(profile.adults) + Decimal("0.35") * profile.children
+    if getattr(profile, "adult_ages", None):
+        household = (sum(Decimal("1.018") ** (age-18) for age in profile.adult_ages)
+                     + Decimal("0.35")*profile.children*age_factor)/age_factor
     excess_factor = Decimal("1") - Decimal(plan["excess_pence"]) / Decimal("250000")
     base = rounded(Decimal(plan["base_pence"]) * age_factor * region * household * excess_factor)
     tax = rounded(Decimal(base) * Decimal(".12"))
@@ -129,7 +132,7 @@ def contextual(plan, profile, memory=None, as_of=None):
     premium = quote(plan, profile)["monthly_pence"]
     components = {
         "coverage": coverage_fit,
-        "budget": max(0, 100-100*max(0, premium-profile.budget_pence)/max(1, profile.budget_pence)),
+        "budget": max(0, 100-100*max(0, premium-profile.budget_pence)/max(1, profile.budget_pence)) if getattr(profile, "budget_enabled", True) else None,
         "underwriting": 0 if profile.existing_condition else 60,
         "excess": max(0, 100-100*max(0, plan["excess_pence"]-profile.excess_max_pence)/50000),
         "access": 100 if plan["network"] >= profile.network_min else 0,

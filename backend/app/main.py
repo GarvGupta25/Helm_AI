@@ -46,6 +46,7 @@ from .domain import (
     plans,
     reassess_fit,
 )
+from .journey.compare import router as journey_compare_router
 from .journey.router import router as journey_router
 from .market.router import router as uk_router
 from .marketplace_broker import marketplace_worklist_items
@@ -89,6 +90,7 @@ app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
+app.include_router(journey_compare_router)
 app.include_router(public_chat_router)
 app.include_router(claim_agent_router)
 app.include_router(broker_claim_router)
