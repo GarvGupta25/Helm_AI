@@ -1,0 +1,11 @@
+{
+  "version":"demo-review-v1",
+  "notice":"Prototype review prompts only. Not legal advice or a compliance certificate. Regulatory wording requires legal review.",
+  "rules":[
+    {"id":"profile","label":"Review the confirmed needs and hard requirements","source":"profile"},
+    {"id":"consent","label":"Check active broker and recipient sharing permissions","source":"consents"},
+    {"id":"selection","label":"Confirm selected plans and limitations","source":"selected"},
+    {"id":"quotations","label":"Check all selected quotations are received and current","source":"quotations"},
+    {"id":"questions","label":"Resolve or explicitly acknowledge flagged questions","source":"flagged_questions"}
+  ]
+}

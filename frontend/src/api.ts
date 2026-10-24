@@ -24,11 +24,14 @@ export async function api<T = any>(path: string, options: RequestInit = {}): Pro
 }
 export const post = <T = any>(path: string, body: unknown = {}) => api<T>(path, { method: 'POST', body: JSON.stringify(body) });
 export async function downloadQuote(id: string) {
+  return downloadFile(`/api/quotes/${id}/download`, `helm-quote-${id}.pdf`);
+}
+export async function downloadFile(path: string, filename: string) {
   const session = auth ? (await auth.auth.getSession()).data.session : null;
-  const response = await fetch(`/api/quotes/${id}/download`, { headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
-  if (!response.ok) throw new Error('The PDF could not be downloaded. Please retry.');
+  const response = await fetch(path, { headers: session ? { Authorization: `Bearer ${session.access_token}` } : {} });
+  if (!response.ok) throw new Error('The approved file could not be downloaded. Please retry.');
   const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement('a'); link.href = url; link.download = `helm-quote-${id}.pdf`; link.click();
+  const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export const aed = (fils: number) => new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 2 }).format(fils / 100);

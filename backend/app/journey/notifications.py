@@ -27,6 +27,12 @@ def quiet_until(preferences, clock):
 def process_notifications(db, clock=None):
     clock = clock or now()
     count = 0
+    for job in db.scalars(select(Job).where(Job.status=='queued',Job.kind=='broker_followup',Job.due_at<=clock).with_for_update(skip_locked=True)):
+        case=db.get(Case,job.case_id)
+        permitted=case and case.broker_id==job.data.get('broker_id') and case.status!='closed' and case.expires_at.replace(tzinfo=timezone.utc)>clock and active(case,'broker_share',['helm-demo-broker'])
+        job.status='delivered_demo' if permitted else 'cancelled'
+        job.attempts+=1
+        count+=1
     for job in db.scalars(select(Job).where(Job.status=='queued',Job.kind=='broker_notice',Job.due_at<=clock).with_for_update(skip_locked=True)):
         case=db.scalar(select(Case).where(Case.id==job.case_id).with_for_update())
         if not case or case.broker_id!=job.data.get('broker_id') or case.status=='closed' or case.expires_at.replace(tzinfo=timezone.utc)<=clock or not active(case,'broker_share',['helm-demo-broker']):

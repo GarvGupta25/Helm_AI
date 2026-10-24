@@ -116,7 +116,7 @@ def me(user: User = Depends(require_broker)):
 
 @router.get('/broker/inbox')
 def broker_inbox(user: User = Depends(require_broker), db: Session = Depends(session)):
-    rows = db.execute(select(Job, Case).join(Case, Job.case_id == Case.id).where(Job.kind == 'broker_case', Case.broker_id == user.id, Case.expires_at > now()).order_by(Job.created_at.desc())).all()
+    rows = db.execute(select(Job, Case).join(Case, Job.case_id == Case.id).where(Job.kind.in_(['broker_case','broker_followup']), Job.status=='delivered_demo', Case.broker_id == user.id, Case.expires_at > now()).order_by(Job.created_at.desc())).all()
     return {'items': [{'id': j.id, 'case_id': c.id, 'text': j.data['text'], 'created_at': j.created_at, 'external_sent': False}
                       for j, c in rows if not c.data.get('withdrawn') and active(c, 'broker_share', ['helm-demo-broker'])][:50]}
 

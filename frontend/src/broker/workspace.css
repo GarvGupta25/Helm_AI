@@ -131,3 +131,5 @@ details p{overflow-wrap:anywhere}
 
 
 .b-review-actions{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.b-entry textarea{margin-bottom:16px}.b-entry li{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+
+.b-checklist{padding-inline-start:20px}.b-checklist li{margin:16px 0;display:flex;gap:12px;flex-wrap:wrap}.b-checklist small{flex-basis:100%}.b-review-needed{background:#fff4dc;color:#614510;border-radius:8px;padding:8px}.b-entry p{overflow-wrap:anywhere}.b-tabs{overflow-x:auto}.b-card select{min-height:44px}

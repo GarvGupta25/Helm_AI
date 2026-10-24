@@ -31,6 +31,8 @@ test('broker UI fixture reviews a case, edits a draft and approves exact revisio
   await page.route('**/api/journey/broker/**', async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith('/me')) return route.fulfill({ json: { id: user.id, role: 'broker' } });
+    if (path.endsWith('/assistant/queue') || path.endsWith('/inbox')) return route.fulfill({ json: { items: [] } });
+    if (path.endsWith('/assistant')) return route.fulfill({ json: { notice: 'Prototype review prompts pending legal review.', checklist_version: 'demo-review-v1', checklist: [{id:'profile', label:'Review confirmed needs', source:'profile', status:'missing'}], statements: [{text:'Source not yet supplied',source:'profile.people',confidence:'review'}], next_deadline: data.expires_at, prepared_documents: [] } });
     if (path.endsWith('/cases')) return route.fulfill({ json: { total: 1, items: [data] } });
     if (route.request().method() === 'POST') {
       const body = route.request().postDataJSON();
@@ -50,6 +52,8 @@ test('broker UI fixture reviews a case, edits a draft and approves exact revisio
   await expect(page.getByRole('heading', { name: 'Your case queue' })).toBeVisible();
   await page.getByRole('button', { name: /case-ui-/ }).click();
   await expect(page.getByRole('heading', { name: 'Profile & priorities' })).toBeVisible();
+  await page.getByRole('tab', { name: 'assistant', exact: true }).click();
+  await expect(page.getByText('Human clarification needed', { exact: false })).toBeVisible();
   await page.getByRole('tab', { name: 'documents', exact: true }).click();
   await page.getByRole('button', { name: 'Prepare internal demo draft' }).click();
   await expect(page.getByRole('button', { name: 'Simulate approved delivery' })).toBeDisabled();

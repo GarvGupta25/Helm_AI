@@ -2,7 +2,7 @@
 from copy import deepcopy
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -58,7 +58,7 @@ def current_quotations(db, case):
 
 class Draft(Strict):
     expected_version: int
-    kind: Literal['case_summary', 'information_request', 'insurer_request', 'cover_check']
+    kind: Literal['case_summary', 'information_request', 'insurer_request', 'cover_check', 'needs_summary', 'recommendation_rationale', 'quotation_comparison', 'underwriting_pack', 'customer_message', 'followup_message']
     audience: Literal['customer', 'insurer']
     recipients: list[str] = Field(min_length=1, max_length=3)
 
@@ -74,22 +74,21 @@ def draft(case_id: str, body: Draft, user: User = Depends(require_broker), db: S
             'sources': [f'case:{case.id}:profile:{case.data["profile_version"]}']+[f'plan:{i["id"]}:catalogue:{i["plan"]["version"]}' for i in case.data['selected']],
             'provider_called': False, 'draft_method': 'controlled_demo_template'}
     authority(db, case, data)
-    lines = ['SIMULATED AI-ASSISTED DRAFT — INTERNAL UNTIL HUMAN APPROVAL', 'General information only. No real offer, policy or submission.',
-             f'Case {case.id}; confirmed profile version {case.data["profile_version"]}.', f'Purpose: {body.kind.replace("_", " ")}.']
-    profile = case.data['profile']
-    lines += ['Region: '+str(profile.get('location', {}).get('region') or 'not answered'),
-              'Essential benefits: '+str(profile.get('benefits', {}).get('required')), 'Preferred benefits: '+str(profile.get('benefits', {}).get('preferred', []))]
-    for item in case.data['selected']:
-        lines.append(f'{item["plan"]["name"]}: synthetic monthly GBP {item["quote"]["monthly_pence"]/100:.2f}; excess GBP {item["plan"]["excess_pence"]/100:.2f}. Existing-condition status: {item["plan"]["pre_existing"]}.')
-    lines += ['Open questions for human review:']+[q['question'] for q in case.data.get('flagged_questions', [])]
-    lines.append('Please review the source fields, outstanding questions, exclusions and intended recipient before approving this document.')
-    data['text'] = '\n'.join(lines)
+    from .broker_assistant import CHECKLIST, quotation_statements, statements
+    facts=statements(case.data)+quotation_statements(db,case)
+    data['sources'] += [fact['source'] for fact in facts]
+    lines=['AI-DRAFTED, NEEDS BROKER REVIEW — INTERNAL UNTIL HUMAN APPROVAL', 'General information only. No real offer, policy, compliance certificate or submission.', 'Purpose: '+body.kind.replace('_',' ')]
+    lines += [fact['text']+' [source: '+fact['source']+']' for fact in facts]
+    lines.append('Human review required: verify missing facts, all exclusions, existing-condition uncertainty and recipient scope before signing.')
+    data['statements']=facts
+    data['text']='\n'.join(lines)
+    data['generation']={'model':'controlled-source-template','prompt_version':'broker-draft-v2','input_references':data['sources'],'input_hash':digest(facts),'output_hash':digest(data['text']),'checklist_version':CHECKLIST['version'],'provider_called':False}
     document = Document(case_id=case.id, kind=body.kind, ai_drafted=True, data=data, content_hash=digest(data))
     db.add(document)
     db.flush()
     if case.status == 'ready_for_signoff':
         case.status = 'in_progress'
-    audit(case, 'review_document_drafted', user.id, document_id=document.id, revision=1)
+    audit(case, 'review_document_drafted', user.id, document_id=document.id, revision=1, generation=data['generation'])
     db.commit()
     return detail(db, case)
 
@@ -129,6 +128,7 @@ def edit(case_id: str, document_id: str, body: Edit, user: User = Depends(requir
 
 class Decision(Exact):
     decision: Literal['approve', 'reject']
+    notes: str = Field(default='',max_length=1000)
 
 
 @router.post('/{case_id}/documents/{document_id}/review')
@@ -137,6 +137,8 @@ def review(case_id: str, document_id: str, body: Decision, user: User = Depends(
     expected(case, body.expected_version)
     if case.status != 'ready_for_signoff':
         raise HTTPException(409, 'Complete the sign-off checklist before approving')
+    if body.decision=='reject' and not body.notes.strip():
+        raise HTTPException(422,'Add revision notes when rejecting a draft')
     document = document_owned(db, case, document_id)
     exact(document, body)
     authority(db, case, document.data)
@@ -146,7 +148,7 @@ def review(case_id: str, document_id: str, body: Decision, user: User = Depends(
     db.add(Approval(document_id=document.id, content_hash=document.content_hash, scope_hash=scope(document), approved_by=user.id, decision=body.decision))
     if body.decision == 'reject':
         case.status = 'in_progress'
-    audit(case, 'document_'+body.decision, user.id, document_id=document.id, revision=document.revision, content_hash=document.content_hash)
+    audit(case, 'document_'+body.decision, user.id, document_id=document.id, revision=document.revision, content_hash=document.content_hash,checklist=deepcopy(case.data.get('checklist',{})),review_notes=body.notes,reviewed_at=now().isoformat())
     db.commit()
     return detail(db, case)
 
@@ -180,3 +182,15 @@ def dispatch(case_id: str, document_id: str, body: Exact, user: User = Depends(r
     audit(case, 'approved_demo_dispatch', user.id, document_id=document.id, revision=document.revision, approval_id=approval.id)
     db.commit()
     return detail(db, case)
+
+
+@router.get('/{case_id}/documents/{document_id}/export')
+def export_approved(case_id:str,document_id:str,user:User=Depends(require_broker),db:Session=Depends(session)):
+    case=assigned(db,user,case_id)
+    document=document_owned(db,case,document_id)
+    authority(db,case,document.data)
+    current_quotations(db,case)
+    approval=db.scalar(select(Approval).where(Approval.document_id==document.id,Approval.content_hash==document.content_hash,Approval.scope_hash==scope(document),Approval.approved_by==user.id,Approval.decision=='approve',Approval.revoked.is_(False)))
+    if not approval or digest(document.data)!=document.content_hash:
+        raise HTTPException(403,'Only the exact human-approved document may be exported')
+    return Response(document.data['text'],media_type='text/plain',headers={'Content-Disposition':f'attachment; filename="helm-approved-{document.id}-v{document.revision}.txt"','Cache-Control':'no-store'})
