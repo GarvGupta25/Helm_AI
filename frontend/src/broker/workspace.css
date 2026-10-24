@@ -129,3 +129,5 @@ details p{overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
 
+
+.b-review-actions{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.b-entry textarea{margin-bottom:16px}.b-entry li{font-size:12px;line-height:1.8;overflow-wrap:anywhere}

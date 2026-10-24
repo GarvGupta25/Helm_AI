@@ -53,6 +53,7 @@ from .journey.compare import router as journey_compare_router
 from .journey.contact import router as journey_contact_router
 from .journey.dashboard import router as journey_dashboard_router
 from .journey.policy import router as journey_policy_router
+from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
 from .market.router import router as uk_router
 from .marketplace_broker import marketplace_worklist_items
@@ -97,6 +98,7 @@ app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
 app.include_router(journey_broker_router)
+app.include_router(journey_review_router)
 app.include_router(journey_compare_router)
 app.include_router(journey_policy_router)
 app.include_router(journey_contact_router)

@@ -13,7 +13,7 @@ from ..auth import User, require_broker
 from ..db import session
 from ..models import now, uid
 from .access import dashboard_case, same_origin
-from .case_models import Case, Contact, Document, Grant, Job
+from .case_models import Approval, Case, Contact, Document, Grant, Job
 from .cases import active, audit, live_case, present_case, source_current
 from .contact import contact_owned
 from .router import digest, owned
@@ -128,6 +128,7 @@ def detail(db, case):
             'preferences': case.data['preferences'], 'questions': case.data.get('flagged_questions', []), 'notes': case.data.get('notes', []),
             'messages': case.data.get('messages', []), 'audit': case.data['audit'], 'checklist': case.data.get('checklist', {}),
             'documents': [{'id': d.id, 'kind': d.kind, 'revision': d.revision, 'hash': d.content_hash, 'ai_drafted': d.ai_drafted,
+                           'approved': bool(db.scalar(select(Approval.id).where(Approval.document_id == d.id, Approval.content_hash == d.content_hash, Approval.decision == 'approve', Approval.revoked.is_(False)))),
                            'draft': d.data if d.ai_drafted else {'notice': 'Synthetic quotation snapshot'}} for d in documents],
             'allowed_states': sorted(TRANSITIONS[case.status])}
 
@@ -151,11 +152,13 @@ def transition(case_id: str, body: Transition, user: User = Depends(require_brok
     if body.state not in TRANSITIONS[case.status] or (body.state == 'closed' and not body.reason.strip()):
         raise HTTPException(422, 'This transition is not allowed, or a closing reason is missing')
     if body.state == 'ready_for_signoff':
+        from .review import current_quotations
         source_current(db, case)
         if set(body.checklist) != {'profile', 'quotations', 'questions', 'documents'} or not all(body.checklist.values()):
             raise HTTPException(422, 'Review every sign-off checklist item')
         if not db.scalar(select(Document.id).where(Document.case_id == case.id, Document.ai_drafted.is_(True))):
             raise HTTPException(422, 'Prepare a review document before sign-off')
+        current_quotations(db, case)
     data = deepcopy(case.data)
     data['checklist'] = body.checklist
     if body.state == 'closed':
