@@ -17,3 +17,9 @@ Delivered deterministic per-adult rating with explicit fictional child/family te
 Checks: 24 schema/intake/recommendation/existing-engine tests passed, the comparison ownership/preview API test passed, scoped ESLint and build passed, and all three intake/comparison/RTL browser tests passed. A browser check caught delayed checkbox feedback; selection now responds immediately and rolls back on server rejection.
 
 Implementation choice: immutable version-qualified family facts are frozen in encrypted run/quotation snapshots rather than overwriting existing research catalogue records or adding a duplicate catalogue database. Single-adult arithmetic is covered by compatibility vectors. Family terms remain invented demo assumptions, not underwriting evidence.
+
+## Phase 3 — policy-specific questions
+
+Delivered plan/run-owned fact retrieval, cited premium/benefit/exclusion/underwriting/network answers, deterministic fixed-scenario calculations, unknown/refusal paths, and private saved broker questions. The UI keeps at most 20 escaped plain-text turns per plan/run in browser-tab storage, supports clearing, shows source fields/versions, and restores focus when closed.
+
+The versioned evaluation corpus contains 50 questions: 40 supported fact/scenario questions and 10 unknown/adversarial questions, each checked against three different synthetic policies. No external provider writes customer-facing prose; answers use controlled templates. Broker questions are saved, not delivered without later sharing consent and assignment.
