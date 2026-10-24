@@ -23,7 +23,7 @@ export default function WizardApp() {
   function choose(value:string){setMode(value);try{sessionStorage.setItem('helm-wizard-mode',value);}catch{/* Memory fallback. */}window.dispatchEvent(new Event('helm-wizard-mode'));}
   async function perform(action:()=>Promise<void>){setBusy(true);model.setError('');try{await action();}catch(e){model.setError(e instanceof Error?e.message:'Please retry.');}finally{setBusy(false);}}
   async function go(next:string){if(next==='ready')await model.confirm(mode==='chat'?'guided_chat':'manual');else await model.flush();navigate(pathFor(location.search.includes('return=review')?'review':next));}
-  async function showPlans(){await model.confirm(mode==='chat'?'guided_chat':'manual');await journey<Comparison>('/recommendations',{});navigate('/get-cover/plans');}
+  async function showPlans(){await model.confirm(mode==='chat'?'guided_chat':'manual');await journey<Comparison>('/recommendations?limit=10',{});navigate('/get-cover/plans');}
   if(!state || !draft)return <section className="uk-section journey wizard"><h1>Let’s find your cover.</h1><p role={model.error?'alert':'status'}>{model.error || 'Opening your private intake…'}</p>{model.error && <button onClick={()=>window.location.reload()}>Try again</button>}</section>;
   if(id && !step)return <Navigate to={pathFor()} replace/>;
   const guard=step && guardedStep(id,draft);if(guard)return <Navigate to={pathFor(guard)} replace/>;

@@ -145,7 +145,7 @@ def contextual(plan, profile, memory=None, as_of=None):
     return result
 
 
-def recommend(plans, profile, memory=None, as_of=None):
+def recommend(plans, profile, memory=None, as_of=None, limit=3):
     rejected, eligible = [], []
     clock = as_of or datetime.now(timezone.utc)
     completeness = len([v for v in profile.evidence.values() if v.confirmed and v.source == "current_explicit"])
@@ -173,7 +173,11 @@ def recommend(plans, profile, memory=None, as_of=None):
             families.add(family)
         if len(chosen) == 3:
             break
-    for item in chosen:
+    diverse = list(chosen)
+    if limit > 3:
+        chosen.extend(item for item in eligible if item not in diverse)
+    chosen = chosen[:limit]
+    for item in chosen[:3]:
         item["simulation"] = simulation(item["plan"])
         item["stability"] = {"fusion_alpha_minus_05": round(max(.2, alpha-.05)*item["standard"]["score"]+(1-max(.2, alpha-.05))*item["contextual"]["score"], 4),
                              "fusion_alpha_plus_05": round(min(.8, alpha+.05)*item["standard"]["score"]+(1-min(.8, alpha+.05))*item["contextual"]["score"], 4)}

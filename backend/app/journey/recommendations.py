@@ -18,7 +18,7 @@ def age(person, on):
     return (on.year-born.year-((on.month, on.day) < (born.month, born.day))) if born else person.age_years
 
 
-def compute(plans, profile: JourneyProfile):
+def compute(plans, profile: JourneyProfile, limit=3):
     check = completeness(profile)
     if not check["ready"]:
         raise ValueError("Complete and confirm all mandatory fields first")
@@ -55,7 +55,7 @@ def compute(plans, profile: JourneyProfile):
             rejected.append({"id": plan["id"], "reasons": failed})
         else:
             eligible.append(plan)
-    result = recommend(eligible, engine_profile, as_of=datetime.combine(start, time.min, tzinfo=timezone.utc))
+    result = recommend(eligible, engine_profile, as_of=datetime.combine(start, time.min, tzinfo=timezone.utc), limit=limit)
     result["rejected"].extend(rejected)
     result["profile_snapshot"] = profile.model_dump(mode="json")
     result["engine_version"] = "journey-deterministic-v1"
