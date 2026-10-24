@@ -10,3 +10,20 @@ test('shell mode choice, deep-link guard and flag-off fallback',async({page})=>{
  const result=await new AxeBuilder({page}).include('.wizard').analyze();expect(result.violations.filter(v=>['serious','critical'].includes(v.impact || ''))).toEqual([]);
  await page.goto('http://127.0.0.1:4174/get-cover/quote');await expect(page.getByRole('heading',{name:'Find cover that fits your needs.'})).toBeVisible();
 });
+for(const width of [1440,375]) test(`mandatory journey preserves canonical values at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900}); await page.emulateMedia({colorScheme:width===375?'dark':'light',reducedMotion:'reduce'});
+ await page.goto('/get-cover/quote');await page.getByRole('button',{name:'Fill it in myself',exact:false}).click();
+ await page.getByRole('button',{name:'I agree',exact:true}).click();await expect(page.getByRole('button',{name:'I agree',exact:true})).toHaveAttribute('aria-pressed','true');
+ const next=async()=>{const before=page.url();await page.getByRole('button',{name:'Next',exact:true}).click();await expect(page).not.toHaveURL(before);};await next();
+ await expect(page.getByRole('button',{name:'Next',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Add adult',exact:true}).click();await page.getByLabel('Person 1 age',{exact:true}).fill('35');
+ await expect(page.getByRole('status').filter({hasText:'Saved in your private session.'})).toBeVisible();await page.reload();await expect(page.getByLabel('Person 1 age',{exact:true})).toHaveValue('35');
+ await next();await page.getByRole('button',{name:'England',exact:true}).click();await next();await page.getByRole('button',{name:'As soon as possible',exact:true}).click();await next();
+ await page.getByRole('button',{name:'No target',exact:true}).click();await next();await page.getByRole('button',{name:'£250',exact:true}).click();await page.getByRole('button',{name:'Excess is a hard ceiling',exact:true}).click();await next();
+ await page.getByRole('button',{name:'Standard fictional list',exact:true}).click();await next();await next();await next();
+ await page.getByRole('button',{name:'None of these are essential',exact:true}).click();await next();await expect(page.getByRole('heading',{name:'Your essentials are done.'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Show my plans',exact:true})).toBeEnabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ const profile=await page.evaluate(async()=>{const r=await fetch('/api/journey/profile',{headers:{'X-Journey-Session':sessionStorage.getItem('helm-journey') || ''}});return (await r.json()).profile;});
+ expect(profile.people).toEqual([{relationship:'lead_adult',age_years:35,date_of_birth:null,smoker_status:null}]);expect(profile.budget).toEqual({choice:'no_target',monthly_pence:null,strict:false});expect(profile.excess).toEqual({choice:'amount',max_pence:25000,strict:true});expect(profile.benefits).toEqual({required:[],preferred:[]});
+ const result=await new AxeBuilder({page}).include('.wizard').analyze();expect(result.violations.filter(v=>['serious','critical'].includes(v.impact || ''))).toEqual([]);
+ await page.screenshot({path:`.runtime/wizard-mandatory-${width}.png`,fullPage:true});
+});

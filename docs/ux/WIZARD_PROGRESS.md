@@ -20,3 +20,10 @@ Phase 0 baseline correction: first run was 7 passed / 1 rate-limited, not eight 
 - Flag-off one-page form preserved; /get-cover/legacy-intake remains explicit fallback.
 - Verification: 14 frontend unit tests passed (including registry/guards); TypeScript and scoped lint passed. Wizard browser shell/guard/refresh/mode-switch/fallback + scoped axe: 1 passed,19.5s. A timezone-boundary test initially failed due to a UTC-derived fixture date; fixed by local-date helper, rerun passed.
 - Pending in subsequent phases: actual question-input autosave path, full restore/race tests, physical screen-reader/mobile tests. No live integration exercised.
+
+## Phase 2 — mandatory topics and checkpoint
+- Re-read source plan/master prompt and canonical contract. Added consent/withdrawal, household age/DOB/smoking cards, searchable region, constrained dates, budget/excess/hospital chips, inline hard preferences and all11 benefits across3 screens.
+- Exact field keys, values and server validation preserved. Final review explicitly distinguishes no essential benefits from unanswered. Confirming essentials creates the canonical version before the checkpoint.
+- Fixed a server-default normalization autosave loop found by browser checks; regression test proves a normalized acknowledgement stops resaving.
+- Verification:15 frontend unit tests passed; TypeScript/scoped lint passed. All3 wizard browser tests passed24.3s, including actual API-backed desktop1440/mobile375 mandatory path, saved refresh, payload assertions, light/dark and scoped axe. First browser retries exposed normalization and too-fast test navigation; fixed application normalization and made test wait for route changes. Repeated sessions hit existing limiter; restarted only isolated API before final run, no limit change.
+- 60-persona canonical form/extractor contract replay passed (1 pytest,0.22s): seven common fields exactly match. This is schema/extractor replay, not60 full browser journeys. Physical devices/screen readers and live providers unverified.

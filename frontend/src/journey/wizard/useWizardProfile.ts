@@ -18,6 +18,7 @@ export function useWizardProfile() {
         const snapshot=current.current!;
         const next=await journey<IntakeState>('/intake/draft',{expected_revision:remote.current!.draft_revision,profile:snapshot},'PATCH');
         remote.current=next; if(alive.current)setState(next);
+        if(current.current===snapshot){current.current=next.draft;if(alive.current)setDraft(next.draft);}
       }
       if(alive.current)setSaved(true); return remote.current!;
     })();

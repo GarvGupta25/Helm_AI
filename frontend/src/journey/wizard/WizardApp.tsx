@@ -6,6 +6,7 @@ import type { Comparison } from '../Recommendations';
 import BrokerHandoff from '../BrokerHandoff';
 import { guardedStep, pathFor, problem, stages, steps } from './steps';
 import { useWizardProfile } from './useWizardProfile';
+import StepFields from './StepFields';
 import '../journey.css';
 import './wizard.css';
 
@@ -17,7 +18,7 @@ export default function WizardApp() {
   useEffect(()=>{heading.current?.focus();},[id]);
   function choose(value:string){setMode(value);try{sessionStorage.setItem('helm-wizard-mode',value);}catch{/* Memory fallback. */}window.dispatchEvent(new Event('helm-wizard-mode'));}
   async function perform(action:()=>Promise<void>){setBusy(true);model.setError('');try{await action();}catch(e){model.setError(e instanceof Error?e.message:'Please retry.');}finally{setBusy(false);}}
-  async function go(next:string){await model.flush();navigate(pathFor(next));}
+  async function go(next:string){if(next==='ready')await model.confirm(mode==='chat'?'guided_chat':'manual');else await model.flush();navigate(pathFor(next));}
   async function showPlans(){await model.confirm(mode==='chat'?'guided_chat':'manual');await journey<Comparison>('/recommendations',{});navigate('/get-cover/plans');}
   if(!state || !draft)return <section className="uk-section journey wizard"><h1>Let’s find your cover.</h1><p role={model.error?'alert':'status'}>{model.error || 'Opening your private intake…'}</p>{model.error && <button onClick={()=>window.location.reload()}>Try again</button>}</section>;
   if(id && !step)return <Navigate to={pathFor()} replace/>;
@@ -30,8 +31,8 @@ export default function WizardApp() {
     <h1 ref={heading} tabIndex={-1}>{step?.title || 'A little clarity. One step at a time.'}</h1>
     <p className="w-save" role="status">{model.saving?'Saving your answers…':model.saved?'Saved in your private session.':'Unsaved changes. Saving shortly…'}</p>
     {model.error && <div className="j-error" role="alert">{model.error}<button onClick={()=>void perform(async()=>{await model.flush();})}>Retry saving</button></div>}
-    {!step?<><p className="uk-lead">About five minutes. Choose how you’d like to tell us what matters. Switch at any time.</p><div className="w-mode-cards">{[['manual','Fill it in myself','Simple questions, at your own pace.'],['chat','Let the AI ask me','Guided questions with clear answers and a review.']].map(([value,title,text])=><button key={value} onClick={()=>{choose(value);navigate(pathFor('consent'));}}>{value==='manual'?<FileText/>:<MessageCircle/>}<strong>{title}</strong><span>{text}</span><ArrowRight size={20}/></button>)}</div></>:<div className="w-step"><p>{mode==='chat'?'Guided questions are coming in Phase 4. You can use the form now without losing your answers.':'Your answers stay in the same private profile. Question controls are added in the next phase.'}</p>{mode==='chat' && <button onClick={()=>choose('manual')}>Use the form</button>}</div>}
-    {step && <div className="w-action"><button onClick={()=>void perform(()=>go(steps[index-1]?.id || ''))}><ArrowLeft size={16}/> Back</button><span id="w-next-reason">{reason || 'Your draft is saved before continuing.'}</span>{step.tier==='Optional' && <button onClick={()=>void perform(()=>go(steps[index+1]?.id || 'review'))}>Skip</button>}<button className="uk-button primary" disabled={busy || !!reason} aria-describedby="w-next-reason" onClick={()=>void perform(()=>id==='review'?showPlans():go(steps[index+1]?.id || 'review'))}>Next <ArrowRight size={16}/></button></div>}
+    {!step?<><p className="uk-lead">About five minutes. Choose how you’d like to tell us what matters. Switch at any time.</p><div className="w-mode-cards">{[['manual','Fill it in myself','Simple questions, at your own pace.'],['chat','Let the AI ask me','Guided questions with clear answers and a review.']].map(([value,title,text])=><button key={value} onClick={()=>{choose(value);navigate(pathFor('consent'));}}>{value==='manual'?<FileText/>:<MessageCircle/>}<strong>{title}</strong><span>{text}</span><ArrowRight size={20}/></button>)}</div></>:<div className="w-step"><StepFields key={id} id={id} model={model}/></div>}
+    {step && <div className="w-action"><button onClick={()=>void perform(()=>go(steps[index-1]?.id || ''))}><ArrowLeft size={16}/> Back</button><span id="w-next-reason">{reason || 'Your draft is saved before continuing.'}</span>{step.tier==='Optional' && <button onClick={()=>void perform(()=>go(steps[index+1]?.id || 'review'))}>Skip</button>}<button className="uk-button primary" disabled={busy || !!reason} aria-describedby="w-next-reason" onClick={()=>void perform(()=>['ready','review'].includes(id)?showPlans():go(steps[index+1]?.id || 'review'))}>{['ready','review'].includes(id)?'Show my plans':'Next'} <ArrowRight size={16}/></button></div>}
     <BrokerHandoff prepare={()=>model.confirm(mode==='chat'?'guided_chat':'manual')}/>
   </section>;
 }
