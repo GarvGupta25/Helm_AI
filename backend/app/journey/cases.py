@@ -49,7 +49,7 @@ def case_owned(db, record, ident):
 
 
 def source_current(db, case):
-    source = db.get(JourneySession, case.session_id)
+    source = db.scalar(select(JourneySession).where(JourneySession.id == case.session_id).with_for_update())
     if not source or source.version != case.data["profile_version"]:
         raise HTTPException(409, "The confirmed intake changed. Review a new selection before dispatch.")
 

@@ -47,6 +47,7 @@ from .domain import (
     reassess_fit,
 )
 from .journey.access import router as journey_access_router
+from .journey.broker import router as journey_broker_router
 from .journey.cases import router as journey_cases_router
 from .journey.compare import router as journey_compare_router
 from .journey.contact import router as journey_contact_router
@@ -95,6 +96,7 @@ app = FastAPI(title="Helm AI", version="0.1.0")
 app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
+app.include_router(journey_broker_router)
 app.include_router(journey_compare_router)
 app.include_router(journey_policy_router)
 app.include_router(journey_contact_router)
