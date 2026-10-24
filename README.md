@@ -2,6 +2,8 @@
 
 For a detailed explanation of the project, delivered features, architecture, setup, shared-repository workflow, and remaining work, read [Project overview and current build status](PROJECT_OVERVIEW.md).
 
+The proposed intake-to-broker expansion is documented in the [Phase 0 journey architecture plan](docs/roadmap/JOURNEY_PLAN.md). It requires owner approval before application development and between subsequent phases.
+
 The new public site explains UK private medical cover and compares fictional plans with server-calculated, tax-inclusive prices. It includes a structured quote demo and a reviewed information assistant. No money is collected or insurance contract created. This is **not ready for a real UK insurance launch**.
 
 Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REPORTS.md), [launch blockers](docs/uk/LAUNCH_READINESS.md), [changelog](docs/uk/CHANGELOG_UK.md) and [measured evidence](docs/uk/PERFORMANCE_ACCESSIBILITY_REPORT.md). The historical customer workflows and professional archives remain preserved and require a separate safe domain/data migration. The historical-term inventory is nonzero; a passing demo build does not mean the whole repository is localised.
