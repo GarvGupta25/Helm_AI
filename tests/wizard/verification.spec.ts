@@ -1,0 +1,6 @@
+import {test,expect} from '@playwright/test';
+import {seedSelection} from './helpers';
+for(const width of [1440,375])test(`private local OTP flow at ${width}px`,async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('helm-cookie-consent-v1',JSON.stringify({necessary:true})));await page.setViewportSize({width,height:900});await seedSelection(page);await page.goto('/get-cover/verify');await page.getByRole('button',{name:'Use email instead',exact:true}).click();await page.getByRole('textbox',{name:'Email address',exact:true}).fill(`otp-${Date.now()}@example.test`);await expect(page.getByRole('button',{name:'Send code by email'})).toBeDisabled();await page.getByRole('checkbox',{name:/I agree to receive a verification code/}).check();await page.getByRole('button',{name:'Send code by email'}).click();await expect(page).toHaveURL(/\/verify\/code$/);
+ await page.getByRole('button',{name:'Reveal local demo code'}).click();const text=await page.getByRole('status').filter({hasText:'Simulation code:'}).innerText();const code=text.match(/\b\d{6}\b/)![0];await page.getByRole('textbox',{name:'Code digit 1',exact:true}).fill(code);await expect(page.getByRole('textbox',{name:'Code digit 6',exact:true})).toHaveValue(code[5]);await page.getByRole('button',{name:'Verify and continue'}).click();await expect(page).toHaveURL(/\/get-cover\/access$/);
+});

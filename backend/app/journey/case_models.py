@@ -16,6 +16,13 @@ class Contact(Base):
     created_at = mapped_column(DateTime(timezone=True), default=now)
 
 
+class OtpWindow(Base):
+    __tablename__ = 'journey_otp_window'
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    data: Mapped[dict] = mapped_column(EncryptedState())
+    expires_at = mapped_column(DateTime(timezone=True), index=True)
+
+
 class Case(Base):
     __tablename__ = "journey_case"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)

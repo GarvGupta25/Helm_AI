@@ -16,3 +16,5 @@ Wizard Phase 1: set `VITE_QUOTE_WIZARD=true` before starting Vite/building to en
 Wizard Phase5: flag-on `/get-cover/plans` is a separate10-option page with view-only filters. `/get-cover/compare` is no longer a redirect when the flag is on; compare/detail/selection UI follows in Phases6–7. Legacy flag-off routes remain. The API defaults to3 for compatibility, with validated `?limit=10` for wizard runs.
 
 Wizard Phase7: flag-on `/get-cover/compare` and `/get-cover/selection` are separate pages. The canonical reviewed receipt is `/api/journey/selection`,1–3 plans and exact named sharing consent. It does not create a policy/payment/account link or contact an insurer. `/api/v1/quotation/confirm` remains the isolated legacy single-plan demo contract.
+
+Wizard Phase8: `/get-cover/verify` and `/get-cover/verify/code` require the current consented selection. `uk_test_server.py` forces console verification; real network transports are allow-listed, server-configured sandboxes only. See `docs/ux/VERIFICATION_SETUP.md`; never expose provider credentials or codes. Additive migration0007 adds encrypted rolling OTP windows.

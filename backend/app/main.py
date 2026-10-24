@@ -59,6 +59,7 @@ from .journey.policy import router as journey_policy_router
 from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
 from .journey.selection import router as journey_selection_router
+from .journey.verification import router as journey_verification_router
 from .market.router import router as uk_router
 from .marketplace_broker import marketplace_worklist_items
 from .marketplace_broker import router as marketplace_broker_router
@@ -103,6 +104,7 @@ app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)
 app.include_router(journey_selection_router)
+app.include_router(journey_verification_router)
 app.include_router(journey_interviewer_router)
 app.include_router(chatbot_feedback_router)
 app.include_router(member_demo_router)

@@ -20,6 +20,7 @@ dependencies = [
   "pytesseract>=0.3.13,<1",
   "av>=15,<17",
   "pillow-heif>=0.18,<2",
+  "phonenumbers>=9,<10",
 ]
 [build-system]
 requires = ["setuptools>=69"]

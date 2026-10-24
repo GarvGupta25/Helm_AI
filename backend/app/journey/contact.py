@@ -93,6 +93,8 @@ def check_code(db, contact, code):
 @router.post("/contacts/verify")
 def verify(body: Verify, request: Request, response: Response, record=Depends(owned), db: Session = Depends(session)):
     contact = contact_owned(db, record, body.contact_id)
+    if contact.data.get('selection_fingerprint'):
+        raise HTTPException(409,'Use the current guided verification flow for this contact')
     check_code(db, contact, body.code)
     token = token_urlsafe(32)
     contacts = db.scalars(select(Contact.id).where(Contact.session_id == record.id, Contact.verified_at.is_not(None))).all()

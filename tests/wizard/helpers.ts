@@ -9,3 +9,12 @@ export async function seedIntake(page:Page) {
   const result=await fetch('/api/journey/profile/confirm',{method:'POST',headers,body:JSON.stringify({expected_version:saved.version,draft_hash:saved.draft_hash})});if(!result.ok)throw new Error('Fixture confirmation failed');
  });
 }
+export async function seedSelection(page:Page) {
+ await seedIntake(page);
+ await page.evaluate(async()=>{
+  const headers={'Content-Type':'application/json','X-Journey-Session':sessionStorage.getItem('helm-journey') || ''};
+  const run=await(await fetch('/api/journey/recommendations?limit=10',{method:'POST',headers,body:'{}'})).json();const item=run.items[0];
+  const consent=await(await fetch('/api/journey/consents',{method:'POST',headers,body:JSON.stringify({purpose:'insurer_share',recipients:[item.plan.insurer_id],accepted:true,wording_version:'journey-sharing-v1'})})).json();
+  const response=await fetch('/api/journey/selection',{method:'POST',headers,body:JSON.stringify({run_id:run.run_id,expected_version:run.profile_version,plan_ids:[item.id],insurer_consent_id:consent.id})});if(!response.ok)throw new Error('Fixture selection failed');
+ });
+}

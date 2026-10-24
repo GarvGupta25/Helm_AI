@@ -4,7 +4,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from ..models import now
-from .case_models import Approval, Case, Contact, Document, Grant, Job, Quotation, QuoteRequest
+from .case_models import Approval, Case, Contact, Document, Grant, Job, OtpWindow, Quotation, QuoteRequest
 from .models import JourneyRun, JourneySession, ProfileVersion
 
 
@@ -61,5 +61,7 @@ def purge_expired(db, clock=None):
             db.delete(job)
         db.flush()
         db.delete(contact)
+    for window in db.scalars(select(OtpWindow).where(OtpWindow.expires_at <= clock).limit(100)):
+        db.delete(window)
     db.commit()
     return len(expired)
