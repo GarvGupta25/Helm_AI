@@ -1,5 +1,7 @@
 # Helm AI — UK private medical cover demonstration
 
+For a detailed explanation of the project, delivered features, architecture, setup, shared-repository workflow, and remaining work, read [Project overview and current build status](PROJECT_OVERVIEW.md).
+
 The new public site explains UK private medical cover and compares fictional plans with server-calculated, tax-inclusive prices. It includes a structured quote demo and a reviewed information assistant. No money is collected or insurance contract created. This is **not ready for a real UK insurance launch**.
 
 Phase checkpoints are committed on `main`. See [phase reports](docs/uk/PHASE_REPORTS.md), [launch blockers](docs/uk/LAUNCH_READINESS.md), [changelog](docs/uk/CHANGELOG_UK.md) and [measured evidence](docs/uk/PERFORMANCE_ACCESSIBILITY_REPORT.md). The historical customer workflows and professional archives remain preserved and require a separate safe domain/data migration. The historical-term inventory is nonzero; a passing demo build does not mean the whole repository is localised.
@@ -81,7 +83,7 @@ npm run test:e2e
 python archive/verify_preservation.py
 ```
 
-The browser suite starts a Vite development server and uses deterministic API boundaries; it does not demonstrate a live insurer transaction. Real API/database integrations and device-specific behavior need their existing integration/device checks. No ESLint/Vitest configuration exists in this revision.
+The browser suite starts a Vite development server and uses deterministic API boundaries; it does not demonstrate a live insurer transaction. Real API/database integrations and device-specific behavior need their existing integration/device checks. Scoped ESLint and Vitest commands are available in `frontend/package.json`; see the project overview for the current verification commands.
 
 archive/ is outside active TypeScript source/test roots, ignored by Vite's watcher, excluded from Tailwind source scanning and ignored by the main Playwright suite. All active customer source remains compiled and checked.
 
