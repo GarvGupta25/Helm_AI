@@ -69,4 +69,29 @@ test('confirmed intake produces a persistent selectable comparison and a nonsele
   await expect(page.locator('.j-card input[type=checkbox]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Return to confirmed results' }).click();
   await expect(page.locator('.j-card input[type=checkbox]').first()).toBeChecked();
+  await page.getByRole('button', { name: 'Review selected plans (1)', exact: true }).click();
+  // Reloading the comparison recreates the request UI; use its saved bookmark for access.
+  await page.evaluate(async () => {
+    const capability = sessionStorage.getItem('helm-journey');
+    const caseId = sessionStorage.getItem('helm-journey-case');
+    const response = await fetch('/api/journey/access-links', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Journey-Session': capability || '' }, body: JSON.stringify({ case_id: caseId, hours: 24 }) });
+    if (!response.ok) throw new Error('Private link could not be created');
+  });
+  const privateUrl = await page.evaluate(async () => {
+    const response = await fetch('/api/journey/demo/inbox', { headers: { 'X-Journey-Session': sessionStorage.getItem('helm-journey') || '' } });
+    const jobs = await response.json();
+    return jobs.find((job: { kind: string }) => job.kind === 'access_link').content.url as string;
+  });
+  await page.goto(privateUrl);
+  await expect(page.getByRole('heading', { name: 'Your quotations, together.' })).toBeVisible();
+  await expect(page).toHaveURL(/\/quote-dashboard$/);
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Refresh quotations', exact: true }).click();
+    await expect(page.getByRole('link', { name: 'Download synthetic quotation PDF' }).first()).toBeVisible();
+  }).toPass({ timeout: 20000 });
+  const download = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'Download synthetic quotation PDF' }).first().click();
+  expect((await download).suggestedFilename()).toMatch(/^helm-demo-quote-.*\.pdf$/);
+  const scan = await new AxeBuilder({ page }).include('.journey').analyze();
+  expect(scan.violations.filter(v => ['serious', 'critical'].includes(v.impact || ''))).toEqual([]);
 });

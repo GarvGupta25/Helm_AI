@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from ..config import settings
 from ..db import session
 from ..models import now
 from ..public_assistant import _check_rate_limit
@@ -24,7 +25,8 @@ router = APIRouter(prefix="/api/journey", tags=["private demo access"])
 
 def same_origin(request):
     origin = request.headers.get("origin")
-    if request.headers.get("sec-fetch-site") == "cross-site" or (origin and urlparse(origin).netloc != request.url.netloc):
+    configured = origin in settings().allowed_origins
+    if request.headers.get("sec-fetch-site") == "cross-site" or (origin and urlparse(origin).netloc != request.url.netloc and not configured):
         raise HTTPException(403, "Use this dashboard's own origin")
 
 
@@ -51,6 +53,9 @@ def issue_link(db, case, hours=24):
     db.flush()
     db.add(Job(case_id=case.id, contact_id=contact.id, kind='access_link', dedupe_key='access:'+grant.id, status='delivered_demo', due_at=now(),
                data={'url': '/quote-dashboard#'+token, 'text': 'Your private synthetic quote dashboard link. Never share this link.', 'expires_at': expiry.isoformat()}))
+    for contact_id in case.data['contact_ids']:
+        db.add(Job(case_id=case.id, contact_id=contact_id, kind='link_reminder', dedupe_key=f'reminder:{grant.id}:{contact_id}', due_at=expiry-timedelta(hours=2),
+                   data={'grant_id': grant.id, 'template': 'link_expiry_v1', 'text': 'Your synthetic dashboard link expires soon. Open your protected demo inbox to review it.'}))
     audit(case, 'demo_access_link_issued', hours=hours)
     return {'sent_to_demo_inbox': True, 'case_reference': case.id, 'expires_at': expiry}
 

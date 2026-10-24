@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
     razorpay_webhook_secret: str = ""
-    allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4174", "http://127.0.0.1:4174"]
     tesseract_cmd: str = ""
 
 

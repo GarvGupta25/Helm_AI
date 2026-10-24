@@ -2,11 +2,11 @@ import hashlib
 import hmac
 import re
 from copy import deepcopy
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from secrets import randbelow, token_urlsafe
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ from ..models import now
 from ..public_assistant import _check_rate_limit
 from ..research.storage import _ephemeral_key, stable_key
 from .case_models import Case, Contact, Grant, Job
-from .router import owned, save
+from .router import digest, owned, save
 from .schemas import Strict
 
 router = APIRouter(prefix="/api/journey", tags=["demo contact verification"])
@@ -91,18 +91,31 @@ def check_code(db, contact, code):
 
 
 @router.post("/contacts/verify")
-def verify(body: Verify, record=Depends(owned), db: Session = Depends(session)):
+def verify(body: Verify, request: Request, response: Response, record=Depends(owned), db: Session = Depends(session)):
     contact = contact_owned(db, record, body.contact_id)
     check_code(db, contact, body.code)
+    token = token_urlsafe(32)
+    contacts = db.scalars(select(Contact.id).where(Contact.session_id == record.id, Contact.verified_at.is_not(None))).all()
+    db.add(Grant(contact_id=contact.id, token_hash=digest(token), kind='demo_mailbox', expires_at=now()+timedelta(days=7), data={'contacts': list(contacts)}))
     db.commit()
+    response.set_cookie('helm_demo_mailbox', token, httponly=True, secure=request.url.scheme == 'https', samesite='strict', max_age=604800, path='/api/journey')
     return {"contact_id": contact.id, "verified_in_demo": True, "real_ownership_verified": False}
 
 
 @router.get("/demo/inbox")
-def inbox(record=Depends(owned), db: Session = Depends(session)):
-    contacts = db.scalars(select(Contact.id).where(Contact.session_id == record.id)).all()
+def inbox(request: Request, db: Session = Depends(session)):
+    try:
+        record = owned(db, request.headers.get('x-journey-session', ''))
+        contacts = db.scalars(select(Contact.id).where(Contact.session_id == record.id)).all()
+    except HTTPException:
+        if not request.cookies.get('helm_demo_mailbox'):
+            raise
+        from .access import valid_grant
+        grant = valid_grant(db, request.cookies.get('helm_demo_mailbox', ''), 'demo_mailbox')
+        contacts = grant.data['contacts']
     jobs = db.scalars(select(Job).where(Job.contact_id.in_(contacts), Job.status == "delivered_demo").order_by(Job.created_at.desc()).limit(30)).all()
-    return [{"id": job.id, "kind": job.kind, "contact_id": job.contact_id, "content": job.data} for job in jobs]
+    return [{"id": job.id, "kind": job.kind, "contact_id": job.contact_id, "content": job.data} for job in jobs
+            if not job.data.get('expires_at') or datetime.fromisoformat(job.data['expires_at']).replace(tzinfo=timezone.utc) > now()]
 
 
 class SharingConsent(Strict):

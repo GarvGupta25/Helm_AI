@@ -40,7 +40,7 @@ def test_single_purpose_exchange_replay_expiry_revocation_and_csrf(fixture_clien
     with Session(engine) as db:
         rows = db.scalars(select(Grant)).all()
         assert all(row.token_hash != token for row in rows)
-        assert len(rows) == 2
+        assert len([row for row in rows if row.case_id]) == 2
 
 
 def test_expired_link_cannot_be_exchanged(fixture_client):

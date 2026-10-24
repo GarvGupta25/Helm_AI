@@ -10,11 +10,27 @@ from sqlalchemy.orm import Session
 from ..db import session
 from ..models import now
 from .access import dashboard_case, same_origin
-from .case_models import Document, Quotation, QuoteRequest
+from .case_models import Document, Job, Quotation, QuoteRequest
 from .cases import audit, present_case
 from .policy import Question, answer
 
 router = APIRouter(prefix="/api/journey", tags=["synthetic quote dashboard"])
+
+
+@router.post('/dashboard/notifications/stop')
+def stop_notifications(request: Request, case=Depends(dashboard_case), db: Session = Depends(session)):
+    same_origin(request)
+    data = deepcopy(case.data)
+    data['preferences']['channels'] = ['dashboard']
+    for consent in data['consents']:
+        if consent['purpose'].startswith('notify_'):
+            consent['revoked'] = True
+    case.data = data
+    for job in db.scalars(select(Job).where(Job.case_id == case.id, Job.status == 'queued')):
+        job.status = 'cancelled'
+    audit(case, 'notifications_stopped')
+    db.commit()
+    return {'notice': 'Notifications stopped. Your private dashboard remains available.'}
 
 
 def quotation_owned(db, case, ident):
