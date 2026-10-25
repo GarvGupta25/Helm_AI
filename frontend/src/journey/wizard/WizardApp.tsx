@@ -10,6 +10,7 @@ import { firstMissing, guardedStep, pathFor, problem, skipped, stages, steps } f
 import { useWizardProfile } from './useWizardProfile';
 import StepFields from './StepFields';
 import GuidedIntake from './GuidedIntake';
+import Checkpoint from './Checkpoint';
 import '../journey.css';
 import './wizard.css';
 
@@ -30,6 +31,7 @@ export default function WizardApp() {
   if(id && !step)return <Navigate to={pathFor()} replace/>;
   const guard=step && guardedStep(id,draft);if(guard)return <Navigate to={pathFor(guard)} replace/>;
   const reason=step?problem(id,draft):'';const canShow=!firstMissing(draft);const optional=step?.id.startsWith('optional/');const stageSteps=steps.filter(s=>s.stage===step?.stage);
+  if(id==='ready')return <Checkpoint model={model} mode={mode} busy={busy} heading={heading} onPlans={()=>void perform(showPlans)} onBack={()=>void perform(()=>go(steps[index-1]?.id || ''))} onSwitch={()=>void perform(async()=>{await model.flush();choose(mode==='manual'?'chat':'manual');})}/>;
   return <section className="uk-section journey wizard" aria-busy={busy}>
     <nav className="w-progress" aria-label="Quote stages"><ol>{stages.map((name,i)=><li key={name} aria-current={i===(step?.stage ?? 0)?'step':undefined}><span>{i+1}</span>{name}</li>)}</ol></nav>
     <div className="w-tools">{mode!=='chat' && <button type="button" onClick={()=>window.dispatchEvent(new Event('helm-open-assistant'))}>Ask Helm</button>}<Link to={pathFor('review')}>Your answers</Link><button onClick={()=>void perform(async()=>{await model.flush();choose(mode==='manual'?'chat':'manual');})}>Switch to {mode==='manual'?'guided chat':'the form'}</button><button onClick={()=>void perform(async()=>{await model.flush();})}>Save and finish later</button></div>

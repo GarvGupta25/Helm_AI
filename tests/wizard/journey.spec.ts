@@ -21,8 +21,8 @@ for(const width of [1440,375]) test(`mandatory journey preserves canonical value
  await next();await page.getByRole('button',{name:'England',exact:true}).click();await next();await page.getByRole('button',{name:'As soon as possible',exact:true}).click();await next();
  await page.getByRole('button',{name:'No target',exact:true}).click();await next();await page.getByRole('button',{name:'£250',exact:true}).click();await page.getByRole('button',{name:'Excess is a hard ceiling',exact:true}).click();await next();
  await page.getByRole('button',{name:'Standard fictional list',exact:true}).click();await next();await next();await next();
- await page.getByRole('button',{name:'None of these are essential',exact:true}).click();await next();await expect(page.getByRole('heading',{name:'Your essentials are done.'})).toBeVisible();
- await expect(page.getByRole('button',{name:'Show my plans',exact:true})).toBeEnabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.getByRole('button',{name:'None of these are essential',exact:true}).click();await next();await expect(page.getByRole('heading',{name:'Your essentials are done'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'See my plans',exact:true})).toBeEnabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const profile=await page.evaluate(async()=>{const r=await fetch('/api/journey/profile',{headers:{'X-Journey-Session':sessionStorage.getItem('helm-journey') || ''}});return (await r.json()).profile;});
  expect(profile.people).toEqual([{relationship:'lead_adult',age_years:35,date_of_birth:null,smoker_status:null}]);expect(profile.budget).toEqual({choice:'no_target',monthly_pence:null,strict:false});expect(profile.excess).toEqual({choice:'amount',max_pence:25000,strict:true});expect(profile.benefits).toEqual({required:[],preferred:[]});
  const result=await new AxeBuilder({page}).include('.wizard').analyze();expect(result.violations.filter(v=>['serious','critical'].includes(v.impact || ''))).toEqual([]);
