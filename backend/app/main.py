@@ -62,7 +62,10 @@ from .journey.privacy import router as journey_privacy_router
 from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
 from .journey.selection import router as journey_selection_router
+from .journey.twilio_auth import router as twilio_auth_router
+from .journey.twilio_auth import validate_startup
 from .journey.verification import router as journey_verification_router
+from .journey.whatsapp_link import router as whatsapp_link_router
 from .journey.wizard_access import router as journey_wizard_access_router
 from .market.router import router as uk_router
 from .marketplace_broker import marketplace_worklist_items
@@ -103,7 +106,11 @@ from .servicing import present_event, rebuild_projection, record_financial_event
 from .sources import registry
 from .voice import validate_audio
 
+validate_startup()
+
 app = FastAPI(title="Helm AI", version="0.1.0")
+app.include_router(twilio_auth_router)
+app.include_router(whatsapp_link_router)
 app.include_router(uk_router)
 app.include_router(research_router)
 app.include_router(journey_router)

@@ -102,6 +102,13 @@ def destination(channel,country_code,number):
 
 def provider(channel,value):
     mode=settings().otp_delivery_mode
+    if mode in {'twilio','mock'} and channel=='whatsapp':
+        from .twilio_auth import TwilioOtp, mock_enabled, ready
+        if mode=='mock' and mock_enabled():
+            return ConsoleProvider()
+        if mode=='twilio' and ready() and value in settings().otp_allowlist:
+            return TwilioOtp()
+        raise HTTPException(503,'WhatsApp verification is not configured for this recipient')
     if mode=='console':
         return ConsoleProvider()
     if mode=='whatsmcp' and not configured():
@@ -160,7 +167,10 @@ def configuration():
     approved=bool(config.otp_allowlist)
     whatsapp=approved and ((mode=='whatsmcp' and configured()) or (mode=='whatsapp_sandbox' and bool(config.whatsapp_access_token and config.whatsapp_phone_number_id and config.whatsapp_graph_version and config.whatsapp_auth_template)))
     email=approved and mode in {'email_sandbox','whatsapp_sandbox','whatsmcp'} and bool(config.smtp_host and config.smtp_from and config.smtp_user and config.smtp_password)
-    return {'mode':mode,'real_delivery':bool(whatsapp or email),'channels':{'whatsapp':bool(whatsapp),'email':bool(email)},'notice':'WhatsApp verification is available.' if whatsapp else 'WhatsApp verification is currently unavailable. Please try again later.'}
+    from .twilio_auth import mock_enabled, ready
+    if mode in {'twilio','mock'}:
+        whatsapp=bool(approved and ready()) if mode=='twilio' else mock_enabled()
+    return {'mock':mock_enabled(),'automatic_link':mode in {'twilio','mock'},'mode':mode,'real_delivery':bool((whatsapp or email) and mode!='mock'),'channels':{'whatsapp':bool(whatsapp),'email':bool(email)},'notice':'Developer simulation only.' if mock_enabled() else 'WhatsApp verification is available.' if whatsapp else 'WhatsApp verification is currently unavailable. Please try again later.'}
 
 
 @router.post('/verify/start')
@@ -177,7 +187,9 @@ def start(body:Start,request:Request,record=Depends(owned),db:Session=Depends(se
     db.add(contact)
     db.flush()
     code=f'{randbelow(1000000):06}'
-    contact.data={'destination':value,'challenge_hash':keyed(contact.id+code),'expires_at':(now()+timedelta(minutes=10)).isoformat(),'attempts':0,'sent_at':now().isoformat(),'selection_fingerprint':receipt['fingerprint'],'mode':settings().otp_delivery_mode,'delivery_status':'pending','messaging_opt_in':{'accepted':True,'wording':body.wording_version,'at':now().isoformat()}}
+    managed=settings().otp_delivery_mode=='twilio' and settings().twilio_otp_provider=='twilio_verify'
+    ttl=600 if managed or settings().otp_delivery_mode not in {'twilio','mock'} else 300
+    contact.data={'destination':value,'challenge_hash':'' if managed else keyed(contact.id+code),'otp_provider':'twilio_verify' if managed else 'custom','expires_at':(now()+timedelta(seconds=ttl)).isoformat(),'attempts':0,'sent_at':now().isoformat(),'selection_fingerprint':receipt['fingerprint'],'mode':settings().otp_delivery_mode,'delivery_status':'pending','messaging_opt_in':{'accepted':True,'wording':body.wording_version,'at':now().isoformat()}}
     number_window.data={**number_window.data,'active_contact_id':contact.id}
     db.commit()
     try:
@@ -190,11 +202,11 @@ def start(body:Start,request:Request,record=Depends(owned),db:Session=Depends(se
         contact.data={**contact.data,'delivery_status':'failed','consumed':True}
         db.commit()
         raise HTTPException(503,'Verification delivery is unavailable. Check the provider setup or use the other channel.') from None
-    contact.data={**contact.data,'delivery_status':delivery.get('provider_status','sent') if isinstance(delivery,dict) else 'sent'}
+    contact.data={**contact.data,**(delivery if isinstance(delivery,dict) else {}),'delivery_status':delivery.get('provider_status','sent') if isinstance(delivery,dict) else 'sent'}
     data=deepcopy(record.data)
     data['wizard_contact_id']=contact.id
     save(db,record,data)
-    return {'contact_id':contact.id,'channel':body.channel,'mode':settings().otp_delivery_mode,'delivery_status':contact.data['delivery_status'],'resend_after':60,'expires_in':600,'notice':'Code available in the private local demo inbox; nothing sent externally.' if settings().otp_delivery_mode=='console' else 'Code submitted to the configured messaging provider. Check WhatsApp or your selected email channel.'}
+    return {'contact_id':contact.id,'channel':body.channel,'mode':settings().otp_delivery_mode,'delivery_status':contact.data['delivery_status'],'resend_after':60,'expires_in':ttl,'notice':'Code available in the private local demo inbox; nothing sent externally.' if settings().otp_delivery_mode in {'console','mock'} else 'Code submitted to the configured messaging provider. Check WhatsApp or your selected email channel.'}
 
 
 def current_contact(db,record):
@@ -204,7 +216,15 @@ def current_contact(db,record):
         raise HTTPException(404,'Start verification for the current reviewed selection')
     if contact.data.get('mode')!=settings().otp_delivery_mode:
         raise HTTPException(409,'Request a new code using the current verification service.')
+    if contact.data.get('mode')=='twilio' and contact.data.get('otp_provider')!=settings().twilio_otp_provider:
+        raise HTTPException(409,'The OTP provider changed; request a new code.')
     return contact
+
+
+@router.post('/verify/resend')
+def resend(request:Request,record=Depends(owned),db:Session=Depends(session)):
+    contact=current_contact(db,record)
+    return start(Start(number=contact.data['destination'],channel=contact.channel,consent=True),request,record,db)
 
 
 @router.get('/verify/status')
@@ -216,7 +236,7 @@ def status(record=Depends(owned),db:Session=Depends(session)):
 
 @router.get('/verify/demo-code')
 def demo_code(record=Depends(owned),db:Session=Depends(session)):
-    if settings().otp_delivery_mode!='console' or settings().app_env not in {'development','test'}:
+    if settings().otp_delivery_mode not in {'console','mock'} or settings().app_env not in {'development','test'}:
         raise HTTPException(404,'Local inbox unavailable')
     contact=current_contact(db,record)
     entry=demo_codes.get(contact.id)
@@ -237,7 +257,11 @@ def verify(body:Check,request:Request,response:Response,record=Depends(owned),db
     active=db.get(OtpWindow,key)
     if not active or active.data.get('active_contact_id')!=contact.id or contact.data.get('delivery_status') not in {'sent','queued'}:
         raise HTTPException(410,'A newer code replaced this one, or delivery failed')
-    check_code(db,contact,body.code)
+    if contact.data.get('otp_provider')=='twilio_verify':
+        from .twilio_auth import check_managed
+        check_managed(db,contact,body.code)
+    else:
+        check_code(db,contact,body.code)
     demo_codes.pop(contact.id,None)
     token=token_urlsafe(32)
     db.add(Grant(contact_id=contact.id,token_hash=digest(token),kind='demo_mailbox',expires_at=now()+timedelta(days=7),data={'contacts':[contact.id]}))
@@ -245,4 +269,8 @@ def verify(body:Check,request:Request,response:Response,record=Depends(owned),db
     data['wizard_verified_contact']=contact.id
     save(db,record,data)
     response.set_cookie('helm_demo_mailbox',token,httponly=True,secure=request.url.scheme=='https',samesite='strict',max_age=604800,path='/api/journey')
-    return {'verified':True,'real_ownership_verified':contact.data['mode']!='console','contact_id':contact.id}
+    result={'verified':True,'real_ownership_verified':contact.data['mode'] not in {'console','mock'},'contact_id':contact.id}
+    if contact.data['mode'] in {'twilio','mock'}:
+        from .whatsapp_link import issue_verified_link
+        result['magic_link']=issue_verified_link(request,record,db)
+    return result

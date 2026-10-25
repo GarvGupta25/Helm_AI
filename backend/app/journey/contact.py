@@ -117,7 +117,7 @@ def inbox(request: Request, db: Session = Depends(session)):
         contacts = grant.data['contacts']
     jobs = db.scalars(select(Job).where(Job.contact_id.in_(contacts), Job.status == "delivered_demo").order_by(Job.created_at.desc()).limit(30)).all()
     return [{"id": job.id, "kind": job.kind, "contact_id": job.contact_id, "content": job.data} for job in jobs
-            if not job.data.get('expires_at') or datetime.fromisoformat(job.data['expires_at']).replace(tzinfo=timezone.utc) > now()]
+            if (not job.data.get('auth_delivery')) and (not job.data.get('expires_at') or datetime.fromisoformat(job.data['expires_at']).replace(tzinfo=timezone.utc) > now())]
 
 
 class SharingConsent(Strict):

@@ -38,7 +38,7 @@ def saved(record=Depends(owned),db:Session=Depends(session)):
     if not grant or grant.revoked or grant.expires_at.replace(tzinfo=now().tzinfo)<=now():
         raise HTTPException(410,'This link expired or was revoked. Reverify before creating a new link.')
     job=db.scalar(select(Job).where(Job.dedupe_key=='access:'+grant.id))
-    return {'case_id':metadata['case_id'],'url':job.data['url'],'expires_at':grant.expires_at,'hours':metadata['hours'],'notifications':metadata['notifications'],'delivery_status':link_delivery(db,grant),'notice':'Private link saved. Never share it. Use your existing dashboard session if this single-use link was already opened.'}
+    return {'case_id':metadata['case_id'],**({} if current_contact(db,record).data.get('mode') in {'twilio','mock'} else {'url':job.data.get('url','')}),'expires_at':grant.expires_at,'hours':metadata['hours'],'notifications':metadata['notifications'],'delivery_status':link_delivery(db,grant),'notice':'Private link saved. Never share it. Use your existing dashboard session if this single-use link was already opened.'}
 
 
 class Access(Strict):
@@ -46,7 +46,6 @@ class Access(Strict):
     notifications: bool = False
 
 
-@router.post('/wizard/access')
 def create(body:Access,request:Request,record=Depends(owned),db:Session=Depends(session)):
     same_origin(request)
     receipt=selected(record)
@@ -66,7 +65,7 @@ def create(body:Access,request:Request,record=Depends(owned),db:Session=Depends(
             if grant.revoked or grant.expires_at.replace(tzinfo=now().tzinfo)<=now():
                 raise HTTPException(410,'Reverify your contact before requesting a new link')
             job=db.scalar(select(Job).where(Job.dedupe_key=='access:'+grant.id))
-            return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':True,'delivery_status':link_delivery(db,grant),'notice':'Private access already saved. External delivery requires a configured provider.'}
+            return {'case_id':case.id,'url':job.data.get('url',''),'expires_at':grant.expires_at,'reused':True,'delivery_status':link_delivery(db,grant),'notice':'Private access already saved. External delivery requires a configured provider.'}
     else:
         consent_ids=[receipt['insurer_consent_id']]+([receipt['broker_consent_id']] if receipt.get('broker_consent_id') else [])
         channels=['dashboard']
@@ -79,15 +78,24 @@ def create(body:Access,request:Request,record=Depends(owned),db:Session=Depends(
         for queued in db.scalars(select(QuoteRequest).where(QuoteRequest.case_id==case.id,QuoteRequest.attempts==0)):
             queued.due_at=now()+timedelta(seconds=3+int(digest(queued.insurer_id)[:2],16)%3)
     _check_rate_limit('journey-link:'+record.id)
-    issue_link(db,case,body.hours)
+    issued=issue_link(db,case,body.hours)
     db.flush()
     grant=db.scalars(select(Grant).where(Grant.case_id==case.id,Grant.kind=='magic_link',Grant.revoked.is_(False)).order_by(Grant.expires_at.desc())).first()
     job=db.scalar(select(Job).where(Job.dedupe_key=='access:'+grant.id))
     # Preserve fragment delivery: a token never enters the HTTP path or server access log.
-    job.data={**job.data,'url':job.data['url'].replace('/quote-dashboard#','/my-quotes#')}
+    if 'url' in job.data:
+        job.data={**job.data,'url':job.data['url'].replace('/quote-dashboard#','/my-quotes#')}
     if body.notifications:
-        db.add(Job(case_id=case.id,contact_id=case.contact_id,kind='access_link_notify',status='queued',dedupe_key='notify-access:'+grant.id,due_at=now(),data={'template':'private_access_v1','url':job.data['url'],'text':'Your private synthetic quotations are ready to review.'}))
+        db.add(Job(case_id=case.id,contact_id=case.contact_id,kind='access_link_notify',status='queued',dedupe_key='notify-access:'+grant.id,due_at=now(),data={'template':'private_access_v1','url':job.data.get('url',''),'text':'Your private synthetic quotations are ready to review.'}))
     data=deepcopy(record.data)
     data['wizard_access']={'case_id':case.id,'grant_id':grant.id,'fingerprint':receipt['fingerprint'],'hours':body.hours,'notifications':body.notifications,'verified_contact_id':contact.id}
     save(db,record,data)
-    return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':False,'delivery_status':link_delivery(db,grant),'notice':'Your synthetic insurer requests are queued. No real insurer is contacted. Message delivery status is shown separately.'}
+    return {'case_id':case.id,'url':issued.get('_url',job.data.get('url','')),'expires_at':grant.expires_at,'reused':False,'delivery_status':link_delivery(db,grant),'notice':'Your synthetic insurer requests are queued. No real insurer is contacted. Message delivery status is shown separately.'}
+
+
+@router.post('/wizard/access')
+def create_public(body:Access,request:Request,record=Depends(owned),db:Session=Depends(session)):
+    result=create(body,request,record,db)
+    if current_contact(db,record).data.get('mode') in {'twilio','mock'}:
+        result.pop('url',None)
+    return result

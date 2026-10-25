@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -49,17 +49,18 @@ def issue_link(db, case, hours=24):
     for previous in db.scalars(select(Grant).where(Grant.case_id == case.id)):
         previous.revoked = True
     token = token_urlsafe(32)
-    expiry = min(case.expires_at.replace(tzinfo=timezone.utc), now()+timedelta(hours=hours))
+    lifetime = timedelta(minutes=settings().magic_link_expiry_minutes) if contact.data.get('mode') in {'twilio','mock'} else timedelta(hours=hours)
+    expiry = min(case.expires_at.replace(tzinfo=timezone.utc), now()+lifetime)
     grant = Grant(case_id=case.id, contact_id=contact.id, token_hash=digest(token), kind='magic_link', expires_at=expiry)
     db.add(grant)
     db.flush()
     db.add(Job(case_id=case.id, contact_id=contact.id, kind='access_link', dedupe_key='access:'+grant.id, status='delivered_demo', due_at=now(),
-               data={'url': '/quote-dashboard#'+token, 'text': 'Your private synthetic quote dashboard link. Never share this link.', 'expires_at': expiry.isoformat()}))
+               data={**({} if contact.data.get('mode')=='twilio' else {'url': '/quote-dashboard#'+token}), 'text': 'Your private synthetic quote dashboard link. Never share this link.', 'expires_at': expiry.isoformat()}))
     for contact_id in case.data['contact_ids']:
         db.add(Job(case_id=case.id, contact_id=contact_id, kind='link_reminder', dedupe_key=f'reminder:{grant.id}:{contact_id}', due_at=expiry-timedelta(hours=2),
                    data={'grant_id': grant.id, 'template': 'link_expiry_v1', 'text': 'Your synthetic dashboard link expires soon. Open your protected demo inbox to review it.'}))
     audit(case, 'demo_access_link_issued', hours=hours)
-    return {'sent_to_demo_inbox': True, 'case_reference': case.id, 'expires_at': expiry}
+    return {'sent_to_demo_inbox': contact.data.get('mode')!='twilio', 'case_reference': case.id, 'expires_at': expiry, **({'_url':'/my-quotes#'+token} if contact.data.get('mode')=='twilio' else {})}
 
 
 class Link(Strict):
@@ -71,6 +72,7 @@ class Link(Strict):
 def access_link(body: Link, record=Depends(owned), db: Session = Depends(session)):
     _check_rate_limit('journey-link:'+record.id)
     result = issue_link(db, case_owned(db, record, body.case_id), body.hours)
+    result.pop('_url',None)
     db.commit()
     return result
 
@@ -87,10 +89,15 @@ def exchange(body: Exchange, request: Request, response: Response, db: Session =
     if parent.used:
         raise HTTPException(410, 'This link was already exchanged. Use the open dashboard or request a new link.')
     case = live_case(db.scalar(select(Case).where(Case.id == parent.case_id).with_for_update()))
+    claimed = db.execute(update(Grant).where(Grant.id == parent.id, Grant.used.is_(False),
+                         Grant.revoked.is_(False), Grant.expires_at > now()).values(used=True),
+                         execution_options={'synchronize_session': False})
+    if claimed.rowcount != 1:
+        db.rollback()
+        raise HTTPException(410, 'This link was already exchanged or expired')
     token = token_urlsafe(32)
     grant = Grant(case_id=case.id, contact_id=parent.contact_id, parent_id=parent.id, token_hash=digest(token), kind='dashboard_session',
                   expires_at=min(parent.expires_at.replace(tzinfo=timezone.utc), now()+timedelta(hours=2)))
-    parent.used = True
     db.add(grant)
     audit(case, 'dashboard_link_exchanged')
     try:
@@ -98,7 +105,8 @@ def exchange(body: Exchange, request: Request, response: Response, db: Session =
     except IntegrityError:
         db.rollback()
         raise HTTPException(410, 'This link was already exchanged') from None
-    response.set_cookie('helm_dashboard', token, httponly=True, secure=request.url.scheme == 'https', samesite='strict', max_age=7200, path='/api/journey')
+    cookie_age = max(1, int((grant.expires_at.replace(tzinfo=timezone.utc)-now()).total_seconds()))
+    response.set_cookie('helm_dashboard', token, httponly=True, secure=request.url.scheme == 'https', samesite='strict', max_age=cookie_age, path='/api/journey')
     response.headers['Cache-Control'] = 'no-store'
     return {'case_reference': case.id, 'session_expires_at': grant.expires_at, 'notice': 'Private demonstration access; no customer account or policy was created.'}
 
@@ -145,6 +153,8 @@ def recover(body: Recovery, request: Request, db: Session = Depends(session)):
         if contact:
             if contact.data.get('mode'):
                 from .verification import provider, reserve_send
+                if contact.data.get('mode')=='twilio' and contact.data.get('otp_provider')!=settings().twilio_otp_provider:
+                    raise HTTPException(409,'Use the original OTP provider for recovery')
                 if contact.data['mode']!=settings().otp_delivery_mode:
                     raise HTTPException(503,'The original verification transport is unavailable')
                 transport=provider(body.channel,destination)
@@ -152,14 +162,18 @@ def recover(body: Recovery, request: Request, db: Session = Depends(session)):
                 quota.data={**quota.data,'active_contact_id':contact.id}
             code = f'{randbelow(1000000):06}'
             data = deepcopy(contact.data)
-            data.update(challenge_hash=keyed(contact.id+code), expires_at=(now()+timedelta(minutes=10)).isoformat(), attempts=0, consumed=False, recovery_case=case.id)
+            data.update(challenge_hash=keyed(contact.id+code), expires_at=(now()+timedelta(minutes=5 if contact.data.get('mode') in {'twilio','mock'} and settings().twilio_otp_provider=='custom' else 10)).isoformat(), attempts=0, consumed=False, recovery_case=case.id)
             contact.data = data
             contact_id = contact.id
             if contact.data.get('mode'):
                 contact.data={**data,'sent_at':now().isoformat(),'delivery_status':'pending'}
                 db.commit()
                 try:
-                    transport.send(destination,code,contact.id)
+                    delivery=transport.send(destination,code,contact.id)
+                    if isinstance(delivery,dict):
+                        contact.data={**contact.data,**delivery}
+                        if delivery.get('otp_provider')=='twilio_verify':
+                            contact.data={**contact.data,'challenge_hash':''}
                 except Exception:
                     contact.data={**contact.data,'consumed':True,'delivery_status':'failed'}
                     db.commit()
@@ -208,9 +222,17 @@ def recover_verify(body: RecoverVerify, request: Request, db: Session = Depends(
         quota=db.get(OtpWindow,keyed('otp-number:'+contact.channel+':'+contact.data['destination']))
         if not quota or quota.data.get('active_contact_id')!=contact.id or contact.data.get('delivery_status')!='sent':
             raise HTTPException(410,'This code was replaced or delivery failed')
-    check_code(db, contact, body.code)
+    if contact.data.get('mode')=='twilio' and contact.data.get('otp_provider')=='twilio_verify':
+        from .twilio_auth import check_managed
+        check_managed(db,contact,body.code)
+    else:
+        check_code(db, contact, body.code)
     if contact.data.get('mode'):
         demo_codes.pop(contact.id,None)
     result = issue_link(db, case,body.hours)
+    if contact.data.get('mode')=='twilio':
+        from .twilio_auth import send_link
+        delivery=send_link(db,contact,result.pop('_url'))
+        result.update(delivery_status=delivery['provider_status'],notice=delivery['notice'])
     db.commit()
     return result

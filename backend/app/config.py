@@ -29,6 +29,19 @@ class Settings(BaseSettings):
     research_llm_enabled: bool = False
     research_intent_model: str = "openai/gpt-oss-20b"
     otp_delivery_mode: str = 'whatsmcp'
+    # Twilio is opt-in; existing transports and customer/broker authentication remain intact.
+    twilio_account_sid: str = ''
+    twilio_auth_token: str = ''
+    twilio_verify_service_sid: str = ''
+    twilio_whatsapp_from: str = ''
+    twilio_otp_provider: str = 'twilio_verify'
+    twilio_otp_content_sid: str = ''
+    twilio_magic_link_content_sid: str = ''
+    twilio_webhook_origin: str = ''
+    twilio_sandbox: bool = True
+    twilio_legacy_session_messages: bool = False
+    whatsapp_mock_auth: bool = False
+    magic_link_expiry_minutes: int = 10
     journey_funnel_enabled: bool = False
     otp_allowlist: list[str] = []
     whatsapp_access_token: str = ''
