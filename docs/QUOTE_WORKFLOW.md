@@ -54,7 +54,7 @@ WhatsMCP REST transport can send the OTP and the requested access link to an app
 
 
 ## Actual WhatsApp verification entry point
-Normal setup is `npm run api:prototype` plus `npm run worker:prototype`, using the private env configuration. The normal verification UI contains no fictional-number prompt, simulation banner or local reveal button. Missing provider credentials disable sends with an unavailable notice. Old console-mode challenges cannot be used after a transport switch; request a fresh real code. Automated tests retain `uk_test_server.py` and protected local-code helpers only for fixtures; stop the normal API before those test suites. See README and LIGHT_UI_WHATSMCP.md.
+Current owner decision: `npm run api:prototype` explicitly selects demo WhatsApp authentication; `npm run worker:prototype` keeps notifications local. Enter a valid-format number, generate the displayed demo OTP, verify it, show the local sign-in link and continue through the existing link exchange/dashboard. No actual phone ownership is proved or external message sent. Twilio settings are commented out and its implementation preserved for later upgrade/approval; real delivery requires the explicit launcher flag documented in WHATSAPP_AUTH_SETUP.md. Old challenges cannot be used after a transport switch; request a fresh code. Automated tests retain `uk_test_server.py` in console mode; stop the normal API before those suites.
 
 ## Optional Twilio access (25 October 2026)
 

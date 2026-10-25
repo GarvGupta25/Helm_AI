@@ -26,19 +26,21 @@ for (const width of [1440, 375]) test(`Twilio trial blocked status, OTP paste an
   await page.getByRole('button',{name:'Verify and continue',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Your verification and private link.'})).toBeVisible();
   await expect(page.getByRole('status')).toContainText('link was not sent');
-  await expect(page.getByRole('button',{name:'Open private developer inbox'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Show demo sign-in link'})).toHaveCount(0);
+  await expect(page.getByLabel('Demo OTP',{exact:true})).toHaveCount(0);
   await expect(page.locator('.wizard a[href*="#"]')).toHaveCount(0);
   const scan=await new AxeBuilder({page}).include('.wizard').analyze();
   expect(scan.violations.filter(v=>['serious','critical'].includes(v.impact || ''))).toEqual([]);
   await page.screenshot({path:`.runtime/twilio-blocked-${width}.png`,fullPage:true});
 });
 
-test('explicit mock UI labels simulation and exposes only its private developer controls',async({page})=>{
+test('demo phone entry generates an OTP and preserves private link access',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('helm-cookie-consent-v1',JSON.stringify({necessary:true})));
   await seedSelection(page);
   await page.route('**/api/journey/verify/**',async route=>{
     const path=new URL(route.request().url()).pathname;
     if(path.endsWith('/config'))return route.fulfill({json:{mode:'mock',automatic_link:true,mock:true,real_delivery:false,channels:{whatsapp:true,email:false}}});
+    if(path.endsWith('/start')){expect(route.request().postDataJSON().number).toBe('9876543210');return route.fulfill({json:{mode:'mock'}});}
     if(path.endsWith('/status'))return route.fulfill({json:{contact_id:'fixture',mode:'mock',verified:false,channel:'whatsapp',attempts_left:5,resend_after:60,expires_at:new Date(Date.now()+300000).toISOString()}});
     if(path.endsWith('/demo-code'))return route.fulfill({json:{code:'765432'}});
     if(path.endsWith('/check'))return route.fulfill({json:{verified:true,real_ownership_verified:false}});
@@ -46,12 +48,18 @@ test('explicit mock UI labels simulation and exposes only its private developer 
     if(path.endsWith('/mock-link'))return route.fulfill({json:{url:'/my-quotes#'+'x'.repeat(43)}});
     throw new Error('Unexpected request');
   });
-  await page.goto('/get-cover/verify/code');
-  await expect(page.getByText(/Isolated developer simulation/)).toBeVisible();
-  await page.getByRole('button',{name:'Use private developer test code'}).click();
+  await page.goto('/get-cover/verify');
+  await expect(page.getByText(/Demo only. No WhatsApp message/)).toBeVisible();
+  await page.getByLabel('Country calling code',{exact:true}).selectOption('+91');
+  await page.getByPlaceholder('Your WhatsApp number',{exact:true}).fill('9876543210');
+  await page.getByRole('checkbox',{name:/I agree to use this number for the demo/}).check();
+  await page.getByRole('button',{name:'Generate demo OTP',exact:true}).click();
+  await expect(page.getByLabel('Demo OTP',{exact:true})).toHaveText('765432');
+  await page.getByRole('button',{name:'Use demo OTP'}).click();
   await page.getByRole('button',{name:'Verify and continue',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Your verification and private link.'})).toBeVisible();
   await expect(page.getByRole('status')).toContainText('no external message');
-  await page.getByRole('button',{name:'Open private developer inbox'}).click();
-  await expect(page.getByRole('link',{name:'Open simulated sign-in link'})).toHaveAttribute('href','/my-quotes#'+'x'.repeat(43));
+  await expect(page.getByText('Your demo OTP was accepted. Phone ownership has not been verified.')).toBeVisible();
+  await page.getByRole('button',{name:'Show demo sign-in link'}).click();
+  await expect(page.getByRole('link',{name:'Continue to my quotes'})).toHaveAttribute('href','/my-quotes#'+'x'.repeat(43));
 });

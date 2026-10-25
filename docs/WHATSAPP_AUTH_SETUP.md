@@ -2,6 +2,12 @@
 
 Implemented 25 October 2026. All insurance products remain synthetic. Twilio delivery has **not** been tested with an actual account or phone. No credentials were created, read from the Console, or committed. Trial entitlement and template approval must be checked by the account owner.
 
+## Current prototype: demo login, Twilio parked
+
+The owner requested demo WhatsApp authentication until upgrading Twilio. `npm run api:prototype` now selects explicit guarded mock mode regardless of saved provider settings. `npm run worker:prototype` keeps notifications local. Twilio's implementation, SDK, validation, webhooks and tests are preserved; activation settings are commented out in `.env.example`. They do not run in demo mode. This is a development-only flow and does not prove phone ownership or grant customer/broker roles.
+
+Use **Generate demo OTP**, enter the displayed six-digit code (or **Use demo OTP**), then **Show demo sign-in link** and **Continue to my quotes**. The original reviewed selection, case creation, synthetic quotation worker, link interstitial, single-use exchange and dashboard remain. No provider credentials, allowlist or public tunnel are required for this local flow. The OTP expires in five minutes with five attempts; the access link expires in ten minutes. Resend throttling and number-format validation remain.
+
 ## Architecture and scope
 
 Helm uses React/TypeScript/Vite with React Router, FastAPI/Pydantic, SQLAlchemy/Alembic and encrypted journey state. Existing customer and professional authentication uses Supabase; these roles are not granted by WhatsApp verification. The quotation journey already has its own reviewed selection, verified Contact, Case, hashed Grant and HttpOnly dashboard session. This integration extends that existing flow; it does not introduce a parallel user database or link a phone to an unrelated Supabase account.
@@ -18,7 +24,7 @@ The UK audience's +44 default stays; +91 and other country codes are selectable.
 |---|---|---|
 | Existing installation | Keep current OTP_DELIVERY_MODE | Existing WhatsMCP, Cloud API, email and legacy console flows remain |
 | Isolated development | `OTP_DELIVERY_MODE=mock`, `WHATSAPP_MOCK_AUTH=true`, `APP_ENV=development` | Private developer OTP and link controls; explicitly simulated ownership |
-| Preferred Twilio trial | `OTP_DELIVERY_MODE=twilio`, `TWILIO_OTP_PROVIDER=twilio_verify` | Twilio controls OTP lifecycle; no custom-code validation for this attempt |
+| Managed Twilio after entitlement is confirmed | `OTP_DELIVERY_MODE=twilio`, `TWILIO_OTP_PROVIDER=twilio_verify` | Twilio controls OTP lifecycle; current new trials require an upgrade to create your own Verify service |
 | Trial custom-code fallback | `OTP_DELIVERY_MODE=twilio`, `TWILIO_OTP_PROVIDER=custom` | Six random digits, HMAC digest bound to contact, five-minute expiry; predefined verification template |
 | Production transport | Twilio mode, registered sender, `TWILIO_SANDBOX=false`, approved ContentSid | Approved template delivery; broader application production guard still stays closed |
 
@@ -89,9 +95,9 @@ WHATSAPP_MOCK_AUTH=true
 
 Start **normal** `npm run api:prototype`, then `npm run worker:prototype`; start frontend with `VITE_QUOTE_WIZARD=true` (PowerShell: `$env:VITE_QUOTE_WIZARD='true'; npm --prefix frontend run dev -- --port 4174`). These prototype launchers select ignored `.runtime` databases and a stable local key. Use the printed local URL. The separately named `uk_test_server.py` deliberately forces old console mode and must not be used to exercise the mock UI or real messaging. Stop normal API before automated browser suites; inspect exact PIDs first.
 
-Complete the guided quote intake and selection, then open `/get-cover/verify`. Select a country, enter a valid-format fictional test number, consent and send OTP. In explicit mock mode the page clearly announces simulation; on the code screen choose **Use private developer test code**. Submit it. On success choose **Open private developer inbox**, then **Open simulated sign-in link**. Deliberately continue on the landing screen. You should reach the existing private quotation dashboard. No real account ownership or message delivery is proved.
+Complete the guided quote intake and selection, then open `/get-cover/verify`. Select a country, enter a valid-format test number, consent and choose **Generate demo OTP**. Enter the displayed OTP or choose **Use demo OTP**, then submit it. On success choose **Show demo sign-in link**, then **Continue to my quotes**. Deliberately continue on the landing screen. You should reach the existing private quotation dashboard. No real account ownership or message delivery is proved.
 
-For Twilio, replace mode with twilio, disable mock, configure credentials/allowlist/origins and select the appropriate trial strategy above. Restart API after settings changes. Use your actual enrolled number, never a fictional number, for real delivery. Codes and URLs are never exposed by developer endpoints in Twilio mode. Ambiguous failure requires Console inspection and reverification rather than blind resend of the same secret. Resend-code is throttled; requesting a new code replaces the active local attempt. An expired/used link requires reverification.
+For Twilio after upgrade/approval, uncomment and fill the private Twilio settings, replace mode with twilio, disable mock, configure credentials/allowlist/origins and select the appropriate strategy above. Start the API with `uv run --project backend python backend/scripts/prototype_server.py --allow-configured-sandbox` and the worker with `uv run --project backend python backend/scripts/journey_worker.py --allow-configured-sandbox`; the ordinary npm prototype commands deliberately stay local. Restart after settings changes. Use your actual enrolled number for real delivery. Codes and URLs are never exposed by developer endpoints in Twilio mode. Ambiguous failure requires Console inspection and reverification rather than blind resend of the same secret. Resend-code is throttled; requesting a new code replaces the active local attempt. An expired/used link requires reverification.
 
 ## Security and testing checklist
 

@@ -9,7 +9,7 @@
     "test:e2e": "playwright test",
     "test:uk": "playwright test --config playwright.uk.config.ts",
     "api:prototype": "uv run --project backend python backend/scripts/prototype_server.py",
-    "worker:prototype": "uv run --project backend python backend/scripts/journey_worker.py --allow-configured-sandbox"
+    "worker:prototype": "uv run --project backend python backend/scripts/journey_worker.py"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

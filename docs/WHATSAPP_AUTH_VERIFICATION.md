@@ -1,5 +1,15 @@
 # Twilio authentication verification — 25 October 2026
 
+## Demo default follow-up — 25 October 2026
+
+At the owner's request, normal prototype startup now explicitly enables guarded mock WhatsApp authentication. The worker's normal command leaves notifications local. Twilio activation settings are commented out; its provider, SDK, webhooks, verification controls and tests remain for later upgrade/approval. Re-enabling requires private env configuration and the explicit real-delivery launcher flag documented in WHATSAPP_AUTH_SETUP.md. No database migration was added.
+
+The form accepts a valid-format phone number, displays its generated demo OTP, supports manual entry or **Use demo OTP**, and opens the existing private-link confirmation and quotation dashboard. Demo copy does not claim phone ownership or external delivery. Docked broker help keeps the code boxes accessible on mobile. Expiry, attempts, cooldown, one active code, selection binding, single-use links and dashboard session limits remain.
+
+Checks: focused backend suite `test_prototype_mode.py`, `test_twilio_auth.py`, `test_wizard_verification.py`: **14 passed**; scoped Ruff passed; frontend check, lint and demo build passed; Vitest **16 passed**. `tests/wizard/twilio.spec.ts`: **3 passed**, including demo phone entry and real-provider controls hidden at desktop/mobile widths. Additional Playwright smoke against the actual running mock API and built preview at 1440px and 375px: **2 passed**, through OTP, private-link exchange, dashboard and received synthetic quotations/PDF link. Axe found no serious/critical wizard violations. Local screenshot evidence and the temporary smoke harness are ignored under `.runtime`.
+
+The first mobile smoke reused the desktop number within its 60-second resend cooldown and was correctly rejected. Changed the fixture to use a separate valid-format test number; both viewports then passed together. No limiter was weakened. Final preview config reports mode=mock, mock=true, real_delivery=false. Real WhatsApp delivery, paid account approval, physical devices, manual screen readers and PostgreSQL concurrency were not tested. The prototype remains local and is not a production authentication rollout.
+
 ## Completed local checks
 
 | Check | Actual result |
