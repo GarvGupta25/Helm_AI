@@ -55,3 +55,7 @@ WhatsMCP REST transport can send the OTP and the requested access link to an app
 
 ## Actual WhatsApp verification entry point
 Normal setup is `npm run api:prototype` plus `npm run worker:prototype`, using the private env configuration. The normal verification UI contains no fictional-number prompt, simulation banner or local reveal button. Missing provider credentials disable sends with an unavailable notice. Old console-mode challenges cannot be used after a transport switch; request a fresh real code. Automated tests retain `uk_test_server.py` and protected local-code helpers only for fixtures; stop the normal API before those test suites. See README and LIGHT_UI_WHATSMCP.md.
+
+## Optional Twilio access (25 October 2026)
+
+With OTP_DELIVERY_MODE=twilio, the existing verification screen accepts the reviewed selection's phone, uses Twilio Verify (or explicitly configured custom HMAC OTP), then automatically creates the existing quotation case and a ten-minute single-use link for the same verified contact. /get-cover/access shows actual delivery status; /my-quotes retains deliberate fragment-to-cookie exchange. Twilio tokens are stored only as grant hashes; browser responses do not include usable Twilio links. Trial template restrictions can block link delivery; explicit isolated mock mode provides private developer controls. Existing WhatsMCP and legacy 24/48-hour link choices remain unchanged in those modes. Supabase customer/broker authentication is separate. Full setup: WHATSAPP_AUTH_SETUP.md. No real send or live database migration has run.

@@ -21,9 +21,9 @@ for(const width of [1440,375])test(`WhatsApp verification uses the real-number f
  await expect(page.locator('.wizard')).not.toContainText(/fictional|local simulation|private demo inbox/i);
  await page.getByLabel('Country calling code',{exact:true}).selectOption('+1');
  await page.getByPlaceholder('Your WhatsApp number',{exact:true}).fill('+12025550123');
- await expect(page.getByRole('button',{name:'Send code on WhatsApp',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Send WhatsApp OTP',exact:true})).toBeDisabled();
  await page.getByRole('checkbox',{name:/I agree to receive a verification code/}).check();
- await page.getByRole('button',{name:'Send code on WhatsApp',exact:true}).click();
+ await page.getByRole('button',{name:'Send WhatsApp OTP',exact:true}).click();
  await expect(page).toHaveURL(/\/verify\/code$/);await expect(page.getByRole('heading',{name:'Check your WhatsApp.'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Reveal local demo code'})).toHaveCount(0);
  await page.screenshot({path:`.runtime/real-whatsapp-code-${width}.png`});
@@ -39,7 +39,7 @@ test('missing credentials blocks sends without offering simulated codes',async({
  await page.route('**/api/journey/verify/config',route=>route.fulfill({json:{mode:'whatsmcp',real_delivery:false,channels:{whatsapp:false,email:false}}}));
  await page.goto('/get-cover/verify');await expect(page.getByText('WhatsApp verification is currently unavailable.',{exact:false})).toBeVisible();
  await page.getByPlaceholder('Your WhatsApp number',{exact:true}).fill('+12025550123');await page.getByRole('checkbox',{name:/I agree to receive a verification code/}).check();
- await expect(page.getByRole('button',{name:'Send code on WhatsApp',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Send WhatsApp OTP',exact:true})).toBeDisabled();
  await expect(page.locator('.wizard')).not.toContainText(/fictional|local simulation|private demo inbox|reveal local/i);
  await page.screenshot({path:'.runtime/real-whatsapp-setup-required.png'});
 });

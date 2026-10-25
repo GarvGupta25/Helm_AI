@@ -103,3 +103,7 @@ archive/ is outside active TypeScript source/test roots, ignored by Vite's watch
 The safety tag is backup-before-split-20261022. Review `git diff --stat main..cleanup/split-main-site`. The archive contains exact inverse move commands in restore.sh, which were generated but not executed. With a clean tree, `git switch main` returns to the original checkout; for a separate original-state branch use `git switch -c restore/before-split backup-before-split-20261022`. Detailed selective restoration instructions preserve current files before replacing any original.
 
 See [archive/VERIFICATION.md](archive/VERIFICATION.md) for the completed preservation/build/browser checks and remaining decisions.
+
+### Optional Twilio WhatsApp verification
+
+The guided quotation journey supports Twilio Verify or a secure custom-code Sandbox fallback, followed by a single-use ten-minute WhatsApp dashboard link. Existing customer and broker login remains intact. Explicit isolated mock mode supports the complete local flow without real messages. See [WhatsApp authentication setup](docs/WHATSAPP_AUTH_SETUP.md) for Console steps, trial restrictions, server environment variables and production transport transition. No real Twilio account/phone delivery has been verified.

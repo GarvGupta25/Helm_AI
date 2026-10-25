@@ -765,3 +765,7 @@ Wizard Phase9: `/get-cover/access` creates a24/48-hour private link after curren
 ## Latest interface and messaging update —25 October2026
 
 The quote journey uses a consistent light palette, readable plan/dashboard cards in normal/hover/focus states, centered form topics and docked help controls. All questions, canonical profile contracts, consent and deterministic calculations remain. WhatsMCP REST support for OTP/private links is implemented, with a private local key placeholder, recipient allowlist, public HTTPS origin and explicit startup flag. Owner will paste credentials later; no actual WhatsApp delivery is claimed. Details and final verification: docs/ux/LIGHT_UI_WHATSMCP.md.
+
+## Twilio extension — 25 October 2026
+
+Optional Twilio Verify/custom Sandbox OTP and verified same-number ten-minute magic-link delivery reuse the existing /api/journey contact/case/grant/session architecture. New modules: journey/twilio_auth.py (SDK, policy gates, signed callbacks), journey/whatsapp_link.py (verified issuance/status/private mock inbox), and wizard/WhatsAppLink.tsx (delivery UI). Supabase roles, ranking, legacy modes and the production guard remain intact. No new database schema or migrations. Configure only server-side settings; see docs/WHATSAPP_AUTH_SETUP.md and docs/WHATSAPP_AUTH_VERIFICATION.md for actual checks and external verification limits.
