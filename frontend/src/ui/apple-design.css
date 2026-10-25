@@ -10,5 +10,13 @@ html .uk-hero-photo,html .uk-scroll-hint svg,html .uk-video-badge>svg{animation:
 /* Inline anchors need a transformable box; existing flex/grid link styles win. */
 :where(a[href]){display:inline-block}
 html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button]){touch-action:manipulation;scale:1;transition:scale 100ms ease-out}
-html body [data-pressed]{scale:.97}
-@media(prefers-reduced-motion:reduce){html body [data-pressed]{scale:1;opacity:.8}}
+html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button])[data-pressed]{scale:.97}
+@media(prefers-reduced-motion:reduce){html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button])[data-pressed]{scale:1;opacity:.8}}
+
+html .uk-modal.apple-sheet{transform:translate3d(-50%,-50%,0) translateY(var(--sheet-y,0px));animation:none!important;transition:none!important;will-change:transform,opacity;padding-top:3.5rem}
+html .apple-sheet-overlay{animation:none!important;transition:none!important;backdrop-filter:none}
+html .apple-sheet:not([data-sheet-ready]){visibility:hidden}
+.apple-sheet-grab{position:absolute;inset:0 3.5rem auto;min-height:44px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;user-select:none}
+.apple-sheet-grab:active{cursor:grabbing}
+.apple-sheet-grab span{display:block;width:2.5rem;height:.3rem;border-radius:999px;background:#8194a2}
+@media(max-width:767px){html .uk-modal.apple-sheet{top:auto;bottom:0;left:50%;width:100%;max-height:92svh;border-radius:1.5rem 1.5rem 0 0;transform:translate3d(-50%,0,0) translateY(var(--sheet-y,0px))}}

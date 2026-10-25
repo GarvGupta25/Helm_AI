@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Field, Modal, NarrativeTabs, Button, Check } from './primitives';
 
@@ -13,10 +13,10 @@ describe('accessible UK controls', () => {
     expect(field.getAttribute('aria-describedby')).toBe('postcode-error');
     expect(screen.getByRole('alert').textContent).toBe('Enter a valid postcode');
   });
-  it('exposes modal title and a working close action', () => {
+  it('exposes modal title and a working close action', async () => {
     const close = vi.fn(); render(<Modal title="Review your choices" open onClose={close}><p>Read before continuing.</p></Modal>);
     expect(screen.getByRole('dialog').getAttribute('aria-labelledby')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' })); expect(close).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' })); await waitFor(()=>expect(close).toHaveBeenCalled());
   });
   it('makes consent unchecked until the user acts', () => {
     render(<Check>I agree to optional analytics</Check>);
