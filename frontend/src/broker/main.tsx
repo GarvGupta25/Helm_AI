@@ -1,3 +1,4 @@
+import '../ui/apple-design.css';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowLeft, ArrowUpRight, Check, Clock3, Inbox, LogOut, ShieldCheck } from 'lucide-react';

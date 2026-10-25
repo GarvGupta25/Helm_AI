@@ -1,0 +1,8 @@
+/* App-owned feedback only; widget internals retain their own interaction model. */
+html .uk-modal{overscroll-behavior:contain;scroll-padding-block:1.5rem;padding-bottom:max(2rem,env(safe-area-inset-bottom));max-height:calc(100svh - 2rem)}
+html .uk-modal :focus-visible{scroll-margin-block:4rem}
+html .uk-overlay{backdrop-filter:none}
+html .uk-video-badge{backdrop-filter:none}
+.uk-site .uk-card:not(:has(a,button,[role=button])):hover{transform:none;box-shadow:none}
+html .uk-hero-photo,html .uk-scroll-hint svg,html .uk-video-badge>svg{animation:none!important}
+@media(prefers-reduced-motion:reduce){.uk-overlay,html .uk-modal{animation:none!important;transition:none!important}}
