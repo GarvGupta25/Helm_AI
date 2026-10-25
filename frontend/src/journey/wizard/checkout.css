@@ -101,7 +101,7 @@
 .flow-more-options button{margin:8px 16px 8px 0}
 .flow-spinner{animation:flow-spin 800ms linear infinite}
 @keyframes flow-spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:no-preference){.checkout-flow :is(button,a,input){transition:background-color 160ms,color 160ms,border-color 160ms}}
+@media(prefers-reduced-motion:no-preference){.checkout-flow :is(button,a,input){transition:none}}
 @media(prefers-reduced-motion:reduce){.checkout-flow *,.flow-header{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(max-width:1023px){.flow-review-grid{grid-template-columns:minmax(0,1fr) minmax(320px,1fr);gap:24px}.flow-summary{padding:24px}.flow-detail-row{grid-template-columns:1fr;gap:0;padding:16px 0}.flow-heading-line{align-items:start}.flow-plan .flow-premium{font-size:40px}}
 @media(max-width:767px){

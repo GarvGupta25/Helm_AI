@@ -1,3 +1,4 @@
+:root{--apple-ui-time:600ms;--apple-move-time:700ms;--apple-press-time:100ms;--apple-spring:linear(0,0.05092,0.16211,0.29258,0.42058,0.53573,0.63413,0.71542,0.78095,0.83284,0.87336,0.90465,0.92858,0.94675,0.96046,0.97074,0.97842,0.98413,0.98835,0.99148,0.99377,0.99546,0.9967,0.9976,0.99826,0.99874,0.99909,0.99934,0.99952,0.99966,1)}
 /* App-owned feedback only; widget internals retain their own interaction model. */
 html .uk-modal{overscroll-behavior:contain;scroll-padding-block:1.5rem;padding-bottom:max(2rem,env(safe-area-inset-bottom));max-height:calc(100svh - 2rem)}
 html .uk-modal :focus-visible{scroll-margin-block:4rem}
@@ -9,7 +10,7 @@ html .uk-hero-photo,html .uk-scroll-hint svg,html .uk-video-badge>svg{animation:
 
 /* Inline anchors need a transformable box; existing flex/grid link styles win. */
 :where(a[href]){display:inline-block}
-html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button]){touch-action:manipulation;scale:1;transition:scale 100ms ease-out}
+html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button]){touch-action:manipulation;scale:1;transition:scale var(--apple-press-time) var(--apple-spring)}
 html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button])[data-pressed]{scale:.97}
 @media(prefers-reduced-motion:reduce){html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button])[data-pressed]{scale:1;opacity:.8}}
 

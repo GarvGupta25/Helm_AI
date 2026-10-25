@@ -37,7 +37,7 @@ input, textarea, select { max-width: 100%; }
 .partners-demo-alert { flex-wrap: wrap; }
 .marketing-layout .scheme-card:focus-visible, .marketing-layout .partners-card:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 3px; transform: none; transition: none; }
 .marketing-layout .scheme-card__action, .marketing-layout .partners-card-action { opacity: 1; transform: none; }
-.marketing-layout .scheme-card::before { transition: opacity 160ms var(--ease-out); }
+.marketing-layout .scheme-card::before { transition:opacity var(--apple-ui-time) var(--apple-spring); }
 .catalogue-filters { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 16px; align-items: end; margin-bottom: 24px; }
 button.plan-card { color: var(--brand-ink); justify-content: flex-start; align-items: stretch; }
 .term-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
@@ -56,7 +56,7 @@ button.plan-card { color: var(--brand-ink); justify-content: flex-start; align-i
 /* Motion is reserved for occasional panels; data and keyboard actions stay steady. */
 .notification-popover {
   transform-origin: top right;
-  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+  transition:transform var(--apple-move-time) var(--apple-spring),opacity var(--apple-ui-time) var(--apple-spring);
 }
 @starting-style { .notification-popover { opacity: 0; transform: scale(.97); } }
 html:has(:focus-visible) .notification-popover { transition: none; }

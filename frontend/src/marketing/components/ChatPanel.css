@@ -128,7 +128,7 @@
   padding: 8px 12px;
   cursor: pointer;
   font-family: var(--font-body, Inter, sans-serif);
-  transition: background 0.15s;
+  transition:none;
   line-height: 1.4;
 }
 
@@ -163,7 +163,7 @@
   font-family: var(--font-body, Inter, sans-serif);
   color: var(--color-ink-700, #1e293b);
   background: var(--color-surface-tint, #f8fafc);
-  transition: border-color 0.15s;
+  transition:none;
   resize: none;
   min-height: 38px;
   max-height: 100px;
@@ -183,7 +183,7 @@
   font-weight: 600;
   font-family: var(--font-body, Inter, sans-serif);
   cursor: pointer;
-  transition: background 0.15s;
+  transition:none;
   white-space: nowrap;
 }
 

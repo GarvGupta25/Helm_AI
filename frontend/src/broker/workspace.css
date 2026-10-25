@@ -3,7 +3,7 @@
 body{margin:0}
 button,input,textarea,select{font:inherit}
 button,a,input,select,textarea{-webkit-tap-highlight-color:transparent}
-button{cursor:pointer;touch-action:manipulation;min-height:44px;border:1px solid #ccd5dd;border-radius:10px;background:#fff;color:#20394a;padding:10px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,box-shadow .15s}
+button{cursor:pointer;touch-action:manipulation;min-height:44px;border:1px solid #ccd5dd;border-radius:10px;background:#fff;color:#20394a;padding:10px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:none}
 button:hover{background:#edf4f4}
 button:disabled{opacity:.5;cursor:default}
 a{color:#176c69}

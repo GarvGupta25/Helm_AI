@@ -34,7 +34,7 @@
 .wizard .uk-button.primary:hover:not(:disabled){background:#23485a;color:#fff;filter:none;transform:none}
 .wizard .uk-button.secondary{border-color:#a8b8bb;color:var(--j-navy);background:#fff}
 .wizard .uk-button.secondary:hover{background:#edf4f2;color:var(--j-navy);transform:none;filter:none}
-.wizard .w-mode-cards button{background:#fff;border-color:#d3dcda;transition:border-color 160ms,background-color 160ms}
+.wizard .w-mode-cards button{background:#fff;border-color:#d3dcda;transition:none}
 .wizard .w-mode-cards button:hover{border-color:var(--j-teal);background:#f7fbfa}
 .helm-wizard-active .wizard:not(.w-plans):not(.w-detail):not(.w-dashboard):not(.checkout-flow){max-width:960px}
 .helm-wizard-active .wizard:not(.w-plans):not(.w-detail):not(.w-dashboard):not(.checkout-flow) .w-step{max-width:640px;margin-inline:auto}
