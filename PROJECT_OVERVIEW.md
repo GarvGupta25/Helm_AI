@@ -759,3 +759,7 @@ Wizard Phase7: flag-on `/get-cover/compare` and `/get-cover/selection` are separ
 Wizard Phase8: `/get-cover/verify` and `/get-cover/verify/code` require the current consented selection. `uk_test_server.py` forces console verification; real network transports are allow-listed, server-configured sandboxes only. See `docs/ux/VERIFICATION_SETUP.md`; never expose provider credentials or codes. Additive migration0007 adds encrypted rolling OTP windows.
 
 Wizard Phase9: `/get-cover/access` creates a24/48-hour private link after current verified selection; `/my-quotes` is the tabbed dashboard alias. Tokens use fragments and deliberate exchange; they never enter request paths. The existing `/quote-dashboard` remains compatible. The isolated worker defaults console-only; explicit --allow-configured-sandbox is required for configured allow-listed notifications.
+
+## Latest interface and messaging update —25 October2026
+
+The quote journey uses a consistent light palette, readable plan/dashboard cards in normal/hover/focus states, centered form topics and docked help controls. All questions, canonical profile contracts, consent and deterministic calculations remain. WhatsMCP REST support for OTP/private links is implemented, with a private local key placeholder, recipient allowlist, public HTTPS origin and explicit startup flag. Owner will paste credentials later; no actual WhatsApp delivery is claimed. Details and final verification: docs/ux/LIGHT_UI_WHATSMCP.md.

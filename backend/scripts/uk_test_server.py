@@ -1,5 +1,6 @@
 """Launch an isolated local test API; never connects to the user's configured database."""
 import os
+import sys
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
@@ -7,7 +8,8 @@ scratch = root / ".runtime"
 scratch.mkdir(exist_ok=True)
 os.environ["DATABASE_URL"] = f"sqlite:///{(scratch / 'uk-e2e.db').as_posix()}"
 os.environ["GROQ_API_KEY"] = ""
-os.environ["OTP_DELIVERY_MODE"] = "console"
+if '--allow-configured-sandbox' not in sys.argv:
+    os.environ["OTP_DELIVERY_MODE"] = "console"
 os.environ["APP_ENV"] = "development"
 os.environ["MEMBER_DEMO_AUTH"] = "true"
 os.environ["CHATBOT_FEEDBACK_DATABASE_URL"] = f"sqlite:///{(scratch / 'chatbot-feedback.db').as_posix()}"

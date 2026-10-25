@@ -6,9 +6,10 @@ import './ChatbotLauncher.css';
 
 const ChatWidget = lazy(() => import('../chat/ChatWidget'));
 const NEXT_CHAT_UI = import.meta.env.VITE_NEXT_CHAT_UI !== 'false';
-export function ChatbotLauncher() {
+export function ChatbotLauncher({hideTrigger=false}:{hideTrigger?:boolean}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
   const greetingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isOpen, setIsOpen] = useState(() => { try { return NEXT_CHAT_UI && sessionStorage.getItem('helm-chat-open') === 'yes'; } catch { return false; } });
   const [hasOpened, setHasOpened] = useState(isOpen);
@@ -61,19 +62,20 @@ export function ChatbotLauncher() {
       motion.removeEventListener('change', update);
       document.removeEventListener('visibilitychange', update);
     };
-  }, []);
+  }, [hideTrigger]);
 
   function dismissGreeting() {
     if (greetingTimer.current) clearTimeout(greetingTimer.current);
     setShowGreeting(false);
     try { sessionStorage.setItem('helm-greeting-dismissed', 'yes'); } catch { /* Session memory is optional. */ }
   }
-  function open() { dismissGreeting(); setIsOpen(true); setHasOpened(true); setUnread(false); }
-  function close() { setIsOpen(false); trigger.current?.focus(); }
+  useEffect(() => { const show=()=>open();window.addEventListener('helm-open-assistant',show);return()=>window.removeEventListener('helm-open-assistant',show); }, []);
+  function open() { returnFocus.current=document.activeElement instanceof HTMLElement?document.activeElement:null;dismissGreeting(); setIsOpen(true); setHasOpened(true); setUnread(false); }
+  function close() { setIsOpen(false); (trigger.current || returnFocus.current)?.focus(); }
 
   return <div className="chatbot-launcher-root">
     {NEXT_CHAT_UI ? hasOpened && <Suspense fallback={null}><ChatWidget open={isOpen} onClose={close} onUnread={() => setUnread(true)}/></Suspense> : isOpen && <ChatPanel onClose={close}/>}
-    <div className="chatbot-launcher">
+    {!hideTrigger && <div className="chatbot-launcher">
       {showGreeting && !isOpen && <div className="chatbot-greeting-card">
         <button type="button" className="chatbot-greeting-card__open" onClick={open}>
           <span className="chatbot-greeting-card__eyebrow">Helm AI Assistant</span>
@@ -87,6 +89,6 @@ export function ChatbotLauncher() {
         {!animated && <MessageCircle size={28} aria-hidden="true"/>}
         <canvas ref={canvas} width={96} height={96} className="chatbot-launcher__canvas" hidden={!animated} aria-hidden="true"/>
       </button>
-    </div>
+    </div>}
   </div>;
 }

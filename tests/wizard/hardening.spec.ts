@@ -12,7 +12,7 @@ test('keyboard, dark RTL structure and narrow reflow retain usable controls',asy
   await page.setViewportSize({width,height:900});await page.emulateMedia({colorScheme:'dark',reducedMotion:'reduce'});
   await page.evaluate(()=>{document.documentElement.dir='rtl';});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
-  const assistant=await page.getByRole('button',{name:'Open the Helm AI assistant',exact:true}).boundingBox();
+  const assistant=await page.getByRole('button',{name:'Ask Helm',exact:true}).boundingBox();
   const broker=await page.getByRole('button',{name:'Talk to a broker',exact:true}).boundingBox();
   expect(assistant && broker && (assistant.y+assistant.height<=broker.y || broker.y+broker.height<=assistant.y)).toBeTruthy();
   const scan=await new AxeBuilder({page}).include('.wizard').analyze();expect(scan.violations.filter(v=>['serious','critical'].includes(v.impact||''))).toEqual([]);

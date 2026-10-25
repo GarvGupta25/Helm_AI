@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     journey_funnel_enabled: bool = False
     otp_allowlist: list[str] = []
     whatsapp_access_token: str = ''
+    whatsmcp_api_key: str = ''
+    whatsmcp_account_id: str = ''
     whatsapp_phone_number_id: str = ''
     whatsapp_graph_version: str = ''
     whatsapp_auth_template: str = ''

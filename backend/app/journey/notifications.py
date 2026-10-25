@@ -42,7 +42,7 @@ def process_notifications(db, clock=None):
         try:
             delivery=notification_provider(contact).send(contact,'/broker.html')
             job.data={**job.data,**delivery}
-            job.status='delivered_sandbox' if delivery['external_sent'] else 'delivered_demo'
+            job.status='accepted' if delivery.get('provider_status')=='queued' else 'delivered_sandbox' if delivery['external_sent'] else 'delivered_demo'
         except Exception:
             job.status='failed'
         job.attempts+=1
@@ -62,13 +62,13 @@ def process_notifications(db, clock=None):
                 job.status = 'cancelled'
                 continue
         quiet = quiet_until(case.data['preferences'], clock)
-        if quiet:
+        if quiet and job.kind!='access_link_notify':
             job.due_at = quiet
             continue
         try:
             delivered=notification_provider(contact).send(contact,job.data.get('url','/my-quotes'))
             job.data={**job.data,'channel':contact.channel,**delivered}
-            job.status='delivered_sandbox' if delivered['external_sent'] else 'delivered_demo'
+            job.status='accepted' if delivered.get('provider_status')=='queued' else 'delivered_sandbox' if delivered['external_sent'] else 'delivered_demo'
         except Exception:
             job.data={**job.data,'delivery':'failed','external_sent':False,'notice':'Configured sandbox delivery failed; use the private dashboard.'}
             job.status='failed'

@@ -22,6 +22,11 @@ from .verification import current_contact
 router=APIRouter(prefix='/api/journey',tags=['guided private access'])
 
 
+def link_delivery(db,grant):
+    job=db.scalar(select(Job).where(Job.dedupe_key=='notify-access:'+grant.id))
+    return ('accepted' if job.status=='accepted' else job.data.get('provider_status',job.status)) if job else 'not_requested'
+
+
 @router.get('/wizard/access')
 def saved(record=Depends(owned),db:Session=Depends(session)):
     receipt=selected(record)
@@ -33,7 +38,7 @@ def saved(record=Depends(owned),db:Session=Depends(session)):
     if not grant or grant.revoked or grant.expires_at.replace(tzinfo=now().tzinfo)<=now():
         raise HTTPException(410,'This link expired or was revoked. Reverify before creating a new link.')
     job=db.scalar(select(Job).where(Job.dedupe_key=='access:'+grant.id))
-    return {'case_id':metadata['case_id'],'url':job.data['url'],'expires_at':grant.expires_at,'hours':metadata['hours'],'notifications':metadata['notifications'],'notice':'Private link saved. Never share it. Use your existing dashboard session if this single-use link was already opened.'}
+    return {'case_id':metadata['case_id'],'url':job.data['url'],'expires_at':grant.expires_at,'hours':metadata['hours'],'notifications':metadata['notifications'],'delivery_status':link_delivery(db,grant),'notice':'Private link saved. Never share it. Use your existing dashboard session if this single-use link was already opened.'}
 
 
 class Access(Strict):
@@ -61,7 +66,7 @@ def create(body:Access,request:Request,record=Depends(owned),db:Session=Depends(
             if grant.revoked or grant.expires_at.replace(tzinfo=now().tzinfo)<=now():
                 raise HTTPException(410,'Reverify your contact before requesting a new link')
             job=db.scalar(select(Job).where(Job.dedupe_key=='access:'+grant.id))
-            return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':True,'notice':'Private access already saved. Delivery is simulated unless an official sandbox is configured.'}
+            return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':True,'delivery_status':link_delivery(db,grant),'notice':'Private access already saved. External delivery requires a configured provider.'}
     else:
         consent_ids=[receipt['insurer_consent_id']]+([receipt['broker_consent_id']] if receipt.get('broker_consent_id') else [])
         channels=['dashboard']
@@ -85,4 +90,4 @@ def create(body:Access,request:Request,record=Depends(owned),db:Session=Depends(
     data=deepcopy(record.data)
     data['wizard_access']={'case_id':case.id,'grant_id':grant.id,'fingerprint':receipt['fingerprint'],'hours':body.hours,'notifications':body.notifications,'verified_contact_id':contact.id}
     save(db,record,data)
-    return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':False,'notice':'Your synthetic insurer requests are queued. No real insurer is contacted. Network notifications require the configured, allow-listed sandbox.'}
+    return {'case_id':case.id,'url':job.data['url'],'expires_at':grant.expires_at,'reused':False,'delivery_status':link_delivery(db,grant),'notice':'Your synthetic insurer requests are queued. No real insurer is contacted. Message delivery status is shown separately.'}

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import httpx
 
 from ..config import settings
+from .whatsmcp import WhatsMCPNotification
 
 
 class ConsoleNotification:
@@ -48,4 +49,6 @@ class OfficialNotification:
 
 def notification_provider(contact):
     mode=settings().otp_delivery_mode
+    if mode=='whatsmcp' and contact.data.get('mode')==mode:
+        return WhatsMCPNotification() if contact.channel=='whatsapp' else OfficialNotification()
     return OfficialNotification() if mode in {'whatsapp_sandbox','email_sandbox'} and contact.data.get('mode')==mode else ConsoleNotification()

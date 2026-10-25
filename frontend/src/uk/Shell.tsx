@@ -15,7 +15,8 @@ function Brand() { return <Link to="/" className="uk-brand" aria-label="Helm AI 
 function PublicAssistant() {
   const location=useLocation();const [mode,setMode]=useState(()=>{try{return sessionStorage.getItem('helm-wizard-mode');}catch{return null;}});
   useEffect(()=>{const update=()=>{try{setMode(sessionStorage.getItem('helm-wizard-mode'));}catch{setMode(null);}};window.addEventListener('helm-wizard-mode',update);return()=>window.removeEventListener('helm-wizard-mode',update);},[]);
-  return import.meta.env.VITE_QUOTE_WIZARD==='true' && location.pathname.startsWith('/get-cover/quote') && mode==='chat'?null:<ChatbotLauncher/>;
+  const journeyPage=import.meta.env.VITE_QUOTE_WIZARD==='true' && /^\/get-cover\/(quote|plans|compare|selection|verify|access)(\/|$)/.test(location.pathname);
+  return journeyPage && location.pathname.startsWith('/get-cover/quote') && mode==='chat'?null:<ChatbotLauncher hideTrigger={journeyPage}/>;
 }
 function PanelLinks({ index, close }: { index: number; close?: () => void }) { const item = audiences[index]; return <>{item.groups.map(group => <div className="uk-menu-links" key={group.title}><strong>{group.title}</strong>{group.links.map(([text, to]) => <Link onClick={close} key={to} to={to}>{text}</Link>)}</div>)}</>; }
 function Header() {

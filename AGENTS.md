@@ -18,3 +18,9 @@ Read docs/ux/GUIDED_JOURNEY_PLAN.md and each phase master prompt, docs/ux/WIZARD
 - Analytics requires both server JOURNEY_FUNNEL_ENABLED and VITE_FUNNEL_ANALYTICS plus visitor Analytics consent; all defaultoff. Fixed daily categories only; no answers or identities.
 - Checks: backend pytest with DATABASE_URL=sqlite:// and GROQ_API_KEY empty; Ruff; frontend check/lint:uk/test/build. Original UK suite targets explicit legacy routes where appropriate; wizard config serves flag-on4175. Run wizard batches with at most10 session creations, restarting only this isolated API between batches. Keep limiters unchanged. Preserve genuine failing tests and fix causes before claiming success.
 - Real messaging, model narration, broker sign-in, physical devices, manual screen readers and PostgreSQL concurrency need explicit external verification. Record limits honestly in readiness docs.
+
+## Light UI and WhatsMCP update
+
+The guided pages now deliberately retain a light palette under dark OS settings, with explicit readable card foregrounds. Broker help is docked in the sticky navigation when present; Ask Helm in the journey toolbar opens the same public assistant without a floating launcher over form controls. All questions and saved-profile semantics are unchanged. See docs/ux/LIGHT_UI_WHATSMCP.md.
+
+WhatsMCP is an additional server-side OTP/link transport, enabled by OTP_DELIVERY_MODE=whatsmcp with WHATSMCP_API_KEY, WHATSMCP_ACCOUNT_ID, exact OTP_ALLOWLIST and PUBLIC_QUOTE_ORIGIN. API/worker launchers still default console; both require --allow-configured-sandbox for external sends. Do not log/paste keys, OTPs or links; the private backend/.env stays ignored. Owner will add credentials later; no live send has been tested. Read-only sender check: backend/scripts/whatsmcp_check.py.

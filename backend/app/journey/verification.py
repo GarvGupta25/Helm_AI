@@ -26,6 +26,7 @@ from .contact import check_code, keyed
 from .router import digest, owned, save
 from .schemas import Strict
 from .selection import selected
+from .whatsmcp import WhatsMCPError, WhatsMCPOtpProvider, configured
 
 router=APIRouter(prefix='/api/journey',tags=['verified contact'])
 demo_codes: dict[str,tuple[str,datetime]] = {}
@@ -105,9 +106,11 @@ def provider(channel,value):
         return ConsoleProvider()
     if value not in settings().otp_allowlist:
         raise HTTPException(422,'This sandbox sends only to operator-approved test contacts')
+    if mode=='whatsmcp' and channel=='whatsapp':
+        return WhatsMCPOtpProvider()
     if mode=='whatsapp_sandbox' and channel=='whatsapp':
         return WhatsAppCloudProvider()
-    if mode in {'email_sandbox','whatsapp_sandbox'} and channel=='email':
+    if mode in {'email_sandbox','whatsapp_sandbox','whatsmcp'} and channel=='email':
         return EmailProvider()
     raise HTTPException(503,'This verification channel is not configured')
 
@@ -150,7 +153,8 @@ def reserve_send(db,session_id,channel,value):
 
 @router.get('/verify/config')
 def configuration():
-    return {'mode':settings().otp_delivery_mode,'real_delivery':settings().otp_delivery_mode!='console','notice':'Local codes are simulations. Official delivery requires an allow-listed test contact and configured provider.'}
+    mode=settings().otp_delivery_mode
+    return {'mode':mode,'real_delivery':mode!='console' and (mode!='whatsmcp' or configured()),'notice':'Local codes are simulations.' if mode=='console' else 'Delivery requires configured sender credentials and an approved recipient. Queued messages are accepted, not yet confirmed.'}
 
 
 @router.post('/verify/start')
@@ -171,16 +175,20 @@ def start(body:Start,request:Request,record=Depends(owned),db:Session=Depends(se
     number_window.data={**number_window.data,'active_contact_id':contact.id}
     db.commit()
     try:
-        transport.send(value,code,contact.id)
+        delivery=transport.send(value,code,contact.id)
+    except WhatsMCPError as exc:
+        contact.data={**contact.data,'delivery_status':'failed','consumed':True}
+        db.commit()
+        raise HTTPException(exc.status_code,str(exc)) from None
     except Exception:
         contact.data={**contact.data,'delivery_status':'failed','consumed':True}
         db.commit()
         raise HTTPException(503,'Verification delivery is unavailable. Check the provider setup or use the other channel.') from None
-    contact.data={**contact.data,'delivery_status':'sent'}
+    contact.data={**contact.data,'delivery_status':delivery.get('provider_status','sent') if isinstance(delivery,dict) else 'sent'}
     data=deepcopy(record.data)
     data['wizard_contact_id']=contact.id
     save(db,record,data)
-    return {'contact_id':contact.id,'channel':body.channel,'mode':settings().otp_delivery_mode,'resend_after':60,'expires_in':600,'notice':'Code available in the private local demo inbox; nothing sent externally.' if settings().otp_delivery_mode=='console' else 'Code submitted to the configured official sandbox provider.'}
+    return {'contact_id':contact.id,'channel':body.channel,'mode':settings().otp_delivery_mode,'delivery_status':contact.data['delivery_status'],'resend_after':60,'expires_in':600,'notice':'Code available in the private local demo inbox; nothing sent externally.' if settings().otp_delivery_mode=='console' else 'Code submitted to the configured messaging provider. Check WhatsApp or your selected email channel.'}
 
 
 def current_contact(db,record):
@@ -219,7 +227,7 @@ def verify(body:Check,request:Request,response:Response,record=Depends(owned),db
     contact=current_contact(db,record)
     key=keyed('otp-number:'+contact.channel+':'+contact.data['destination'])
     active=db.get(OtpWindow,key)
-    if not active or active.data.get('active_contact_id')!=contact.id or contact.data.get('delivery_status')!='sent':
+    if not active or active.data.get('active_contact_id')!=contact.id or contact.data.get('delivery_status') not in {'sent','queued'}:
         raise HTTPException(410,'A newer code replaced this one, or delivery failed')
     check_code(db,contact,body.code)
     demo_codes.pop(contact.id,None)
