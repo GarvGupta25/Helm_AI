@@ -1,3 +1,4 @@
+import { track } from './wizard/funnel';
 export type Person = { relationship: 'lead_adult' | 'partner' | 'child'; age_years: number | null; date_of_birth?: string | null; smoker_status?: string | null };
 export type Profile = {
   people: Person[]; location: { region: string | null; postcode?: string | null };
@@ -16,7 +17,14 @@ try { capability = sessionStorage.getItem('helm-journey') || ''; } catch { /* In
 export async function journey<T>(path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST', options: {signal?:AbortSignal;keepalive?:boolean} = {}): Promise<T> {
   const response = await fetch(`/api/journey${path}`, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Journey-Session': capability }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), ...options });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || (typeof data.detail === 'string' ? data.detail : data.field_errors?.map((e: { message: string }) => e.message).join(' ')) || 'Please check your answers and try again.');
+  if (!response.ok) throw Object.assign(new Error(data.message || (typeof data.detail === 'string' ? data.detail : data.field_errors?.map((e: { message: string }) => e.message).join(' ')) || 'Please check your answers and try again.'), {status:response.status});
+  if (method === 'POST') {
+    if (path === '/selection') track('selection_complete', 'selection');
+    if (path === '/verify/start') track('otp_started', 'verify');
+    if (path === '/verify/check') track('otp_success', 'verify/code');
+    if (path === '/broker-handoff' || path === '/dashboard/broker-handoff') track('broker_requested', 'broker');
+    if (path === '/wizard/access') { const hours=(body as {hours?:number})?.hours; if (hours===24 || hours===48) track('link_choice','access','',String(hours) as '24'|'48'); }
+  }
   return data as T;
 }
 export async function openJourney(reset = false): Promise<IntakeState> {

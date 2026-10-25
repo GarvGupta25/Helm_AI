@@ -55,8 +55,10 @@ from .journey.cases import router as journey_cases_router
 from .journey.compare import router as journey_compare_router
 from .journey.contact import router as journey_contact_router
 from .journey.dashboard import router as journey_dashboard_router
+from .journey.funnel import router as journey_funnel_router
 from .journey.interviewer import router as journey_interviewer_router
 from .journey.policy import router as journey_policy_router
+from .journey.privacy import router as journey_privacy_router
 from .journey.review import router as journey_review_router
 from .journey.router import router as journey_router
 from .journey.selection import router as journey_selection_router
@@ -115,8 +117,10 @@ app.include_router(journey_broker_router)
 app.include_router(journey_broker_assistant_router)
 app.include_router(journey_review_router)
 app.include_router(journey_compare_router)
+app.include_router(journey_privacy_router)
 app.include_router(journey_policy_router)
 app.include_router(journey_contact_router)
+app.include_router(journey_funnel_router)
 app.include_router(journey_cases_router)
 app.include_router(journey_access_router)
 app.include_router(journey_dashboard_router)

@@ -63,5 +63,7 @@ def purge_expired(db, clock=None):
         db.delete(contact)
     for window in db.scalars(select(OtpWindow).where(OtpWindow.expires_at <= clock).limit(100)):
         db.delete(window)
+    from .funnel import purge_counts
+    purge_counts(db,clock)
     db.commit()
     return len(expired)

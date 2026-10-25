@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight, FileText, MessageCircle } from 'lucide-react';
 import { journey } from '../api';
 import type { Comparison } from '../Recommendations';
 import BrokerContact from './BrokerContact';
+import PrivacyControls from './PrivacyControls';
+import { track } from './funnel';
 import { firstMissing, guardedStep, pathFor, problem, skipped, stages, steps } from './steps';
 import { useWizardProfile } from './useWizardProfile';
 import StepFields from './StepFields';
@@ -20,11 +22,11 @@ export default function WizardApp() {
   useEffect(()=>{heading.current?.focus();},[id,opened]);
   useEffect(()=>{document.body.classList.add('helm-wizard-active');return()=>document.body.classList.remove('helm-wizard-active');},[]);
   useEffect(()=>{document.body.dataset.wizardMode=mode;return()=>{delete document.body.dataset.wizardMode;};},[mode]);
-  function choose(value:string){setMode(value);try{sessionStorage.setItem('helm-wizard-mode',value);}catch{/* Memory fallback. */}window.dispatchEvent(new Event('helm-wizard-mode'));}
+  function choose(value:string){track('mode_chosen','choice',value==='chat'?'chat':'manual');setMode(value);try{sessionStorage.setItem('helm-wizard-mode',value);}catch{/* Memory fallback. */}window.dispatchEvent(new Event('helm-wizard-mode'));}
   async function perform(action:()=>Promise<void>){setBusy(true);model.setError('');try{await action();}catch(e){model.setError(e instanceof Error?e.message:'Please retry.');}finally{setBusy(false);}}
-  async function go(next:string){if(next==='ready')await model.confirm(mode==='chat'?'guided_chat':'manual');else await model.flush();navigate(pathFor(location.search.includes('return=review')?'review':next));}
-  async function showPlans(){await model.confirm(mode==='chat'?'guided_chat':'manual');await journey<Comparison>('/recommendations?limit=10',{});navigate('/get-cover/plans');}
-  if(!state || !draft)return <section className="uk-section journey wizard"><h1>Let’s find your cover.</h1><p role={model.error?'alert':'status'}>{model.error || 'Opening your private intake…'}</p>{model.error && <button onClick={()=>window.location.reload()}>Try again</button>}</section>;
+  async function go(next:string){if(next==='ready')await model.confirm(mode==='chat'?'guided_chat':'manual');else await model.flush();if(steps.findIndex(s=>s.id===next)>index)track('step_complete',id,mode==='chat'?'chat':'manual');navigate(pathFor(location.search.includes('return=review')?'review':next));}
+  async function showPlans(){track('show_plans',id,mode==='chat'?'chat':'manual',id==='ready'?'checkpoint':id.startsWith('optional/')?'optional':'review');await model.confirm(mode==='chat'?'guided_chat':'manual');await journey<Comparison>('/recommendations?limit=10',{});navigate('/get-cover/plans');}
+  if(!state || !draft)return <section className="uk-section journey wizard"><h1>Let’s find your cover.</h1><p role={model.error?'alert':'status'}>{model.error || 'Opening your private intake…'}</p>{model.error && (model.expired?<button onClick={()=>void perform(async()=>{await model.restart();navigate(pathFor());})}>Start a new private intake</button>:<button onClick={()=>window.location.reload()}>Try again</button>)}</section>;
   if(id && !step)return <Navigate to={pathFor()} replace/>;
   const guard=step && guardedStep(id,draft);if(guard)return <Navigate to={pathFor(guard)} replace/>;
   const reason=step?problem(id,draft):'';const canShow=!firstMissing(draft);const optional=step?.id.startsWith('optional/');const stageSteps=steps.filter(s=>s.stage===step?.stage);
@@ -37,6 +39,7 @@ export default function WizardApp() {
     {model.error && <div className="j-error" role="alert">{model.error}<button onClick={()=>void perform(async()=>{await model.flush();})}>Retry saving</button></div>}
     {!step?<><p className="uk-lead">About five minutes. Choose how you’d like to tell us what matters. Switch at any time.</p><div className="w-mode-cards">{[['manual','Fill it in myself','Simple questions, at your own pace.'],['chat','Let the AI ask me','Guided questions with clear answers and a review.']].map(([value,title,text])=><button key={value} onClick={()=>{choose(value);navigate(pathFor('consent'));}}>{value==='manual'?<FileText/>:<MessageCircle/>}<strong>{title}</strong><span>{text}</span><ArrowRight size={20}/></button>)}</div></>:<div className="w-step">{mode==='chat' && !['consent','ready','review'].includes(id)?<GuidedIntake key={id} id={id} model={model}/>:<StepFields key={id} id={id} model={model}/>}</div>}
     {step && <div className="w-action"><button onClick={()=>void perform(()=>go(steps[index-1]?.id || ''))}><ArrowLeft size={16}/> Back</button>{optional && <button disabled={busy || !canShow} onClick={()=>void perform(showPlans)}>Show my plans</button>}<span id="w-next-reason">{reason || (optional?'Optional answers can be added later.':'Your draft is saved before continuing.')}</span>{step.tier==='Optional' && mode!=='chat' && <button onClick={()=>void perform(async()=>{for(const [key,value] of Object.entries(skipped(id,draft)))model.change(key as keyof typeof draft,value as never);await go(steps[index+1]?.id || 'review');})}>Skip</button>}<button className="uk-button primary" disabled={busy || !!reason} aria-describedby="w-next-reason" onClick={()=>void perform(()=>['ready','review'].includes(id)?showPlans():go(steps[index+1]?.id || 'review'))}>{['ready','review'].includes(id)?'Show my plans':'Next'} <ArrowRight size={16}/></button></div>}
+    <PrivacyControls prepare={()=>model.flush()}/>
     <BrokerContact prepare={()=>model.confirm(mode==='chat'?'guided_chat':'manual')}/>
   </section>;
 }

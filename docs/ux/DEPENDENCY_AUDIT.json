@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-25",
+  "initial_backend_advisories": 42,
+  "final_backend_advisories": 0,
+  "upgraded": {
+    "certifi": "2026.10.23",
+    "langgraph-checkpoint": "4.3.0",
+    "langgraph-checkpoint-postgres": "3.2.0",
+    "pillow": "13.0.0",
+    "urllib3": "2.8.0"
+  },
+  "npm": {
+    "root": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "frontend": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "method": "npm audit for both locks; pip-audit against uv-exported pinned runtime dependencies, no-deps/disable-pip. No source or visitor data uploaded."
+}

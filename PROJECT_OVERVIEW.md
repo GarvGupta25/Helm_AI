@@ -1,4 +1,33 @@
-# Helm AI — Project Overview and Current Build Status
+# Helm AI — guided quotation prototype
+
+Updated **25 October 2026**. Shared repository: [GarvGupta25/Helm_AI](https://github.com/GarvGupta25/Helm_AI). Checkout: `U:\projects\Helm_AI`. Development author: **Utkarsh Raj**.
+
+The current build follows all14 development phases (0–13) in `docs/ux/GUIDED_JOURNEY_PLAN.md`. Actual results and decisions are in `docs/ux/WIZARD_PROGRESS.md`. This is a local synthetic prototype; production release remains blocked.
+
+## What we are building
+
+A UK private-medical-cover journey: describe household needs manually or through guided questions; review eligible fictional plans in words; compare/select up to3; verify a contact; choose24/48-hour private access; inspect synthetic quotations/PDFs; ask a grounded assistant; optionally share with an assigned broker who reviews and approves generated outgoing documents.
+
+## What is built now
+
+- One-topic wizard with four-stage progress, autosave, refresh restore, navigation guards, mandatory checkpoint, optional skips, review/edit/undo and a shared manual/guided draft.
+- Separate10-plan list with narrowing filters, hard limits, sort and max3 selection; plain-English detail and policy Q&A with citations/refusals; comparison and consented selection receipt.
+- International contact entry with secure OTP rules and official allow-listed WhatsApp/SMTP implementations. **Local delivery is simulated** in a private inbox; no live ownership/provider claim.
+-24/48-hour fragment link, deliberate single-use exchange, short-lived private cookie, synthetic worker, six-tab dashboard, grounded assistant, quotation/comparison PDFs and optional quiet-hour reminders.
+- Broker contact with preferences and withdrawal; separate authenticated `/broker.html`, assigned queue, notes/messages/documents, source-linked assistant, review checklist and private follow-ups. Exact-revision approval gates generated dispatch/export. Legal wording remains a placeholder.
+- Visitor export/deletion, encrypted state and retention; optional anonymous daily funnel counts requiring operator flags and visitor consent. Existing chatbot-feedback database/member demos remain separate.
+
+## Run and verify
+
+Follow `docs/QUOTE_WORKFLOW.md` and `AGENTS.md`: start the isolated API, wait for health, start the worker, enable `VITE_QUOTE_WIZARD=true`, build/preview at4174. Flag defaultsfalse; `/get-cover/legacy-intake` remains available. Canonical API: `/api/journey`, `X-Journey-Session`; migration head0008. Never commit local keys/databases or overwrite a friend's changes; fetch/integrate before pushing.
+
+Evidence is in `docs/ux/QA_CHECKLIST.md`, `SECURITY_PRIVACY_REVIEW.md`, `DEPENDENCY_AUDIT.json`, the intake/broker evaluation reports and phase ledger. Real insurers, live provider delivery, configured broker sign-in, physical devices, manual screen readers, PostgreSQL races and legal/privacy sign-off remain external checks. English-only UI follows the owner's earlier instruction; RTL structure is tested without an Arabic option.
+
+## Earlier implementation record
+
+The following records the previous build and its original verification scope. Current routes/setup above supersede conflicting older descriptions.
+
+### Previous project overview
 
 > Updated: 24 October 2026, after implementation of the intake-to-broker demo. Shared repository: [GarvGupta25/Helm_AI](https://github.com/GarvGupta25/Helm_AI). Checkout: `U:\projects\Helm_AI`. Development commits are authored **Utkarsh Raj**.
 

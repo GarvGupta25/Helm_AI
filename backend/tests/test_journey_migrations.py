@@ -19,5 +19,5 @@ def test_fresh_migration_and_existing_grant_upgrade(tmp_path):
     command.upgrade(config, 'head')
     assert 'parent_id' in {c['name'] for c in inspect(engine).get_columns('journey_access_grant')}
     with engine.connect() as connection:
-        assert connection.scalar(text('select version_num from alembic_version')) == '0007_wizard_otp'
+        assert connection.scalar(text('select version_num from alembic_version')) == '0008_funnel_counts'
     engine.dispose()

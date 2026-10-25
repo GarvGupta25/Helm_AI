@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session  # noqa: E402
 
 from app.db import engine  # noqa: E402
 from app.journey import case_models as journey_case_models  # noqa: E402, F401
+from app.journey import funnel as journey_funnel  # noqa: E402, F401
 from app.journey import models as journey_models  # noqa: E402, F401
 from app.market.seed import seed  # noqa: E402
 from app.member_demo import seed_demo_members  # noqa: E402

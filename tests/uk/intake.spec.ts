@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('English guided intake remains usable on a narrow viewport', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/get-cover/quote');
+  await page.goto('/get-cover/legacy-intake');
   await page.getByRole('button', { name: 'Let the AI ask me', exact: true }).click();
   await expect(page.locator('.j-interview')).toHaveAttribute('dir', 'ltr');
   const scan = await new AxeBuilder({ page }).include('.journey').analyze();
@@ -16,7 +16,7 @@ test('English guided intake remains usable on a narrow viewport', async ({ page 
 });
 
 test('manual and guided modes share saved answers without invented defaults', async ({ page }) => {
-  await page.goto('/get-cover/quote');
+  await page.goto('/get-cover/legacy-intake');
   await page.getByRole('button', { name: 'Add adult', exact: true }).click();
   await page.getByLabel('Person 1 age', { exact: true }).fill('35');
   await page.getByRole('button', { name: 'Let the AI ask me', exact: true }).click();
@@ -32,11 +32,11 @@ test('manual and guided modes share saved answers without invented defaults', as
 });
 
 test('confirmed intake produces a persistent selectable comparison and a nonselectable preview', async ({ page }) => {
-  await page.goto('/get-cover/quote');
+  await page.goto('/get-cover/legacy-intake');
   await page.getByRole('button', { name: 'Add adult', exact: true }).click();
   await page.getByLabel('Person 1 age', { exact: true }).fill('35');
   await page.getByLabel('Region · mandatory', { exact: true }).selectOption('England');
-  await page.getByLabel('Cover start date · mandatory', { exact: true }).fill(new Date().toISOString().slice(0, 10));
+  await page.getByLabel('Cover start date · mandatory', { exact: true }).fill(new Date(Date.now()+86400000).toISOString().slice(0, 10));
   await page.getByLabel('Monthly budget · mandatory choice', { exact: true }).selectOption('amount');
   await page.getByLabel('Budget in pounds', { exact: true }).fill('150');
   await page.getByLabel('Maximum excess · mandatory choice', { exact: true }).selectOption('50000');

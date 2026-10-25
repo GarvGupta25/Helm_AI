@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 const chrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 export default defineConfig({
   testDir: './tests/uk', timeout: 60_000, workers: 1,
+  outputDir: './.runtime/playwright-uk-results',
   reporter: [['list'], ['json', { outputFile: 'docs/uk/evidence/playwright.json' }]],
   expect: { timeout: 15_000 },
   use: { baseURL: 'http://127.0.0.1:4174', trace: 'retain-on-failure',

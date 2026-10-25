@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-25",
+  "page": "/get-cover/quote (flag-on production demo build)",
+  "method": "Local Lighthouse navigation before and after reserving wizard loading height. One run per preset per version; consent dialog visible and other browser/lab processes active. Lab simulation, not field data or deployed SLA.",
+  "remaining": "Final mobile LCP still exceeds2500ms target. Physical-device responsiveness, field vitals and all-route budgets remain unverified. Desktop initial footer shifts were fixed; final desktop CLS0.",
+  "before_layout_fix": {
+    "mobile": {
+      "performance_score": 82,
+      "accessibility_score": 100,
+      "lcp_ms": 3294,
+      "fcp_ms": 2617,
+      "tbt_ms": 304,
+      "cls": 0.016
+    },
+    "desktop": {
+      "performance_score": 78,
+      "accessibility_score": 100,
+      "lcp_ms": 870,
+      "fcp_ms": 636,
+      "tbt_ms": 35,
+      "cls": 0.5153
+    }
+  },
+  "runs": {
+    "mobile": {
+      "performance_score": 86,
+      "accessibility_score": 100,
+      "lcp_ms": 3126,
+      "fcp_ms": 2516,
+      "tbt_ms": 234,
+      "cls": 0.026
+    },
+    "desktop": {
+      "performance_score": 100,
+      "accessibility_score": 100,
+      "lcp_ms": 713,
+      "fcp_ms": 585,
+      "tbt_ms": 26,
+      "cls": 0.0005
+    }
+  }
+}

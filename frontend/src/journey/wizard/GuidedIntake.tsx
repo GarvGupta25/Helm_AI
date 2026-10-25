@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { journey, type IntakeState, type Profile } from '../api';
 import { pathFor } from './steps';
+import { track } from './funnel';
 import { ProfileSummary } from './StepFields';
 import type { useWizardProfile } from './useWizardProfile';
 
@@ -11,7 +12,7 @@ export default function GuidedIntake({model,id}:{model:ReturnType<typeof useWiza
   const controller=useRef<AbortController | null>(null);const navigate=useNavigate();
   async function load(action='read',value?:unknown) {
     controller.current?.abort();const abort=new AbortController();controller.current=abort;setBusy(true);setNotice('');
-    try{const current=await model.flush();const data=await journey<Turn>('/intake/turn',{action,expected_revision:current.draft_revision,value,text,proposal_hash:turn?.proposedChanges?.hash,external_processing_consent:permission},'POST',{signal:abort.signal});if(abort.signal.aborted)return;setTurn(data);model.accept(data.state);setPermission(false);if(action!=='read' && action!=='clarify')setText('');setExact('');if(data.currentQuestion && data.currentQuestion.route!==id)navigate(pathFor(data.currentQuestion.route),{replace:true});}
+    try{const current=await model.flush();const data=await journey<Turn>('/intake/turn',{action,expected_revision:current.draft_revision,value,text,proposal_hash:turn?.proposedChanges?.hash,external_processing_consent:permission},'POST',{signal:abort.signal});if(abort.signal.aborted)return;setTurn(data);model.accept(data.state);setPermission(false);if(action!=='read' && action!=='clarify')setText('');setExact('');if(data.currentQuestion && data.currentQuestion.route!==id && ['direct','confirm','skip'].includes(action))track('step_complete',id,'chat');if(data.currentQuestion && data.currentQuestion.route!==id)navigate(pathFor(data.currentQuestion.route),{replace:true});}
     catch(e){if(!abort.signal.aborted)setNotice(e instanceof Error?e.message:'Try again.');}finally{if(!abort.signal.aborted)setBusy(false);}
   }
   useEffect(()=>{void load();return()=>controller.current?.abort();},[id]); // Read the server-owned question after route changes.

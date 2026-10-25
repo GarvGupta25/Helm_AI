@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { journey, money, openJourney, type Profile } from './api';
 import DemoInbox from './DemoInbox';
+import { track } from './wizard/funnel';
 import DashboardBroker from './DashboardBroker';
 import PolicyQuestions from './PolicyQuestions';
 import DashboardAssistant from './wizard/DashboardAssistant';
@@ -18,6 +19,7 @@ export default function Dashboard(){
  const initial=useRef(window.location.hash.slice(1));const [pendingLink,setPendingLink]=useState(Boolean(initial.current));const opening=useRef<Promise<DashboardState>|null>(null);const [data,setData]=useState<DashboardState>();const [notice,setNotice]=useState('');const [policy,setPolicy]=useState<Quote>();const [tab,setTab]=useState('Quotations');const [clock,setClock]=useState(Date.now());
  const [caseId,setCaseId]=useState(()=>{try{return sessionStorage.getItem('helm-journey-case') || '';}catch{return '';}});const [destination,setDestination]=useState('');const [channel,setChannel]=useState('email');const [contactId,setContactId]=useState('');const [code,setCode]=useState('');const [busy,setBusy]=useState(false);const [renewHours,setRenewHours]=useState('24');
  useEffect(()=>{let active=true;window.history.replaceState(null,'',window.location.pathname);if(initial.current)return()=>{active=false;};opening.current ||= journey<DashboardState>('/dashboard');void opening.current.then(value=>{if(active){setData(value);setCaseId(value.id);}}).catch(e=>{if(active)setNotice(e.message);});return()=>{active=false;};},[]);
+ useEffect(()=>{if(data)track('dashboard_open','dashboard');},[Boolean(data)]);
  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer);},[]);
  useEffect(()=>{if(!data)return;const timer=setInterval(()=>{if(document.hidden)return;void journey<DashboardState>('/dashboard').then(setData).catch(e=>{setData(undefined);setNotice(e.message);});},5000);return()=>clearInterval(timer);},[data]);
  async function perform(action:()=>Promise<void>){setBusy(true);setNotice('');try{await action();}catch(e){setNotice(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
