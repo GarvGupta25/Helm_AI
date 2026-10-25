@@ -5,4 +5,10 @@ html .uk-overlay{backdrop-filter:none}
 html .uk-video-badge{backdrop-filter:none}
 .uk-site .uk-card:not(:has(a,button,[role=button])):hover{transform:none;box-shadow:none}
 html .uk-hero-photo,html .uk-scroll-hint svg,html .uk-video-badge>svg{animation:none!important}
-@media(prefers-reduced-motion:reduce){.uk-overlay,html .uk-modal{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){html .uk-overlay,html .uk-modal{animation:none!important;transition:none!important}}
+
+/* Inline anchors need a transformable box; existing flex/grid link styles win. */
+:where(a[href]){display:inline-block}
+html body :is(button,a[href],summary,[role=button],[role=tab],[role=menuitem],input[type=submit],input[type=button]){touch-action:manipulation;scale:1;transition:scale 100ms ease-out}
+html body [data-pressed]{scale:.97}
+@media(prefers-reduced-motion:reduce){html body [data-pressed]{scale:1;opacity:.8}}

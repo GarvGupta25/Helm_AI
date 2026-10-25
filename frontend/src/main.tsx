@@ -1,3 +1,4 @@
+import { PressFeedback } from './ui/PressFeedback';
 import './ui/apple-design.css';
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -17,5 +18,5 @@ function Entry() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode><BrowserRouter><Suspense fallback={<main style={{ padding: 40, fontFamily: 'system-ui' }} role="status">Loading Helm…</main>}><Entry/></Suspense></BrowserRouter></React.StrictMode>,
+  <React.StrictMode><PressFeedback/><BrowserRouter><Suspense fallback={<main style={{ padding: 40, fontFamily: 'system-ui' }} role="status">Loading Helm…</main>}><Entry/></Suspense></BrowserRouter></React.StrictMode>,
 );
