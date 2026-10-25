@@ -18,6 +18,8 @@ export function SheetModal({ open, onClose, title, children }: { open: boolean; 
     const node = content.current; const scrim = overlay.current;
     node.dataset.sheetReady='true';
     const media = typeof matchMedia==='function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false, addEventListener() {}, removeEventListener() {} }; latest.current.reduced = media.matches;
+    const transparency = typeof matchMedia==='function' ? matchMedia('(prefers-reduced-transparency: reduce)') : null;
+    const contrast = typeof matchMedia==='function' ? matchMedia('(prefers-contrast: more)') : null;
     const distance = () => window.innerHeight + 32;
     function finish() {
       if (!latest.current.open || latest.current.closing) {
@@ -32,14 +34,17 @@ export function SheetModal({ open, onClose, title, children }: { open: boolean; 
     }, () => { if (latest.current.reduced) finish(); }, .002);
     function update() {
       latest.current.reduced = media.matches;
+      node.dataset.reducedMotion=String(media.matches);
+      node.dataset.reducedTransparency=String(Boolean(transparency?.matches));
+      node.dataset.moreContrast=String(Boolean(contrast?.matches));
       const show = latest.current.open && !latest.current.closing;
       if (drag.current && !media.matches && show) return;
       if (media.matches) { drag.current = null; motion.current?.jump(0); }
       else motion.current?.to(show ? 0 : distance(), { damping: closingByUser.current && Math.abs(motion.current.velocity)>80 ? .8 : 1, response: .3 });
       fade.current?.to(show ? 1 : 0, { damping: 1, response: media.matches ? .12 : .3 });
     }
-    update(); media.addEventListener('change', update);
-    return () => { media.removeEventListener('change', update); motion.current?.pause(); fade.current?.pause(); };
+    update(); for(const signal of [media,transparency,contrast])signal?.addEventListener('change',update);
+    return () => { for(const signal of [media,transparency,contrast])signal?.removeEventListener('change',update); motion.current?.pause(); fade.current?.pause(); };
   }, [present, open, closing, mountedNode]);
   useEffect(() => { if (!present) { motion.current?.pause(); fade.current?.pause(); motion.current = null; fade.current = null; } }, [present]);
   function requestClose() { closingByUser.current = true; setClosing(true); }
