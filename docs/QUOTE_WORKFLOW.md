@@ -1,6 +1,6 @@
 # Helm AI quotation workflow — current prototype
 
-Updated25 October2026. Shared source: https://github.com/GarvGupta25/Helm_AI. Use `U:\projects\Helm_AI`; `Insurance_UAE` is another checkout. Development author: **Utkarsh Raj**. Original implementation history is retained in Git and phase reports; this document describes the current journey.
+Updated25 October2026. Shared source: https://github.com/GarvGupta25/Helm_AI. Use `U:\projects\Helm_AI`; `Insurance_UAE` is another checkout. Development author: **Garv Gupta**. Original implementation history is retained in Git and phase reports; this document describes the current journey.
 
 ## Run and collaborate
 
