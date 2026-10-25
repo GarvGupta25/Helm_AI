@@ -18,21 +18,24 @@ The new separate `/broker.html` entry uses the existing Supabase authentication 
 
 The redesigned public widget adds streaming/Stop, attachment processing, voice feature detection, session controls, English-only controls and dark mode. It is enabled by default in development and built previews. For an explicit preview/QA setting, use `$env:VITE_NEXT_CHAT_UI='true'` **before** building. Set it to `false` to retain the legacy panel. See [design notes and verification limits](docs/chatbot-design-notes.md). Optional provider calls need credentials and explicit consent; learned ranking remains disabled.
 
-### Run the isolated UK demo
+### Run the isolated prototype with real WhatsApp verification
 
 ```powershell
 npm ci
 npm --prefix frontend ci
 uv sync --project backend --locked --group dev
-# Terminal 1: explicitly uses a scratch SQLite database, never your configured database
-uv run --project backend python backend/scripts/uk_test_server.py
-# Terminal 2: delayed insurer replies, private demo notifications and retention
-uv run --project backend python backend/scripts/journey_worker.py
+# Terminal 1: scratch SQLite, configured WhatsMCP delivery (no console fallback)
+npm run api:prototype
+# Terminal 2: synthetic insurer replies, configured messaging and retention
+npm run worker:prototype
 # Terminal 3
+$env:VITE_QUOTE_WIZARD='true'
 npm run dev
 ```
 
-The public pages work without an API; the quote and assistant require the test API. Build with `npm run build`. Run `npm run test:uk` after building; the browser suite uses the production preview and an isolated API. `npm --prefix frontend run build:production` intentionally fails while live-release blockers remain. Do not deploy the legacy authenticated workflows as a completed UK migration.
+Fill the private `backend/.env` WhatsMCP key, sender ID, approved recipient and phone-reachable HTTPS origin first; see [setup](docs/ux/LIGHT_UI_WHATSMCP.md). Missing setup shows verification unavailable and never offers a demo code. Verification uses your actual WhatsApp number; insurance quotations remain synthetic. The automated test server `backend/scripts/uk_test_server.py` deliberately stays console-only and is not the normal prototype entry point.
+
+The public pages work without an API; the quote and assistant require the API. Build with `npm run build`. Run `npm run test:uk` after building against the isolated console test API; real delivery is never exercised by browser regression tests. `npm --prefix frontend run build:production` intentionally fails while live-release blockers remain. Do not deploy the legacy authenticated workflows as a completed UK migration.
 
 ## Main-site pages
 

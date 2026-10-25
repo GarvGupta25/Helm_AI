@@ -1,5 +1,7 @@
 # Helm AI — guided quotation prototype
 
+Current verification: the normal website requests an actual WhatsApp number and uses configured WhatsMCP, with no local-code inbox. Missing credentials disable sending. Start the normal API/worker with `npm run api:prototype` / `npm run worker:prototype`; console verification belongs only to the separate automated test server. Insurance prices and quotations remain synthetic.
+
 Updated **25 October 2026**. Shared repository: [GarvGupta25/Helm_AI](https://github.com/GarvGupta25/Helm_AI). Checkout: `U:\projects\Helm_AI`. Development author: **Utkarsh Raj**.
 
 The current build follows all14 development phases (0–13) in `docs/ux/GUIDED_JOURNEY_PLAN.md`. Actual results and decisions are in `docs/ux/WIZARD_PROGRESS.md`. This is a local synthetic prototype; production release remains blocked.

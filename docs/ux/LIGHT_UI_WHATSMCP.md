@@ -30,12 +30,12 @@ Keep the sender and recipient numbers distinct if your account cannot send to it
 5. Restart the isolated API and worker with explicit messaging permission (stop only their verified task PIDs first):
 
 ```powershell
-uv run --project backend python backend/scripts/uk_test_server.py --allow-configured-sandbox
+npm run api:prototype
 # In a separate terminal, once /health responds:
-uv run --project backend python backend/scripts/journey_worker.py --allow-configured-sandbox
+npm run worker:prototype
 ```
 
-Both launchers otherwise force console mode intentionally, even if the env file contains a provider setting. No provider key is required to use the rest of the prototype.
+The normal API now honors the real WhatsMCP configuration. Only the separate automated test server forces console. The public verification page never offers local codes, even against that test server. Missing keys disable verification with an unavailable notice; no provider key is needed to inspect the other prototype pages.
 
 6. Use the website normally: review/select plans, choose WhatsApp, enter the approved number and allow the verification code. Enter the code from your WhatsApp. On access choice, select24/48h and tick **Send the private access link and quotation updates through my verified channel** before creating the link. That explicit request sends the access link promptly; later quotation updates/reminders respect quiet hours. Keep sharing/notification consent unticked unless you want messages.
 
@@ -62,3 +62,12 @@ Actual command results are recorded below after completion. Tests use mocked Wha
 - The read-only setup check correctly reports missing credentials (expected exit1); backend/.env is confirmed ignored. Secret-pattern and diff checks ran before commit. Physical phones, manual screen readers and actual public routing/provider delivery remain unverified.
 - Full UK/public/chat/member/legacy browser suite:27 passed in1.7min against the rebuilt preview. This also verifies the normal public launcher remains functional outside the guided journey.
 - For the first real-delivery test, start a fresh private comparison. Existing console-verified cases cannot be renewed as a different real contact; the original-contact binding is preserved.
+
+
+## Real verification correction
+Normal verification asks for an actual WhatsApp number and never renders the former local inbox, reveal button, fictional-number prompt or simulation banner. Country code, consent, six-box paste/keyboard support, countdown, attempts and verified private access remain. Email is offered only when configured. Readiness is checked before allowing Send; missing sender setup is an honest unavailable state. A transport change invalidates old console challenges.
+
+Normal startup: `npm run api:prototype` and `npm run worker:prototype`; the API uses the same isolated SQLite/key setup, with configured real transport instead of the test-only console override. `backend/.env` is currently set to whatsmcp, with key/sender/recipient/origin still blank. The sender cannot deliver until those fields are completed. No real message is claimed. Stop the normal API before browser regression suites that require the isolated console test server.
+
+### Actual verification correction results
+Full backend515 passed/1 skipped; focused14 passed; frontend16 unit tests, TypeScript, scoped lint, Ruff and demo build passed. Final browser8 passed plus1 smoke against the actual preview. The current normal API reports mode=whatsmcp and readiness=false because credentials remain blank. The normal UI has no local-code reveal path. Production guard stays closed. No actual message delivery was exercised; configured-sender UI cases use explicit fixtures and the REST transport is covered by mocked backend integration tests.

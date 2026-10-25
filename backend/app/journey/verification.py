@@ -104,8 +104,10 @@ def provider(channel,value):
     mode=settings().otp_delivery_mode
     if mode=='console':
         return ConsoleProvider()
+    if mode=='whatsmcp' and not configured():
+        raise HTTPException(503,'WhatsApp verification is currently unavailable. Please try again later.')
     if value not in settings().otp_allowlist:
-        raise HTTPException(422,'This sandbox sends only to operator-approved test contacts')
+        raise HTTPException(422,'Verification is not enabled for this contact. Contact us for help.')
     if mode=='whatsmcp' and channel=='whatsapp':
         return WhatsMCPOtpProvider()
     if mode=='whatsapp_sandbox' and channel=='whatsapp':
@@ -153,8 +155,12 @@ def reserve_send(db,session_id,channel,value):
 
 @router.get('/verify/config')
 def configuration():
-    mode=settings().otp_delivery_mode
-    return {'mode':mode,'real_delivery':mode!='console' and (mode!='whatsmcp' or configured()),'notice':'Local codes are simulations.' if mode=='console' else 'Delivery requires configured sender credentials and an approved recipient. Queued messages are accepted, not yet confirmed.'}
+    config=settings()
+    mode=config.otp_delivery_mode
+    approved=bool(config.otp_allowlist)
+    whatsapp=approved and ((mode=='whatsmcp' and configured()) or (mode=='whatsapp_sandbox' and bool(config.whatsapp_access_token and config.whatsapp_phone_number_id and config.whatsapp_graph_version and config.whatsapp_auth_template)))
+    email=approved and mode in {'email_sandbox','whatsapp_sandbox','whatsmcp'} and bool(config.smtp_host and config.smtp_from and config.smtp_user and config.smtp_password)
+    return {'mode':mode,'real_delivery':bool(whatsapp or email),'channels':{'whatsapp':bool(whatsapp),'email':bool(email)},'notice':'WhatsApp verification is available.' if whatsapp else 'WhatsApp verification is currently unavailable. Please try again later.'}
 
 
 @router.post('/verify/start')
@@ -196,6 +202,8 @@ def current_contact(db,record):
     contact=db.scalar(select(Contact).where(Contact.id==record.data.get('wizard_contact_id'),Contact.session_id==record.id).with_for_update())
     if not contact or contact.data.get('selection_fingerprint')!=receipt['fingerprint']:
         raise HTTPException(404,'Start verification for the current reviewed selection')
+    if contact.data.get('mode')!=settings().otp_delivery_mode:
+        raise HTTPException(409,'Request a new code using the current verification service.')
     return contact
 
 

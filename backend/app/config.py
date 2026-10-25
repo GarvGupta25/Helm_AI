@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     research_state_key: str = ""
     research_llm_enabled: bool = False
     research_intent_model: str = "openai/gpt-oss-20b"
-    otp_delivery_mode: str = 'console'
+    otp_delivery_mode: str = 'whatsmcp'
     journey_funnel_enabled: bool = False
     otp_allowlist: list[str] = []
     whatsapp_access_token: str = ''
