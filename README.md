@@ -20,6 +20,8 @@ The redesigned public widget adds streaming/Stop, attachment processing, voice f
 
 ### Run the isolated prototype with demo WhatsApp login
 
+Local API origins include ports 5173, 4174, 4175 and 4176 on `localhost` and `127.0.0.1`. If your private `backend/.env` overrides `ALLOWED_ORIGINS`, include the exact address used by your browser and restart the API. An omitted preview origin blocks account signup, login and private-link exchange with “Use this dashboard's own origin”. Keep this an explicit list; do not use a wildcard or remove the origin check.
+
 ```powershell
 npm ci
 npm --prefix frontend ci

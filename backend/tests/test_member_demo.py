@@ -1,16 +1,43 @@
 from datetime import timedelta
 from types import SimpleNamespace
 
+import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import member_demo
 from app.auth import current_user
+from app.config import Settings
+from app.journey import access
 from app.main import app
 from app.member_demo import DEMO_PASSWORD, MemberAccount, MemberSession, seed_demo_members
 from app.models import now
 from app.public_assistant import _rate_store
+
+
+@pytest.mark.parametrize(('origin', 'fetch_site', 'expected'), [
+    ('http://127.0.0.1:4176', 'same-origin', 200),
+    ('http://localhost:4176', 'same-origin', 200),
+    ('http://127.0.0.1:4176', 'cross-site', 403),
+    ('http://127.0.0.1:4177', 'same-origin', 403),
+    ('https://foreign.test', 'same-origin', 403),
+])
+def test_preview_member_login_origin(fixture_client, monkeypatch, origin, fetch_site, expected):
+    client, _, engine = fixture_client
+    _rate_store.clear()
+    monkeypatch.setenv('RESEARCH_STATE_KEY', Fernet.generate_key().decode())
+    monkeypatch.delenv('ALLOWED_ORIGINS', raising=False)
+    config = Settings(_env_file=None, member_demo_auth=True, app_env='development')
+    monkeypatch.setattr(member_demo, 'settings', lambda: config)
+    monkeypatch.setattr(access, 'settings', lambda: config)
+    with Session(engine) as db:
+        seed_demo_members(db)
+    response = client.post('/api/member-demo/login',
+                           headers={'Origin': origin, 'Sec-Fetch-Site': fetch_site},
+                           json={'email': 'new.member@example.test', 'password': DEMO_PASSWORD})
+    assert response.status_code == expected, response.text
+    assert client.get('/api/member-demo/me').status_code == (200 if expected == 200 else 401)
 
 
 def test_accounts_password_sessions_policy_landing_and_broker_separation(fixture_client, monkeypatch):
